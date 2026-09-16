@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Dashboard | SLNA</title><link rel="stylesheet" href="../css/style.css"></head>
+<body class="admin-body">
+  <div class="admin-header">
+    <h1 style="font-size:16px;">SLNA Content Management</h1>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span id="welcome-user" style="font-size:13px;"></span>
+      <button id="logout-btn" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">Log Out</button>
+    </div>
+  </div>
+  <div class="admin-wrap">
+    <div class="main-tab-buttons">
+      <button class="main-tab-btn active" data-maintab="maintab-news">Add News</button>
+      <button class="main-tab-btn" data-maintab="maintab-photos">Add Photos / Albums</button>
+    </div>
+    <div class="main-tab-panel active" id="maintab-news">
+      <div class="admin-card">
+        <h2>Add News Item</h2>
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-tab="tab-type">Type in UI</button>
+          <button class="tab-btn" data-tab="tab-upload">Upload File (Word / PDF / Text)</button>
+        </div>
+        <div class="tab-panel active" id="tab-type">
+          <div id="type-alert"></div>
+          <form id="type-news-form">
+            <div class="form-group"><label>Title</label><input type="text" id="type-title" required></div>
+            <div class="form-group"><label>Date</label><input type="date" id="type-date" required></div>
+            <div class="form-group"><label>Short Summary</label><input type="text" id="type-summary"></div>
+            <div class="form-group"><label>Full Content</label><textarea id="type-body" rows="6" required></textarea></div>
+            <div class="form-group"><label>Photo (optional)</label><input type="file" id="type-photo-input" accept="image/*"><div id="type-photo-preview" style="margin-top:8px;"></div></div>
+            <button type="submit" class="btn btn-primary">Publish News Item</button>
+          </form>
+        </div>
+        <div class="tab-panel" id="tab-upload">
+          <div id="file-alert"></div>
+          <form id="file-news-form">
+            <div class="form-group"><label>Title</label><input type="text" id="file-title" required></div>
+            <div class="form-group"><label>Date</label><input type="date" id="file-date" required></div>
+            <div class="form-group">
+              <label>Document (.txt, .docx, .pdf)</label>
+              <div class="file-drop" id="file-drop-zone">Click or drag a file here</div>
+              <input type="file" id="file-upload-input" accept=".txt,.docx,.pdf" style="display:none;">
+              <div id="file-name-display" style="margin-top:8px; font-size:13px; color:var(--primary-dark); font-weight:600;"></div>
+            </div>
+            <div class="form-group"><label>Short Summary</label><input type="text" id="file-summary"></div>
+            <div class="form-group"><label>Content Preview</label><textarea id="file-body-preview" rows="5"></textarea></div>
+            <div class="form-group"><label>Photo (optional)</label><input type="file" id="file-photo-input" accept="image/*"><div id="file-photo-preview" style="margin-top:8px;"></div></div>
+            <button type="submit" class="btn btn-primary">Publish News Item with Attachment</button>
+          </form>
+        </div>
+      </div>
+      <div class="admin-card">
+        <h2>Published News Items</h2>
+        <table class="news-table"><thead><tr><th>Photo</th><th>Title</th><th>Date</th><th>Source</th><th>Attachment</th><th>Actions</th></tr></thead><tbody id="news-table-body"></tbody></table>
+      </div>
+    </div>
+    <div class="main-tab-panel" id="maintab-photos">
+      <div class="admin-card">
+        <h2>Add Photo Album</h2>
+        <div id="album-alert"></div>
+        <form id="album-form">
+          <div class="form-group"><label>Album Title</label><input type="text" id="album-title" required></div>
+          <div class="form-group"><label>Date</label><input type="date" id="album-date" required></div>
+          <div class="form-group">
+            <label>Photos (select multiple, or add more separately)</label>
+            <input type="file" id="album-photo-input" accept="image/*" multiple>
+            <div class="photo-picker-count" id="album-photo-count">0 photo(s) selected</div>
+            <div class="photo-picker-grid" id="album-photo-picker"></div>
+          </div>
+          <button type="submit" class="btn btn-primary">Publish Album</button>
+        </form>
+      </div>
+      <div class="admin-card">
+        <h2>Published Albums</h2>
+        <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Photos</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
+      </div>
+    </div>
+    <div class="info-box"><p><strong>Note:</strong> This dashboard saves to a real database via your local backend server. Make sure the backend is running (<code>npm start</code> in the slna-backend folder) before adding news or albums.</p></div>
+  </div>
+  <script src="../js/config.js"></script>
+  <script src="../js/admin-auth.js"></script>
+  <script src="../js/admin-panel.js"></script>
+</body></html>
