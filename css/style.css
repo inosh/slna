@@ -235,3 +235,133 @@ ul { list-style:none; }
   .news-feed-item .news-photo { flex:0 0 auto; height:170px; }
   .president-box { flex-direction:column; text-align:center; }
 }
+
+/* Mobile navigation: keep all links collapsed until the hamburger is tapped */
+@media (max-width: 900px) {
+  .main-nav {
+    min-height: 52px;
+  }
+
+  .main-nav .container {
+    min-height: 52px;
+    position: relative;
+    justify-content: flex-end;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    min-height: 52px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: #fff;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .main-nav ul.nav-list,
+  .main-nav .nav-list {
+    display: none !important;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+    background: var(--primary);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
+    z-index: 1501;
+  }
+
+  .main-nav.open ul.nav-list,
+  .main-nav.open .nav-list {
+    display: flex !important;
+  }
+
+  .main-nav .nav-list > li {
+    width: 100%;
+    flex: 0 0 auto;
+    text-align: left;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .main-nav .nav-list > li > a {
+    padding: 14px 20px;
+    white-space: normal;
+  }
+
+  /* Disable desktop hover dropdowns on touch/mobile screens. */
+  .main-nav .nav-list > li:hover .dropdown {
+    display: none;
+  }
+
+  .main-nav .nav-list > li.open .dropdown {
+    display: block;
+    position: static;
+    min-width: 0;
+    width: 100%;
+    border-top: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+}
+
+@media (max-width: 900px) {
+  .content-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 24px;
+  }
+
+  .side-menu {
+    width: 100%;
+    position: static;
+    order: 0;
+    border-radius: 6px;
+  }
+
+  .side-menu h3 {
+    position: relative;
+    padding: 15px 42px 15px 18px;
+    cursor: pointer;
+  }
+
+  .side-menu h3::after {
+    content: "⌄";
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 22px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+
+  .side-menu.open h3::after {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .side-menu ul {
+    display: none;
+  }
+
+  .side-menu.open ul {
+    display: block;
+  }
+
+  .content-main {
+    width: 100%;
+    order: 1;
+  }
+
+  .side-menu li a {
+    padding: 12px 18px;
+  }
+}
