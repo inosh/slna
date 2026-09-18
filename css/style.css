@@ -713,3 +713,229 @@ ul { list-style:none; }
   font-size: 13px;
   font-weight: 600;
 }
+
+/* News page: three-column card grid */
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 30px;
+  align-items: stretch;
+}
+
+.news-grid-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 9px rgba(8, 50, 94, 0.07);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.news-grid-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(8, 50, 94, 0.14);
+}
+
+.news-grid-image {
+  position: relative;
+  display: block;
+  height: 210px;
+  overflow: hidden;
+  background: var(--primary-dark);
+}
+
+.news-grid-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.news-grid-card:hover .news-grid-image img {
+  transform: scale(1.05);
+}
+
+.news-grid-placeholder {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.news-grid-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 26px;
+  background: var(--primary-dark);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.news-grid-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 20px 24px 24px;
+}
+
+.news-grid-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.news-grid-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.news-grid-meta span:first-child::before {
+  content: "By";
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.news-grid-meta span:last-child::before {
+  content: "Date";
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.news-grid-card h2 {
+  margin: 0 0 12px;
+  color: var(--primary-dark);
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.news-grid-card h2 a:hover {
+  color: var(--primary);
+}
+
+.news-grid-card p {
+  display: -webkit-box;
+  margin: 0 0 20px;
+  overflow: hidden;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.65;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.news-grid-read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  color: var(--primary-dark);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.news-grid-read-more:hover {
+  color: var(--primary);
+}
+
+.news-grid-read-more span {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.news-grid-read-more:hover span {
+  transform: translateX(4px);
+}
+
+@media (max-width: 992px) {
+  .news-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 620px) {
+  .news-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .news-grid-image {
+    height: 220px;
+  }
+
+  .news-grid-body {
+    padding: 18px 20px 22px;
+  }
+}
+
+/* News detail: display the complete uploaded image without cropping */
+.news-detail .detail-photo {
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  margin-bottom: 22px;
+  background: var(--bg-light);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.news-detail .detail-photo img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: none;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+/* SLNA constitutional objectives */
+.content-main .objectives-list {
+  margin: 18px 0 24px 24px;
+  padding-left: 18px;
+  list-style: decimal;
+}
+
+.content-main .objectives-list li {
+  margin-bottom: 13px;
+  padding-left: 6px;
+  color: #3d4450;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+@media (max-width: 700px) {
+  .content-main .objectives-list {
+    margin-left: 18px;
+    padding-left: 14px;
+  }
+
+  .content-main .objectives-list li {
+    padding-left: 3px;
+  }
+}
