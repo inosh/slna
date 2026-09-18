@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Dashboard | SLNA</title><link rel="stylesheet" href="../css/style.css"></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | SLNA</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
 <body class="admin-body">
   <div class="admin-header">
     <h1 style="font-size:16px;">SLNA Content Management</h1>
@@ -8,12 +14,15 @@
       <button id="logout-btn" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">Log Out</button>
     </div>
   </div>
+
   <div class="admin-wrap">
-    <div class="main-tab-buttons">
-      <button class="main-tab-btn active" data-maintab="maintab-news">Add News</button>
-      <button class="main-tab-btn" data-maintab="maintab-photos">Add Photos / Albums</button>
+    <div class="main-tab-buttons" role="tablist" aria-label="Admin dashboard sections">
+      <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">Add News</button>
+      <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Add Photos / Albums</button>
+      <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
     </div>
-    <div class="main-tab-panel active" id="maintab-news">
+
+    <div class="main-tab-panel active" id="maintab-news" role="tabpanel">
       <div class="admin-card">
         <h2>Add News Item</h2>
         <div class="tab-buttons">
@@ -49,12 +58,16 @@
           </form>
         </div>
       </div>
+
       <div class="admin-card">
         <h2>Published News Items</h2>
-        <table class="news-table"><thead><tr><th>Photo</th><th>Title</th><th>Date</th><th>Source</th><th>Attachment</th><th>Actions</th></tr></thead><tbody id="news-table-body"></tbody></table>
+        <div class="table-scroll">
+          <table class="news-table"><thead><tr><th>Photo</th><th>Title</th><th>Date</th><th>Source</th><th>Attachment</th><th>Actions</th></tr></thead><tbody id="news-table-body"></tbody></table>
+        </div>
       </div>
     </div>
-    <div class="main-tab-panel" id="maintab-photos">
+
+    <div class="main-tab-panel" id="maintab-photos" role="tabpanel">
       <div class="admin-card">
         <h2>Add Photo Album</h2>
         <div id="album-alert"></div>
@@ -70,14 +83,228 @@
           <button type="submit" class="btn btn-primary">Publish Album</button>
         </form>
       </div>
+
       <div class="admin-card">
         <h2>Published Albums</h2>
-        <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Photos</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
+        <div class="table-scroll">
+          <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Photos</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
+        </div>
       </div>
     </div>
-    <div class="info-box"><p><strong>Note:</strong> This dashboard saves to a real database via your local backend server. Make sure the backend is running (<code>npm start</code> in the slna-backend folder) before adding news or albums.</p></div>
+
+    <div class="main-tab-panel" id="maintab-membership" role="tabpanel">
+      <div class="admin-card">
+        <div class="membership-admin-heading">
+          <div>
+            <h2>Membership Applications</h2>
+            <p class="admin-muted">Review new applications and verify their bank-transfer receipts before approving or rejecting membership.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="refresh-membership-applications" type="button">Refresh List</button>
+        </div>
+
+        <div id="membership-applications-alert" aria-live="polite"></div>
+
+        <div class="tab-buttons membership-status-tabs" role="tablist" aria-label="Membership application status">
+          <button class="tab-btn active" data-membership-status="pending" type="button">Pending <span class="status-count" id="pending-status-count">0</span></button>
+          <button class="tab-btn" data-membership-status="approved" type="button">Approved <span class="status-count" id="approved-status-count">0</span></button>
+          <button class="tab-btn" data-membership-status="rejected" type="button">Rejected <span class="status-count" id="rejected-status-count">0</span></button>
+        </div>
+
+        <div class="membership-filter-row">
+          <div class="form-group"><label for="membership-search">Search</label><input type="search" id="membership-search" placeholder="Name, reference, NIC, email or SLNC registration"></div>
+          <div class="form-group"><label for="membership-category-filter">Membership category</label><select id="membership-category-filter"><option value="">All categories</option><option value="Full Member">Full Member</option><option value="Associate Member">Associate Member</option><option value="Student Member">Student Member</option></select></div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="news-table membership-applications-table">
+            <thead><tr><th>Reference</th><th>Applicant</th><th>NIC / SLNC Reg.</th><th>Category</th><th>Submitted</th><th>Receipt</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="membership-applications-body">
+              <tr><td colspan="8" class="empty-table-state">No pending membership applications to display.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-card membership-review-card" id="membership-review-card" hidden>
+        <div class="membership-admin-heading">
+          <div>
+            <h2>Review Membership Application</h2>
+            <p class="admin-muted" id="membership-review-reference">Select an application from the list.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="close-membership-review" type="button">Close Review</button>
+        </div>
+
+        <div id="membership-review-content">
+          <div class="application-review-grid">
+            <section class="review-section"><h3>Personal Details</h3><dl><div><dt>Full name</dt><dd data-application-field="fullName">—</dd></div><div><dt>NIC number</dt><dd data-application-field="nicNumber">—</dd></div><div><dt>Date of birth</dt><dd data-application-field="dateOfBirth">—</dd></div><div><dt>Gender</dt><dd data-application-field="gender">—</dd></div><div><dt>Address</dt><dd data-application-field="residentialAddress">—</dd></div><div><dt>Contact number</dt><dd data-application-field="contactNumber">—</dd></div><div><dt>Email</dt><dd data-application-field="emailAddress">—</dd></div></dl></section>
+            <section class="review-section"><h3>Professional Details</h3><dl><div><dt>SLNC registration</dt><dd data-application-field="slncRegistrationNumber">—</dd></div><div><dt>Registration year</dt><dd data-application-field="yearOfRegistration">—</dd></div><div><dt>Qualification</dt><dd data-application-field="nursingQualification">—</dd></div><div><dt>Specialisation</dt><dd data-application-field="specialization">—</dd></div><div><dt>Employer</dt><dd data-application-field="currentEmployer">—</dd></div><div><dt>Designation</dt><dd data-application-field="currentDesignation">—</dd></div><div><dt>Experience</dt><dd data-application-field="yearsOfExperience">—</dd></div><div><dt>Work district</dt><dd data-application-field="workDistrict">—</dd></div></dl></section>
+            <section class="review-section"><h3>Membership &amp; Payment</h3><dl><div><dt>Membership category</dt><dd data-application-field="membershipCategory">—</dd></div><div><dt>Regional branch</dt><dd data-application-field="regionalBranch">—</dd></div><div><dt>Referral source</dt><dd data-application-field="referralSource">—</dd></div><div><dt>Payment reference</dt><dd data-application-field="paymentReference">—</dd></div><div><dt>Transfer date</dt><dd data-application-field="transferDate">—</dd></div><div><dt>Receipt</dt><dd><button class="btn btn-outline btn-sm" type="button" id="view-membership-receipt">View Receipt</button></dd></div></dl></section>
+          </div>
+
+          <div class="form-group"><label for="membership-admin-note">Internal admin note</label><textarea id="membership-admin-note" rows="4" placeholder="Optional internal note. This is not shown to the applicant."></textarea></div>
+          <div class="membership-review-actions"><button type="button" class="btn btn-danger" id="reject-membership-application">Reject Application</button><button type="button" class="btn btn-primary" id="approve-membership-application">Approve Application</button></div>
+          <p class="form-help">Approval and rejection controls are interface previews until the membership backend endpoints are implemented.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box"><p><strong>Note:</strong> This dashboard saves news and albums to the local backend server. The Membership Applications screen is currently a stakeholder-review UI; it will connect to the membership application API after backend implementation.</p></div>
   </div>
+
   <script src="../js/config.js"></script>
   <script src="../js/admin-auth.js"></script>
   <script src="../js/admin-panel.js"></script>
-</body></html>
+  <script>
+    (function () {
+      var membershipPanel = document.getElementById('maintab-membership');
+      if (!membershipPanel) return;
+
+      var applications = [
+        {
+          id: 1,
+          referenceNumber: 'SLNA-2026-000124',
+          status: 'pending',
+          fullName: 'Sample Applicant',
+          nicNumber: '199012345678',
+          dateOfBirth: '1990-06-12',
+          gender: 'Female',
+          residentialAddress: 'Colombo, Sri Lanka',
+          contactNumber: '+94 77 123 4567',
+          emailAddress: 'applicant@example.com',
+          slncRegistrationNumber: 'SLNC-123456',
+          yearOfRegistration: '2014',
+          nursingQualification: 'Diploma in Nursing',
+          specialization: 'Critical Care',
+          currentEmployer: 'Sample Hospital',
+          currentDesignation: 'Nursing Officer',
+          yearsOfExperience: '12 years',
+          workDistrict: 'Colombo',
+          membershipCategory: 'Full Member',
+          regionalBranch: 'Colombo',
+          referralSource: 'Colleague or friend',
+          paymentReference: 'BANK-REF-00124',
+          transferDate: '2026-09-17',
+          submittedAt: '17 Sep 2026, 10:30 AM',
+          receiptName: 'bank-transfer-receipt.pdf'
+        }
+      ];
+      var activeStatus = 'pending';
+      var selectedApplication = null;
+      var tbody = document.getElementById('membership-applications-body');
+      var searchInput = document.getElementById('membership-search');
+      var categoryFilter = document.getElementById('membership-category-filter');
+      var reviewCard = document.getElementById('membership-review-card');
+      var reviewReference = document.getElementById('membership-review-reference');
+      var noteInput = document.getElementById('membership-admin-note');
+      var alertBox = document.getElementById('membership-applications-alert');
+
+      function setMessage(type, message) {
+        alertBox.className = 'alert alert-' + type;
+        alertBox.textContent = message;
+      }
+
+      function updateCounts() {
+        ['pending', 'approved', 'rejected'].forEach(function (status) {
+          var count = applications.filter(function (application) { return application.status === status; }).length;
+          var element = document.getElementById(status + '-status-count');
+          if (element) element.textContent = count;
+        });
+        var pendingCount = applications.filter(function (application) { return application.status === 'pending'; }).length;
+        var badge = document.getElementById('membership-pending-count');
+        if (badge) badge.textContent = pendingCount;
+      }
+
+      function renderApplications() {
+        var searchTerm = (searchInput.value || '').toLowerCase().trim();
+        var category = categoryFilter.value;
+        var filtered = applications.filter(function (application) {
+          var searchable = [application.referenceNumber, application.fullName, application.nicNumber, application.emailAddress, application.slncRegistrationNumber].join(' ').toLowerCase();
+          return application.status === activeStatus && (!searchTerm || searchable.indexOf(searchTerm) !== -1) && (!category || application.membershipCategory === category);
+        });
+
+        tbody.innerHTML = '';
+        if (!filtered.length) {
+          var row = document.createElement('tr');
+          row.innerHTML = '<td colspan="8" class="empty-table-state">No ' + activeStatus + ' membership applications to display.</td>';
+          tbody.appendChild(row);
+          return;
+        }
+
+        filtered.forEach(function (application) {
+          var row = document.createElement('tr');
+          row.innerHTML = '<td><strong>' + application.referenceNumber + '</strong></td>' +
+            '<td>' + application.fullName + '<br><span class="admin-muted">' + application.emailAddress + '</span></td>' +
+            '<td>' + application.nicNumber + '<br><span class="admin-muted">' + application.slncRegistrationNumber + '</span></td>' +
+            '<td>' + application.membershipCategory + '</td>' +
+            '<td>' + application.submittedAt + '</td>' +
+            '<td><button type="button" class="table-link-button" data-receipt-id="' + application.id + '">Receipt</button></td>' +
+            '<td><span class="application-status status-' + application.status + '">' + application.status + '</span></td>' +
+            '<td><button type="button" class="btn btn-outline btn-sm" data-review-id="' + application.id + '">Review</button></td>';
+          tbody.appendChild(row);
+        });
+      }
+
+      function openReview(application) {
+        selectedApplication = application;
+        reviewCard.hidden = false;
+        reviewReference.textContent = application.referenceNumber + ' · Submitted ' + application.submittedAt + ' · Status: ' + application.status;
+        noteInput.value = '';
+        reviewCard.querySelectorAll('[data-application-field]').forEach(function (field) {
+          var value = application[field.getAttribute('data-application-field')];
+          field.textContent = value || '—';
+        });
+        reviewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function updateApplicationStatus(status) {
+        if (!selectedApplication) {
+          setMessage('error', 'Select an application to review first.');
+          return;
+        }
+        selectedApplication.status = status;
+        selectedApplication.adminNote = noteInput.value.trim();
+        setMessage('success', selectedApplication.referenceNumber + ' has been marked as ' + status + '. This is preview-only until the backend API is connected.');
+        reviewCard.hidden = true;
+        selectedApplication = null;
+        updateCounts();
+        renderApplications();
+      }
+
+      document.querySelectorAll('[data-membership-status]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          activeStatus = button.getAttribute('data-membership-status');
+          document.querySelectorAll('[data-membership-status]').forEach(function (tab) { tab.classList.remove('active'); });
+          button.classList.add('active');
+          reviewCard.hidden = true;
+          renderApplications();
+        });
+      });
+
+      tbody.addEventListener('click', function (event) {
+        var reviewId = event.target.getAttribute('data-review-id');
+        var receiptId = event.target.getAttribute('data-receipt-id');
+        if (reviewId) {
+          openReview(applications.find(function (application) { return String(application.id) === reviewId; }));
+        }
+        if (receiptId) {
+          var application = applications.find(function (item) { return String(item.id) === receiptId; });
+          setMessage('success', 'Preview: the protected receipt "' + application.receiptName + '" would open here after backend implementation.');
+        }
+      });
+
+      document.getElementById('view-membership-receipt').addEventListener('click', function () {
+        if (!selectedApplication) return;
+        setMessage('success', 'Preview: the protected receipt "' + selectedApplication.receiptName + '" would open here after backend implementation.');
+      });
+      document.getElementById('approve-membership-application').addEventListener('click', function () { updateApplicationStatus('approved'); });
+      document.getElementById('reject-membership-application').addEventListener('click', function () { updateApplicationStatus('rejected'); });
+      document.getElementById('close-membership-review').addEventListener('click', function () { reviewCard.hidden = true; });
+      document.getElementById('refresh-membership-applications').addEventListener('click', function () { setMessage('success', 'Preview list refreshed. Live applications will load here after backend implementation.'); renderApplications(); });
+      searchInput.addEventListener('input', renderApplications);
+      categoryFilter.addEventListener('change', renderApplications);
+      updateCounts();
+      renderApplications();
+    })();
+  </script>
+</body>
+</html>
