@@ -13,18 +13,70 @@ function fullUrl(relativePath) {
   const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
   return apiOrigin + relativePath;
 }
+function escapeHtml(value) {
+  return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+}
 async function renderPublicNewsList() {
   const container = document.getElementById('news-list-container');
+
   if (!container) return;
+
   try {
     const items = await apiGet('/news');
-    if (items.length === 0) { container.innerHTML = '<div class="news-empty">No news items published yet.</div>'; return; }
-    container.innerHTML = items.map(item => {
-      const photoHtml = item.photo_url ? '<div class="news-photo"><img src="' + fullUrl(item.photo_url) + '" alt=""></div>' : '<div class="news-photo no-photo">SLNA</div>';
-      return '<div class="news-feed-item" onclick="window.location.href=\'news-detail.html?id=' + item.id + '\'">' + photoHtml +
-        '<div class="news-feed-body"><div class="news-feed-date">' + formatDateLong(item.event_date) + '</div><h3>' + item.title + '</h3><p>' + (item.summary || item.body.substring(0, 200)) + '</p><span class="read-more-link">Read Full Story &rarr;</span></div></div>';
+
+    if (items.length === 0) {
+      container.innerHTML =
+          '<div class="news-empty">No news items published yet.</div>';
+      return;
+    }
+
+    container.innerHTML = items.map(function (item) {
+      const detailUrl = 'news-detail.html?id=' + encodeURIComponent(item.id);
+      const title = escapeHtml(item.title || 'News Update');
+      const date = formatDateLong(item.event_date);
+      const excerpt = escapeHtml(
+          item.summary || (item.body ? item.body.substring(0, 230) : '')
+      );
+
+      const imageHtml = item.photo_url
+          ? '<img src="' + fullUrl(item.photo_url) + '" alt="' + title + '">'
+          : '<div class="news-grid-placeholder" aria-hidden="true">SLNA</div>';
+
+      return (
+          '<article class="news-grid-card">' +
+          '<a href="' + detailUrl + '" class="news-grid-image">' +
+          imageHtml +
+          '<span class="news-grid-label">News</span>' +
+          '</a>' +
+
+          '<div class="news-grid-body">' +
+          '<div class="news-grid-meta">' +
+          '<span>SLNA Admin</span>' +
+          '<span>' + date + '</span>' +
+          '</div>' +
+
+          '<h2><a href="' + detailUrl + '">' + title + '</a></h2>' +
+          '<p>' + excerpt + '</p>' +
+
+          '<a href="' + detailUrl + '" class="news-grid-read-more">' +
+          'Read More <span aria-hidden="true">&rarr;</span>' +
+          '</a>' +
+          '</div>' +
+          '</article>'
+      );
     }).join('');
-  } catch (err) { container.innerHTML = '<div class="news-empty">Could not load news. Is the backend server running?</div>'; console.error(err); }
+
+  } catch (err) {
+    container.innerHTML =
+        '<div class="news-empty">Could not load news. Is the backend server running?</div>';
+
+    console.error(err);
+  }
 }
 async function renderHomeNewsPreview() {
   const container = document.getElementById('news-list-container');
