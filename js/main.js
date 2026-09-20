@@ -1,55 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-  var toggle = document.querySelector('.nav-toggle');
-  var nav = document.querySelector('.main-nav');
-
-  if (toggle && nav) {
-    toggle.setAttribute('aria-expanded', 'false');
-
-    toggle.addEventListener('click', function () {
-      var isOpen = nav.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
-  }
-
-  document.querySelectorAll('.main-nav .nav-list > li').forEach(function (li) {
-    var link = li.querySelector(':scope > a');
-    var dropdown = li.querySelector(':scope > .dropdown');
-
-    if (link && dropdown) {
-      link.addEventListener('click', function (e) {
-        if (window.innerWidth <= 900) {
-          e.preventDefault();
-          li.classList.toggle('open');
-        }
-      });
-    } else if (link) {
-      link.addEventListener('click', function () {
-        if (window.innerWidth <= 900 && nav) {
-          nav.classList.remove('open');
-
-          if (toggle) {
-            toggle.setAttribute('aria-expanded', 'false');
-          }
-        }
-      });
-    }
-  });
-
-  var backToTop = document.querySelector('.back-to-top');
-
-  if (backToTop) {
-    window.addEventListener('scroll', function () {
-      backToTop.style.display = window.scrollY > 400 ? 'flex' : 'none';
-    });
-
-    backToTop.addEventListener('click', function () {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    });
-  }
-
   var loginForm = document.querySelector('#member-login-form');
 
   if (loginForm) {
@@ -96,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       var isOpen = menu.classList.toggle('open');
+
       heading.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     }
 

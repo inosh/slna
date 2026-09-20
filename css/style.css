@@ -939,3 +939,7 @@ ul { list-style:none; }
     padding-left: 3px;
   }
 }
+
+body.layout-loading {
+  visibility: hidden;
+}
