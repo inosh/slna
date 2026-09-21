@@ -295,6 +295,10 @@ document.addEventListener('DOMContentLoaded', function () {
         'membership-status-note'
     );
 
+    const statusNoteError = document.getElementById(
+        'membership-status-note-error'
+    );
+
     const adminNoteInput = document.getElementById(
         'membership-admin-note'
     );
@@ -362,6 +366,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const confirmIdModalButton = document.getElementById(
         'confirm-id-application-modal'
     );
+
+    const membershipDecisionHistory =
+        document.getElementById(
+            'membership-decision-history'
+        );
+
+    const readOnlyStatusNote =
+        document.getElementById(
+            'read-only-status-note'
+        );
+
+    const readOnlyAdminNote =
+        document.getElementById(
+            'read-only-admin-note'
+        );
 
     let applications = [];
     let activeStatus = 'pending';
@@ -795,7 +814,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateReviewWorkflowVisibility(application) {
       const membershipStatus =
-          application.applicationStatus || '';
+          application.applicationStatus;
 
       const openedFromIdApplicationTab =
           activeStatus === 'id_application';
@@ -804,13 +823,16 @@ document.addEventListener('DOMContentLoaded', function () {
           !openedFromIdApplicationTab &&
           (
               membershipStatus === 'pending' ||
-              membershipStatus === 'under_review' ||
-              membershipStatus === 'more_information_required'
+              membershipStatus === 'under_review'
           );
 
       const showIdApplicationWorkflow =
           openedFromIdApplicationTab &&
           membershipStatus === 'approved';
+
+      const showReadOnlyDecisionHistory =
+          membershipStatus === 'more_information_required' ||
+          membershipStatus === 'rejected';
 
       if (membershipDecisionFields) {
         membershipDecisionFields.classList.toggle(
@@ -840,23 +862,21 @@ document.addEventListener('DOMContentLoaded', function () {
         );
       }
 
-      if (
-          showIdApplicationWorkflow &&
-          idApplicationStatusDisplay
-      ) {
-        const idStatus =
-            application.idApplicationStatus || 'pending';
+      renderDecisionHistory(
+          application,
+          showReadOnlyDecisionHistory
+      );
 
-        const isCreated = idStatus === 'created';
-
-        idApplicationStatusDisplay.textContent = isCreated
-            ? 'ID Application Created'
-            : 'ID Application Pending';
+      if (showIdApplicationWorkflow) {
+        idApplicationStatusDisplay.textContent =
+            application.idApplicationStatus === 'created'
+                ? 'ID application created'
+                : 'ID application pending';
 
         idApplicationStatusDisplay.className =
             'application-status ' +
             (
-                isCreated
+                application.idApplicationStatus === 'created'
                     ? 'status-id_application_created'
                     : 'status-id_application_pending'
             );
@@ -865,6 +885,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function openReview(application) {
       selectedApplication = application;
+
+      clearMembershipNumberError();
+      clearStatusNoteError();
+      clearMembershipMessage();
 
       /*
        * Hide all workflow-specific controls immediately.
@@ -978,6 +1002,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function updateApplicationStatus(status) {
       clearMembershipNumberError();
+      clearStatusNoteError();
+
+      if (!selectedApplication) {
+        setMembershipMessage(
+            'error',
+            'Select an application to review first.',
+            { focus: true }
+        );
+
+        return;
+      }
+
+      const statusNote =
+          statusNoteInput.value.trim();
+
+      if (
+          (
+              status === 'more_information_required' ||
+              status === 'rejected'
+          ) &&
+          !statusNote
+      ) {
+        showStatusNoteError(
+            status === 'rejected'
+                ? 'Applicant Status Note is required before rejecting this application.'
+                : 'Applicant Status Note is required before requesting more information.'
+        );
+
+        return;
+      }
+
       if (!selectedApplication) {
         setMembershipMessage(
             'error',
@@ -999,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const membershipNumber = membershipNumberInput.value.trim();
-      const statusNote = statusNoteInput.value.trim();
       const adminNote = adminNoteInput.value.trim();
 
       if (status === 'approved' && !membershipNumber) {
@@ -1220,6 +1274,14 @@ document.addEventListener('DOMContentLoaded', function () {
       statusNoteInput.value = '';
       adminNoteInput.value = '';
 
+      clearMembershipNumberError();
+      clearStatusNoteError();
+      clearMembershipMessage();
+
+      if (membershipDecisionHistory) {
+        membershipDecisionHistory.hidden = true;
+      }
+
       [
         membershipDecisionFields,
         membershipAdminNoteGroup,
@@ -1273,6 +1335,18 @@ document.addEventListener('DOMContentLoaded', function () {
               'click',
               closeIdConfirmationModal
           );
+    }
+
+    statusNoteInput.addEventListener('input', function () {
+      clearStatusNoteError();
+      clearMembershipMessage();
+    });
+
+    if (statusNoteInput) {
+      statusNoteInput.addEventListener('input', function () {
+        clearStatusNoteError();
+        clearMembershipMessage();
+      });
     }
 
     document.addEventListener('keydown', function (event) {
@@ -1643,6 +1717,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     membershipNumberInput.addEventListener('input', function () {
       clearMembershipNumberError();
+      clearMembershipMessage();
     });
 
     function clearMembershipNumberError() {
@@ -1678,6 +1753,63 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
+    function renderDecisionHistory(
+        application,
+        visible
+    ) {
+      if (!membershipDecisionHistory) {
+        return;
+      }
+
+      membershipDecisionHistory.hidden = !visible;
+
+      if (!visible) {
+        return;
+      }
+
+      if (readOnlyStatusNote) {
+        readOnlyStatusNote.textContent =
+            application.statusNote || 'No applicant status note recorded.';
+      }
+
+      if (readOnlyAdminNote) {
+        readOnlyAdminNote.textContent =
+            application.adminNote || 'No internal admin note recorded.';
+      }
+    }
+
+    function clearStatusNoteError() {
+      if (statusNoteError) {
+        statusNoteError.textContent = '';
+        statusNoteError.classList.remove('is-visible');
+      }
+
+      if (statusNoteInput) {
+        statusNoteInput.classList.remove('input-error');
+        statusNoteInput.removeAttribute('aria-invalid');
+      }
+    }
+
+    function showStatusNoteError(message) {
+      if (statusNoteError) {
+        statusNoteError.textContent = message;
+        statusNoteError.classList.add('is-visible');
+      }
+
+      if (statusNoteInput) {
+        statusNoteInput.classList.add('input-error');
+        statusNoteInput.setAttribute('aria-invalid', 'true');
+
+        statusNoteInput.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        window.setTimeout(function () {
+          statusNoteInput.focus();
+        }, 350);
+      }
+    }
   }
 });
 
