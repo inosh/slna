@@ -1,179 +1,645 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Join SLNA | SLNA</title>
-  <meta name="description" content="Apply to join the Sri Lanka Nurses' Association.">
+
+  <meta
+          name="description"
+          content="Apply for lifetime membership and an SLNA identity card."
+  >
+
   <link rel="stylesheet" href="../css/style.css">
-  </head>
 </head>
+
 <body>
 <div id="site-header">
   <!-- Shared header will be inserted here -->
 </div>
 
-<!-- Shared header will be inserted here -->
+<div class="page-hero">
+  <div class="container">
+    <h1>Join SLNA</h1>
+
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a> /
+      <a href="membership.html">Membership</a> /
+      <span>Join SLNA</span>
+    </div>
+  </div>
 </div>
 
-<div class="page-hero"><div class="container"><h1>Join SLNA</h1><div class="breadcrumb"><a href="../index.html">Home</a> / <a href="membership.html">Membership</a> / <span>Join SLNA</span></div></div></div>
-
 <div class="container content-layout">
-    <aside class="side-menu">
+  <aside class="side-menu">
     <h3>MEMBERSHIP</h3>
+
     <ul>
       <li><a href="membership.html">Membership</a></li>
       <li><a href="membership-categories.html">Membership Categories</a></li>
       <li><a class="active" href="join-slna.html">Join SLNA</a></li>
-      <li><a href="renew-membership.html">Renew Membership</a></li>
       <li><a href="membership-benefits.html">Membership Benefits</a></li>
       <li><a href="membership-fees.html">Membership Fees</a></li>
       <li><a href="member-login.html">Member Login</a></li>
     </ul>
   </aside>
+
   <main class="content-main">
-  <h2>Apply for SLNA Membership</h2>
-  <p>Complete this application to apply for membership of the Sri Lanka Nurses' Association. Your application and payment receipt will be reviewed by the SLNA Secretariat before membership is approved.</p>
-  <div class="info-box"><p><strong>Before you begin:</strong> Please have your Sri Lanka Nurses Council registration details and a clear bank-transfer receipt ready. Fields marked <span aria-hidden="true">*</span> are required.</p></div>
-  <div id="join-form-alert" aria-live="polite"></div>
-  <div class="form-box join-application-form">
-  <form id="join-form" enctype="multipart/form-data" novalidate>
-  <section class="application-section" aria-labelledby="personal-details-heading">
-  <h3 id="personal-details-heading">Personal Details</h3>
-  <div class="application-grid">
-  <div class="form-group"><label for="full-name">Full Name (as per NIC) <span aria-hidden="true">*</span></label><input type="text" id="full-name" name="fullName" autocomplete="name" required></div>
-  <div class="form-group"><label for="nic-number">NIC Number <span aria-hidden="true">*</span></label><input type="text" id="nic-number" name="nicNumber" required></div>
-  <div class="form-group"><label for="date-of-birth">Date of Birth <span aria-hidden="true">*</span></label><input type="date" id="date-of-birth" name="dateOfBirth" required></div>
-  <div class="form-group"><label for="gender">Gender <span aria-hidden="true">*</span></label><select id="gender" name="gender" required><option value="">Select gender</option><option>Female</option><option>Male</option><option>Prefer not to say</option></select></div>
-  <div class="form-group application-grid-full"><label for="residential-address">Residential Address <span aria-hidden="true">*</span></label><textarea id="residential-address" name="residentialAddress" rows="3" autocomplete="street-address" required></textarea></div>
-  <div class="form-group"><label for="contact-number">Contact Number <span aria-hidden="true">*</span></label><input type="tel" id="contact-number" name="contactNumber" autocomplete="tel" required></div>
-  <div class="form-group"><label for="email-address">Email Address <span aria-hidden="true">*</span></label><input type="email" id="email-address" name="emailAddress" autocomplete="email" required></div>
-</div>
-</section>
-  <section class="application-section" aria-labelledby="professional-details-heading">
-  <h3 id="professional-details-heading">Professional Details</h3>
-  <div class="application-grid">
-  <div class="form-group"><label for="slnc-registration">Sri Lanka Nurses Council Registration No. <span aria-hidden="true">*</span></label><input type="text" id="slnc-registration" name="slncRegistrationNumber" required></div>
-  <div class="form-group"><label for="registration-year">Year of Registration <span aria-hidden="true">*</span></label><input type="number" id="registration-year" name="yearOfRegistration" min="1900" max="2100" required></div>
-  <div class="form-group"><label for="nursing-qualification">Nursing Qualification <span aria-hidden="true">*</span></label><select id="nursing-qualification" name="nursingQualification" required><option value="">Select qualification</option><option>Diploma in Nursing</option><option>BSc Nursing</option><option>MSc Nursing</option><option>Post Basic Nursing</option><option>Other</option></select></div>
-  <div class="form-group"><label for="specialization">Area of Specialisation</label><input type="text" id="specialization" name="specialization" placeholder="e.g. Critical Care, Midwifery"></div>
-  <div class="form-group"><label for="employer">Current Employer / Institution <span aria-hidden="true">*</span></label><input type="text" id="employer" name="currentEmployer" required></div>
-  <div class="form-group"><label for="designation">Current Designation <span aria-hidden="true">*</span></label><input type="text" id="designation" name="currentDesignation" required></div>
-  <div class="form-group"><label for="experience-years">Years of Nursing Experience <span aria-hidden="true">*</span></label><input type="number" id="experience-years" name="yearsOfExperience" min="0" required></div>
-  <div class="form-group"><label for="work-district">Work District / Province <span aria-hidden="true">*</span></label><input type="text" id="work-district" name="workDistrict" required></div>
-</div>
-</section>
-  <section class="application-section" aria-labelledby="membership-details-heading">
-  <h3 id="membership-details-heading">Membership Details</h3>
-  <div class="application-grid">
-  <div class="form-group"><label for="membership-category">Membership Category <span aria-hidden="true">*</span></label><select id="membership-category" name="membershipCategory" required><option value="">Select category</option><option>Full Member</option><option>Associate Member</option><option>Student Member</option></select></div>
-  <div class="form-group"><label for="regional-branch">SLNA Regional Branch</label><input type="text" id="regional-branch" name="regionalBranch" placeholder="Leave blank if unsure"></div>
-  <div class="form-group application-grid-full"><label for="referral-source">How did you hear about SLNA? <span aria-hidden="true">*</span></label><select id="referral-source" name="referralSource" required><option value="">Select an option</option><option>Colleague or friend</option><option>Hospital or institution</option><option>Social media</option><option>SLNA event</option><option>Web search</option><option>Other</option></select></div>
-</div>
-</section>
-  <section class="application-section" aria-labelledby="payment-details-heading">
-  <h3 id="payment-details-heading">Payment Details</h3>
-  <p class="form-help">Pay the applicable membership fee by bank transfer before submitting this application. Upload a clear receipt as proof of payment.</p>
-  <div class="application-grid">
-  <div class="form-group"><label for="payment-reference">Bank Transfer Reference No. <span aria-hidden="true">*</span></label><input type="text" id="payment-reference" name="paymentReference" required></div>
-  <div class="form-group"><label for="transfer-date">Bank Transfer Date <span aria-hidden="true">*</span></label><input type="date" id="transfer-date" name="transferDate" required></div>
-  <div class="form-group application-grid-full"><label for="payment-receipt">Bank Transfer Receipt <span aria-hidden="true">*</span></label><input type="file" id="payment-receipt" name="paymentReceipt" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required><p class="form-help">Required. Accepted formats: PDF, JPG, JPEG, PNG. Maximum file size: 5 MB.</p><p id="payment-receipt-name" class="form-help" aria-live="polite"></p></div>
-</div>
-</section>
-  <div class="form-group declaration-group">
-  <label class="checkbox-label" for="declaration"><input type="checkbox" id="declaration" name="declaration" value="true" required> <span>I confirm that the information provided is accurate and I agree to abide by the SLNA Constitution and Code of Ethics. <span aria-hidden="true">*</span></span></label>
-</div>
-  <button type="submit" class="btn btn-primary submit-application-btn">Submit Membership Application</button>
-  <p class="form-help submit-help">After submission, you will receive an application reference number. SLNA will review your application and payment receipt before confirming membership.</p>
-</form>
-</div>
-</main>
+    <h2>Lifetime Membership Application</h2>
+
+    <p>
+      Complete this application to apply for lifetime membership of the
+      Sri Lanka Nurses' Association and for an SLNA identity card.
+    </p>
+
+    <div class="info-box">
+      <p>
+        <strong>Before you begin:</strong>
+        Please prepare your Sri Lanka Nurses Council registration details,
+        bank-transfer receipt, passport-size photograph, and signature image.
+        Fields marked <span aria-hidden="true">*</span> are required.
+      </p>
+    </div>
+
+    <div id="join-form-alert" aria-live="polite"></div>
+
+    <div class="form-box join-application-form">
+      <form
+              id="join-form"
+              enctype="multipart/form-data"
+      >
+
+        <section
+                class="application-section"
+                aria-labelledby="personal-details-heading"
+        >
+          <h3 id="personal-details-heading">1. Personal Details</h3>
+
+          <div class="application-grid">
+            <div class="form-group application-grid-full">
+              <label for="full-name">
+                Name in Full
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="full-name"
+                      name="fullName"
+                      autocomplete="name"
+                      required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="name-with-initials">
+                Name with Initials
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="name-with-initials"
+                      name="nameWithInitials"
+                      required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="title">
+                Title
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <select id="title" name="title" required>
+                <option value="">Select title</option>
+                <option value="Dr.">Dr.</option>
+                <option value="Mr.">Mr.</option>
+                <option value="Miss.">Miss.</option>
+                <option value="Mrs.">Mrs.</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="nic-number">
+                National ID Number
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="nic-number"
+                      name="nicNumber"
+                      required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="date-of-birth">
+                Date of Birth
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="date"
+                      id="date-of-birth"
+                      name="dateOfBirth"
+                      required
+              >
+            </div>
+
+            <div class="personal-inline-row">
+              <fieldset class="form-group sex-field">
+                <legend>
+                  Sex
+                  <span aria-hidden="true">*</span>
+                </legend>
+
+                <div class="radio-options">
+                  <label class="radio-option" for="sex-male">
+                    <input
+                            type="radio"
+                            id="sex-male"
+                            name="sex"
+                            value="Male"
+                            required
+                    >
+                    <span>Male</span>
+                  </label>
+
+                  <label class="radio-option" for="sex-female">
+                    <input
+                            type="radio"
+                            id="sex-female"
+                            name="sex"
+                            value="Female"
+                    >
+                    <span>Female</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div class="form-group marital-status-field">
+                <label for="marital-status">
+                  Marital Status
+                  <span aria-hidden="true">*</span>
+                </label>
+
+                <select
+                        id="marital-status"
+                        name="maritalStatus"
+                        required
+                >
+                  <option value="">Select status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+
+          </div>
+        </section>
+
+        <section
+                class="application-section"
+                aria-labelledby="contact-details-heading"
+        >
+          <h3 id="contact-details-heading">2. Contact Details</h3>
+
+          <div class="application-grid">
+            <div class="form-group application-grid-full">
+              <label for="permanent-address">
+                Permanent Address
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <textarea
+                      id="permanent-address"
+                      name="permanentAddress"
+                      rows="3"
+                      autocomplete="street-address"
+                      required
+              ></textarea>
+            </div>
+
+            <div class="form-group application-grid-full">
+              <label for="current-working-place">
+                Current Working Place
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="current-working-place"
+                      name="currentWorkingPlace"
+                      required
+              >
+            </div>
+
+            <div class="form-group application-grid-full">
+              <label for="official-address">
+                Official Address
+              </label>
+
+              <textarea
+                      id="official-address"
+                      name="officialAddress"
+                      rows="3"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="mobile-number">
+                Mobile
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="tel"
+                      id="mobile-number"
+                      name="mobileNumber"
+                      autocomplete="tel"
+                      required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="whatsapp-number">WhatsApp</label>
+
+              <input
+                      type="tel"
+                      id="whatsapp-number"
+                      name="whatsappNumber"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="residential-number">Residential</label>
+
+              <input
+                      type="tel"
+                      id="residential-number"
+                      name="residentialNumber"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="office-number">Office</label>
+
+              <input
+                      type="tel"
+                      id="office-number"
+                      name="officeNumber"
+              >
+            </div>
+
+            <div class="form-group application-grid-full">
+              <label for="email-address">
+                Email
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="email"
+                      id="email-address"
+                      name="emailAddress"
+                      autocomplete="email"
+                      required
+              >
+            </div>
+          </div>
+        </section>
+
+        <section
+                class="application-section"
+                aria-labelledby="professional-details-heading"
+        >
+          <h3 id="professional-details-heading">3. Professional Details</h3>
+
+          <div class="application-grid">
+            <div class="form-group">
+              <label for="slnc-registration">
+                SLNC Registration Number
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="slnc-registration"
+                      name="slncRegistrationNumber"
+                      required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="slnc-registration-date">
+                SLNC Registration Date
+              </label>
+
+              <input
+                      type="date"
+                      id="slnc-registration-date"
+                      name="slncRegistrationDate"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="designation">
+                Designation
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="designation"
+                      name="designation"
+                      required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="first-appointment-date">
+                First Appointment Date
+              </label>
+
+              <input
+                      type="date"
+                      id="first-appointment-date"
+                      name="firstAppointmentDate"
+              >
+            </div>
+
+            <div class="form-group application-grid-full">
+              <label for="first-appointment-place">
+                First Appointment Place
+              </label>
+
+              <input
+                      type="text"
+                      id="first-appointment-place"
+                      name="firstAppointmentPlace"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="nursing-school">
+                Nursing School / University
+              </label>
+
+              <input
+                      type="text"
+                      id="nursing-school"
+                      name="nursingSchool"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="batch">Batch</label>
+
+              <input
+                      type="text"
+                      id="batch"
+                      name="batch"
+              >
+            </div>
+
+            <div class="form-group application-grid-full">
+              <label for="higher-qualification">
+                Higher Educational Qualification
+              </label>
+
+              <textarea
+                      id="higher-qualification"
+                      name="higherEducationalQualification"
+                      rows="3"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section
+                class="application-section"
+                aria-labelledby="payment-details-heading"
+        >
+          <h3 id="payment-details-heading">4. Lifetime Membership Payment</h3>
+
+          <div class="payment-details-box">
+            <h4>Bank Transfer Details</h4>
+
+            <dl class="bank-details">
+              <div>
+                <dt>Account Name</dt>
+                <dd>The Sri Lanka Nurses</dd>
+              </div>
+
+              <div>
+                <dt>Bank</dt>
+                <dd>Bank of Ceylon (BOC)</dd>
+              </div>
+
+              <div>
+                <dt>Branch</dt>
+                <dd>Regent Street, Colombo 10</dd>
+              </div>
+
+              <div>
+                <dt>Account Number</dt>
+                <dd>76034111</dd>
+              </div>
+            </dl>
+
+            <p class="form-help">
+              Transfer the applicable lifetime membership fee to this account,
+              then upload a clear copy of your bank receipt.
+            </p>
+          </div>
+
+          <div class="application-grid">
+            <div class="form-group">
+              <label for="payment-reference">
+                Bank Transfer Reference Number
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="payment-reference"
+                      name="paymentReference"
+                      required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="transfer-date">
+                Bank Transfer Date
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="date"
+                      id="transfer-date"
+                      name="transferDate"
+                      required
+              >
+            </div>
+
+            <div class="form-group application-grid-full">
+              <label for="payment-receipt">
+                Bank Receipt
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="file"
+                      id="payment-receipt"
+                      name="paymentReceipt"
+                      accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                      required
+              >
+
+              <p class="form-help">
+                Accepted formats: PDF, JPG, JPEG, PNG.
+                Maximum file size: 5 MB.
+              </p>
+
+              <p
+                      id="payment-receipt-name"
+                      class="form-help"
+                      aria-live="polite"
+              ></p>
+            </div>
+          </div>
+        </section>
+
+        <section
+                class="application-section"
+                aria-labelledby="id-application-heading"
+        >
+          <h3 id="id-application-heading">5. SLNA ID Application</h3>
+
+          <p>
+            The details in this application will also be used to prepare your
+            SLNA membership identity card.
+          </p>
+
+          <div class="id-application-box">
+            <div class="form-group">
+              <label for="id-photo">
+                Passport-Size Photograph
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="file"
+                      id="id-photo"
+                      name="idPhoto"
+                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                      required
+              >
+
+              <p class="form-help">
+                Upload a clear, recent passport-size photograph.
+                Use JPG, JPEG, or PNG. Maximum file size: 5 MB.
+              </p>
+
+              <p
+                      id="id-photo-name"
+                      class="form-help"
+                      aria-live="polite"
+              ></p>
+            </div>
+
+            <div class="id-photo-preview">
+              <img
+                      id="id-photo-preview-image"
+                      alt="Passport-size photo preview"
+              >
+
+              <span id="id-photo-preview-placeholder">
+                Photo preview
+              </span>
+            </div>
+          </div>
+
+          <div class="form-group signature-upload-group">
+            <label for="signature-photo">
+              Signature Photograph
+              <span aria-hidden="true">*</span>
+            </label>
+
+            <input
+                    type="file"
+                    id="signature-photo"
+                    name="signaturePhoto"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    required
+            >
+
+            <p class="form-help">
+              Sign clearly using dark blue or black ink on a plain white sheet
+              of paper. Upload a clear, well-lit image with the entire
+              signature visible, centred, and without shadows, fingers, lines,
+              or other markings. Accepted formats: JPG, JPEG, PNG.
+              Maximum file size: 5 MB.
+            </p>
+
+            <p
+                    id="signature-photo-name"
+                    class="form-help"
+                    aria-live="polite"
+            ></p>
+          </div>
+        </section>
+
+        <div class="form-group declaration-group">
+          <label class="checkbox-label" for="declaration">
+            <input
+                    type="checkbox"
+                    id="declaration"
+                    name="declaration"
+                    value="true"
+                    required
+            >
+
+            <span>
+              I confirm that the information provided is accurate and I agree
+              to abide by the SLNA Constitution and Code of Ethics.
+              <span aria-hidden="true">*</span>
+            </span>
+          </label>
+        </div>
+
+        <button
+                type="submit"
+                class="btn btn-primary submit-application-btn"
+        >
+          Submit Lifetime Membership Application
+        </button>
+
+        <p class="form-help submit-help">
+          After submission, you will receive an application reference number.
+          SLNA will review your application, payment receipt, passport
+          photograph, and signature image before confirming membership.
+        </p>
+      </form>
+    </div>
+  </main>
 </div>
 
 <div id="site-footer">
   <!-- Shared footer will be inserted here -->
 </div>
 
-<!-- Shared footer will be inserted here -->
-</div>
-
 <div class="back-to-top">&uarr;</div>
-
-<script>
-
-(function () {
-var form = document.getElementById('join-form');
-var alertBox = document.getElementById('join-form-alert');
-var receiptInput = document.getElementById('payment-receipt');
-var receiptName = document.getElementById('payment-receipt-name');
-var submitButton = form ? form.querySelector('button[type="submit"]') : null;
-var maxFileSize = 5 * 1024 * 1024;
-var acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-function showMessage(type, message) {
-alertBox.className = 'alert alert-' + type;
-alertBox.textContent = message;
-}
-if (receiptInput) {
-receiptInput.addEventListener('change', function () {
-var file = receiptInput.files[0];
-receiptName.textContent = file ? 'Selected file: ' + file.name : '';
-});
-}
-if (!form) return;
-form.addEventListener('submit', async function (event) {
-event.preventDefault();
-alertBox.className = '';
-alertBox.textContent = '';
-if (!form.checkValidity()) {
-form.reportValidity();
-return;
-}
-var receipt = receiptInput.files[0];
-if (!receipt) {
-showMessage('error', 'Please upload your bank transfer receipt.');
-return;
-}
-if (receipt.size > maxFileSize) {
-showMessage('error', 'The receipt must be 5 MB or smaller.');
-return;
-}
-if (acceptedTypes.indexOf(receipt.type) === -1) {
-showMessage('error', 'Please upload a PDF, JPG, JPEG, or PNG receipt.');
-return;
-}
-var apiBase = window.SLNA_API_BASE_URL || 'http://localhost:3000';
-var formData = new FormData(form);
-if (submitButton) {
-submitButton.disabled = true;
-submitButton.textContent = 'Submitting Application...';
-}
-try {
-var response = await fetch(apiBase + '/api/membership/applications', {
-method: 'POST',
-body: formData
-});
-var data = await response.json().catch(function () { return {}; });
-if (!response.ok) {
-throw new Error(data.message || 'Unable to submit your application. Please try again.');
-}
-form.reset();
-receiptName.textContent = '';
-showMessage('success', (data.message || 'Your membership application has been received.') + (data.referenceNumber ? ' Reference: ' + data.referenceNumber : ''));
-} catch (error) {
-showMessage('error', error.message || 'Unable to submit your application. Please check your connection and try again.');
-} finally {
-if (submitButton) {
-submitButton.disabled = false;
-submitButton.textContent = 'Submit Membership Application';
-}
-}
-});
-})();
-</script>
 
 <script src="../js/config.js"></script>
 <script src="../js/include-header.js"></script>
 <script src="../js/main.js"></script>
+<script src="../js/join-slna.js"></script>
 </body>
 </html>

@@ -943,3 +943,1300 @@ ul { list-style:none; }
 body.layout-loading {
   visibility: hidden;
 }
+
+/* Committees page */
+
+.committee-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 28px 0 34px;
+}
+
+.committee-card {
+  display: grid;
+  grid-template-columns: 42px 1fr 24px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 18px;
+  color: #173f73;
+  background: #ffffff;
+  border: 1px solid #d9e3ef;
+  border-left: 4px solid #2a6fbb;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+  box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.committee-card:hover,
+.committee-card:focus-visible {
+  background: #f3f8fd;
+  border-color: #1d5da6;
+  box-shadow: 0 5px 16px rgba(23, 63, 115, 0.14);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.committee-card.active {
+  color: #ffffff;
+  background: #173f73;
+  border-color: #173f73;
+}
+
+.committee-number {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.committee-title {
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.committee-arrow {
+  font-size: 1.35rem;
+  text-align: right;
+}
+
+.committee-detail {
+  padding: 28px;
+  background: #f6f9fc;
+  border: 1px solid #dce5ef;
+  border-radius: 5px;
+}
+
+.committee-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.committee-detail-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  color: #ffffff;
+  background: #173f73;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.committee-detail-label {
+  margin: 0 0 3px;
+  color: #5b7088;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.committee-detail h3 {
+  margin: 0;
+  color: #173f73;
+}
+
+.committee-detail h4 {
+  margin: 28px 0 8px;
+  color: #173f73;
+}
+
+.committee-note {
+  margin-top: 0;
+  color: #5b6470;
+  font-size: 0.95rem;
+}
+
+.committee-members {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.committee-member {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #dce5ef;
+  border-radius: 4px;
+}
+
+.committee-member-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.committee-member-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-photo {
+  color: #6c7c8e;
+  background: #e2e9f0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.committee-member-info h5 {
+  margin: 0 0 4px;
+  color: #173f73;
+  font-size: 0.95rem;
+}
+
+.committee-member-info p {
+  margin: 0;
+  color: #566474;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .committee-list,
+  .committee-members {
+    grid-template-columns: 1fr;
+  }
+
+  .committee-detail {
+    padding: 20px;
+  }
+}
+
+/* Lifetime membership application */
+
+.payment-details-box {
+  margin: 20px 0 26px;
+  padding: 22px;
+  background: #f3f8fd;
+  border: 1px solid #cbddec;
+  border-left: 5px solid #173f73;
+  border-radius: 5px;
+}
+
+.payment-details-box h4 {
+  margin-top: 0;
+  color: #173f73;
+}
+
+.bank-details {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.bank-details div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #d6e1ec;
+}
+
+.bank-details div:last-child {
+  border-bottom: 0;
+}
+
+.bank-details dt {
+  color: #536b83;
+  font-weight: 700;
+}
+
+.bank-details dd {
+  margin: 0;
+  color: #173f73;
+  font-weight: 700;
+}
+
+.id-application-box {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 24px;
+  align-items: start;
+  margin: 20px 0 26px;
+}
+
+.id-photo-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  height: 200px;
+  overflow: hidden;
+  color: #6a7785;
+  background: #eef2f6;
+  border: 1px dashed #aab8c6;
+  text-align: center;
+}
+
+.id-photo-preview img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inline-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 18px 8px 0;
+  font-weight: 400;
+}
+
+.form-group fieldset,
+fieldset.form-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+fieldset.form-group legend {
+  margin-bottom: 8px;
+  color: #334455;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .bank-details div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .id-application-box {
+    grid-template-columns: 1fr;
+  }
+
+  .id-photo-preview {
+    width: 140px;
+    height: 175px;
+  }
+}
+
+/* Lifetime membership application: payment and ID uploads */
+
+.payment-details-box {
+  margin: 20px 0 26px;
+  padding: 22px;
+  background: #f3f8fd;
+  border: 1px solid #cbddec;
+  border-left: 5px solid #173f73;
+  border-radius: 5px;
+}
+
+.payment-details-box h4 {
+  margin-top: 0;
+  color: #173f73;
+}
+
+.bank-details {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.bank-details div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #d6e1ec;
+}
+
+.bank-details div:last-child {
+  border-bottom: 0;
+}
+
+.bank-details dt {
+  color: #536b83;
+  font-weight: 700;
+}
+
+.bank-details dd {
+  margin: 0;
+  color: #173f73;
+  font-weight: 700;
+}
+
+.id-application-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 24px;
+  align-items: start;
+  margin: 20px 0 26px;
+}
+
+.id-photo-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  height: 200px;
+  overflow: hidden;
+  color: #6a7785;
+  background: #eef2f6;
+  border: 1px dashed #aab8c6;
+  text-align: center;
+}
+
+.id-photo-preview img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Fix the Sex radio-button alignment */
+
+.sex-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sex-field legend {
+  margin-bottom: 10px;
+  color: #173f73;
+  font-weight: 700;
+}
+
+.radio-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 28px;
+  min-height: 42px;
+}
+
+.radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #26384a;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.signature-upload-group {
+  margin-top: 10px;
+}
+
+#signature-photo {
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .bank-details div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .id-application-box {
+    grid-template-columns: 1fr;
+  }
+
+  .id-photo-preview {
+    width: 140px;
+    height: 175px;
+  }
+
+  .radio-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* Correct Sex field layout */
+
+fieldset.sex-field.application-grid-full {
+  display: block;
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+fieldset.sex-field legend {
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 0;
+  color: #173f73;
+  font-weight: 700;
+}
+
+fieldset.sex-field .radio-options {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+  min-height: 36px;
+}
+
+fieldset.sex-field .radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  margin: 0;
+  color: #26384a;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+fieldset.sex-field .radio-option input[type="radio"] {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: 0 0 18px;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  fieldset.sex-field .radio-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Keep Sex and Marital Status on the same row */
+
+.personal-inline-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  width: 100%;
+  align-items: start;
+}
+
+.personal-inline-row .sex-field {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.personal-inline-row .sex-field legend {
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 0;
+  color: #173f73;
+  font-weight: 700;
+}
+
+.personal-inline-row .radio-options {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  min-height: 42px;
+}
+
+.personal-inline-row .radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #26384a;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.personal-inline-row .radio-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.personal-inline-row .marital-status-field {
+  min-width: 0;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .personal-inline-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+/* Join SLNA: application-success confirmation */
+
+#join-form-alert.alert-success {
+  margin: 0 0 28px;
+  padding: 26px;
+  color: #12482b;
+  background: #e9f8ee;
+  border: 2px solid #2f9e55;
+  border-left: 7px solid #16723a;
+  border-radius: 6px;
+  box-shadow: 0 5px 18px rgba(22, 114, 58, 0.15);
+}
+
+.application-success-message {
+  max-width: 760px;
+}
+
+.application-success-title {
+  margin-bottom: 12px;
+  color: #0c5a2c;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.application-success-message p {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+.application-reference-box {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 20px 0 14px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #9bcfac;
+  border-radius: 5px;
+}
+
+.application-reference-label {
+  color: #28543a;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.application-reference-number {
+  display: inline-block;
+  color: #073e1d;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  overflow-wrap: anywhere;
+}
+
+.application-reference-help {
+  color: #28543a;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  #join-form-alert.alert-success {
+    padding: 20px;
+  }
+
+  .application-reference-number {
+    font-size: 1.05rem;
+  }
+}
+
+/* =========================================================
+   Admin membership review form
+   ========================================================= */
+
+.membership-review-card {
+  margin-top: 24px;
+  padding: 30px;
+  background: #ffffff;
+  border: 1px solid #d8e1eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(16, 51, 84, 0.08);
+}
+
+.membership-review-card[hidden] {
+  display: none;
+}
+
+.membership-review-card .membership-admin-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #dce5ee;
+}
+
+.membership-review-card .membership-admin-heading h2 {
+  margin: 0 0 8px;
+  color: #073f73;
+  font-size: 1.55rem;
+}
+
+.membership-review-card .admin-muted {
+  margin: 0;
+  color: #68798a;
+  font-size: 0.94rem;
+}
+
+/* Review sections */
+
+.application-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-bottom: 28px;
+}
+
+.review-section {
+  min-width: 0;
+  padding: 24px;
+  background: #f8fafc;
+  border: 1px solid #d9e3ed;
+  border-radius: 6px;
+}
+
+.review-section h3 {
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  color: #073f73;
+  border-bottom: 3px solid #e5a900;
+  font-size: 1.15rem;
+}
+
+/* Review field rows */
+
+.review-section dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.review-section dl > div {
+  display: grid;
+  grid-template-columns: minmax(145px, 42%) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e8ef;
+}
+
+.review-section dl > div:last-child {
+  border-bottom: 0;
+}
+
+.review-section dt {
+  color: #526578;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.review-section dd {
+  min-width: 0;
+  margin: 0;
+  color: #172b3e;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Documents */
+
+.review-section dd .btn {
+  margin-top: -5px;
+}
+
+/* Decision area */
+
+.membership-decision-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 22px;
+  margin: 28px 0 22px;
+  padding: 24px;
+  background: #f3f8fd;
+  border: 1px solid #cbddec;
+  border-left: 5px solid #173f73;
+  border-radius: 6px;
+}
+
+.membership-review-card .form-group {
+  margin-bottom: 20px;
+}
+
+.membership-review-card .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.membership-review-card .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #173f73;
+  font-weight: 700;
+}
+
+.membership-review-card input[type="text"],
+.membership-review-card textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  color: #24384a;
+  background: #ffffff;
+  border: 1px solid #cbd7e3;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.membership-review-card input[type="text"]:focus,
+.membership-review-card textarea:focus {
+  border-color: #1b6ca8;
+  outline: 3px solid rgba(27, 108, 168, 0.14);
+}
+
+.membership-review-card textarea {
+  min-height: 105px;
+  resize: vertical;
+}
+
+.membership-review-card .form-help {
+  margin: 7px 0 0;
+  color: #68798a;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+/* Action buttons */
+
+.membership-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 22px;
+  border-top: 1px solid #dce5ee;
+}
+
+.membership-review-actions .btn {
+  min-height: 44px;
+}
+
+.membership-review-actions .btn-primary {
+  margin-left: auto;
+}
+
+/* Status badge improvements */
+
+.application-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+.status-pending {
+  color: #765600;
+  background: #fff4c7;
+}
+
+.status-under_review {
+  color: #07577d;
+  background: #d9f1ff;
+}
+
+.status-more_information_required {
+  color: #68428c;
+  background: #efe0ff;
+}
+
+.status-approved {
+  color: #176638;
+  background: #dff5e7;
+}
+
+.status-rejected {
+  color: #8a2020;
+  background: #ffe1e1;
+}
+
+/* Responsive review layout */
+
+@media (max-width: 900px) {
+  .application-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-decision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-review-actions .btn-primary {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .membership-review-card {
+    padding: 18px;
+  }
+
+  .membership-review-card .membership-admin-heading {
+    display: block;
+  }
+
+  .membership-review-card .membership-admin-heading .btn {
+    margin-top: 16px;
+  }
+
+  .review-section {
+    padding: 18px;
+  }
+
+  .review-section dl > div {
+    display: block;
+  }
+
+  .review-section dt {
+    margin-bottom: 5px;
+  }
+
+  .membership-review-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .membership-review-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Compact document buttons in membership review */
+
+.membership-review-card
+.review-section dl > div:has(
+  [id^="view-membership-"]
+) {
+  align-items: center;
+}
+
+.membership-review-card
+.review-section dl > div:has(
+  [id^="view-membership-"]
+) dt {
+  align-self: center;
+}
+
+.membership-review-card
+.review-section dl > div:has(
+  [id^="view-membership-"]
+) dd {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.membership-review-card
+.review-section dl > div:has(
+  [id^="view-membership-"]
+) .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 130px;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 14px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Keep the longer Signature button on one line */
+#view-membership-signature {
+  min-width: 150px;
+}
+
+/* Small screens */
+@media (max-width: 620px) {
+  .membership-review-card
+  .review-section dl > div:has(
+    [id^="view-membership-"]
+  ) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .membership-review-card
+  .review-section dl > div:has(
+    [id^="view-membership-"]
+  ) dd {
+    justify-content: flex-start;
+  }
+}
+
+/* =========================================================
+   Membership admin: ID application workflow
+   ========================================================= */
+
+.id-application-admin-panel {
+  margin-top: 28px;
+  padding: 26px;
+  background: #f3f8fd;
+  border: 1px solid #cbddec;
+  border-left: 5px solid #173f73;
+  border-radius: 6px;
+}
+
+.id-application-admin-panel[hidden] {
+  display: none;
+}
+
+.id-application-admin-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.id-application-admin-heading h3 {
+  margin: 0 0 7px;
+  color: #073f73;
+  font-size: 1.2rem;
+}
+
+.id-application-admin-heading p {
+  margin: 0;
+}
+
+.status-id_application {
+  color: #07577d;
+  background: #d9f1ff;
+}
+
+.status-id_application_generated {
+  color: #176638;
+  background: #dff5e7;
+}
+
+.id-application-document-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.id-application-document-card {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 15px;
+  align-items: start;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #d8e3ed;
+  border-radius: 5px;
+}
+
+.id-application-document-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  color: #ffffff;
+  background: #173f73;
+  border-radius: 5px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.id-application-document-card h4 {
+  margin: 0 0 7px;
+  color: #173f73;
+  font-size: 1rem;
+}
+
+.id-application-document-card p {
+  margin: 0;
+  color: #5d6f81;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.id-application-document-card .btn {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 5px;
+}
+
+.id-application-confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-top: 20px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #a8cdb7;
+  border-radius: 5px;
+}
+
+.id-application-confirmation h4 {
+  margin: 0 0 7px;
+  color: #176638;
+}
+
+.id-application-confirmation p {
+  max-width: 680px;
+  margin: 0;
+  color: #536b61;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 850px) {
+  .id-application-document-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .id-application-confirmation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 620px) {
+  .id-application-admin-panel {
+    padding: 18px;
+  }
+
+  .id-application-admin-heading {
+    display: block;
+  }
+
+  .id-application-admin-heading .application-status {
+    margin-top: 12px;
+  }
+
+  .id-application-document-card {
+    grid-template-columns: 1fr;
+  }
+
+  .id-application-document-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .id-application-document-card .btn,
+  .id-application-confirmation .btn {
+    width: 100%;
+  }
+}
+
+/* Membership review controls are hidden until JavaScript enables them. */
+#membership-decision-fields,
+#membership-admin-note-group,
+#membership-review-actions,
+#id-application-admin-panel {
+  display: none;
+}
+
+/* JavaScript adds .workflow-visible only when the section is allowed. */
+#membership-decision-fields.workflow-visible,
+#membership-admin-note-group.workflow-visible,
+#membership-review-actions.workflow-visible,
+#id-application-admin-panel.workflow-visible {
+  display: block;
+}
+
+/* Align document cards with equal-height content */
+
+.id-application-document-card {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  grid-template-rows: minmax(105px, auto) auto;
+  column-gap: 15px;
+  align-items: start;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.id-application-document-card .id-application-document-icon {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.id-application-document-card > div {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.id-application-document-card .btn {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: start;
+  margin-top: 18px;
+}
+
+/* =========================================================
+   Admin confirmation modal
+   ========================================================= */
+
+.admin-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.admin-confirm-modal[hidden] {
+  display: none;
+}
+
+.admin-confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 27, 47, 0.62);
+}
+
+.admin-confirm-dialog {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 18px;
+  width: min(520px, 100%);
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #cbd8e5;
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(7, 40, 72, 0.28);
+}
+
+.admin-confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  color: #ffffff;
+  background: #e0a400;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.admin-confirm-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-confirm-content h2 {
+  margin: 0 0 12px;
+  color: #073f73;
+  font-size: 1.35rem;
+}
+
+.admin-confirm-content p {
+  margin: 0 0 16px;
+  color: #526678;
+  line-height: 1.55;
+}
+
+.admin-confirm-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 18px 0;
+  padding: 13px 15px;
+  background: #f3f8fd;
+  border: 1px solid #cbddec;
+  border-radius: 5px;
+}
+
+.admin-confirm-reference span {
+  color: #64798b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-confirm-reference strong {
+  color: #073f73;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-confirm-warning {
+  color: #795900 !important;
+  font-size: 0.9rem;
+}
+
+.admin-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (max-width: 600px) {
+  .admin-confirm-dialog {
+    display: block;
+    padding: 22px;
+  }
+
+  .admin-confirm-icon {
+    margin-bottom: 14px;
+  }
+
+  .admin-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-confirm-actions .btn {
+    width: 100%;
+  }
+}
