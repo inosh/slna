@@ -283,6 +283,10 @@ document.addEventListener('DOMContentLoaded', function () {
         'membership-review-actions'
     );
 
+    const membershipNumberError = document.getElementById(
+        'membership-number-error'
+    );
+
     const membershipNumberInput = document.getElementById(
         'membership-number'
     );
@@ -321,10 +325,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const photoButton = document.getElementById(
         'view-membership-photo'
-    );
-
-    const signatureButton = document.getElementById(
-        'view-membership-signature'
     );
 
     const idApplicationPanel = document.getElementById(
@@ -371,11 +371,23 @@ document.addEventListener('DOMContentLoaded', function () {
       return SLNA_CONFIG.API_BASE_URL + path;
     }
 
-    function setMembershipMessage(type, message) {
+    function setMembershipMessage(type, message, options) {
+      options = options || {};
+
       alertBox.className = 'alert alert-' + type;
       alertBox.textContent = message;
-    }
 
+      if (options.focus) {
+        alertBox.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        window.setTimeout(function () {
+          alertBox.focus();
+        }, 350);
+      }
+    }
     function clearMembershipMessage() {
       alertBox.className = '';
       alertBox.textContent = '';
@@ -568,30 +580,34 @@ document.addEventListener('DOMContentLoaded', function () {
       try {
         const data = await response.json();
 
-        if (data && data.message) {
-          return data.message;
-        }
+        if (data && (data.message || data.error)) {
+          const error = new Error(
+              data.message ||
+              data.error
+          );
 
-        if (data && data.error) {
-          return data.error;
+          error.field = data.field || null;
+          error.status = response.status;
+
+          return error;
         }
       } catch (error) {
         // Use generic message below.
       }
 
-      if (response.status === 401) {
-        return 'Your session has expired. Please log in again.';
-      }
-
-      if (response.status === 403) {
-        return 'You do not have permission to manage membership applications.';
-      }
-
-      return (
-          'Membership request failed with status ' +
-          response.status +
-          '.'
+      const error = new Error(
+          response.status === 401
+              ? 'Your session has expired. Please log in again.'
+              : response.status === 403
+                  ? 'You do not have permission to manage membership applications.'
+                  : 'Membership request failed with status ' +
+                  response.status +
+                  '.'
       );
+
+      error.status = response.status;
+
+      return error;
     }
 
     function updateCounts() {
@@ -654,9 +670,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const searchable = [
           application.referenceNumber,
           application.fullName,
-          application.nicNumber,
-          application.emailAddress,
-          application.slncRegistrationNumber
+          application.nicNumber
         ]
             .join(' ')
             .toLowerCase();
@@ -700,18 +714,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             '<td>' +
             escapeHtml(application.fullName) +
-            '<br>' +
-            '<span class="admin-muted">' +
-            escapeHtml(application.emailAddress) +
-            '</span>' +
             '</td>' +
 
             '<td>' +
             escapeHtml(application.nicNumber) +
-            '<br>' +
-            '<span class="admin-muted">' +
-            escapeHtml(application.slncRegistrationNumber) +
-            '</span>' +
             '</td>' +
 
             '<td>' +
@@ -937,9 +943,7 @@ document.addEventListener('DOMContentLoaded', function () {
         );
 
         if (!response.ok) {
-          throw new Error(
-              await parseMembershipError(response)
-          );
+          throw await parseMembershipError(response);
         }
 
         const data = await response.json();
@@ -966,12 +970,14 @@ document.addEventListener('DOMContentLoaded', function () {
         setMembershipMessage(
             'error',
             error.message ||
-            'Could not load membership applications.'
+            'Could not load membership applications.',
+            { focus: true }
         );
       }
     }
 
     async function updateApplicationStatus(status) {
+      clearMembershipNumberError();
       if (!selectedApplication) {
         setMembershipMessage(
             'error',
@@ -997,12 +1003,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const adminNote = adminNoteInput.value.trim();
 
       if (status === 'approved' && !membershipNumber) {
-        setMembershipMessage(
-            'error',
+        showMembershipNumberError(
             'Enter a membership number before approving this application.'
         );
 
-        membershipNumberInput.focus();
         return;
       }
 
@@ -1043,9 +1047,7 @@ document.addEventListener('DOMContentLoaded', function () {
         );
 
         if (!response.ok) {
-          throw new Error(
-              await parseMembershipError(response)
-          );
+          throw await parseMembershipError(response);
         }
 
         setMembershipMessage(
@@ -1061,10 +1063,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         await loadApplications();
       } catch (error) {
+        if (
+            status === 'approved' &&
+            error.field === 'membershipNumber'
+        ) {
+          showMembershipNumberError(error.message);
+          return;
+        }
+
         setMembershipMessage(
             'error',
             error.message ||
-            'Could not update the membership application.'
+            'Could not update the membership application.',
+            { focus: true }
         );
       } finally {
         actionButtons.forEach(function (button) {
@@ -1119,11 +1130,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (!response.ok) {
-          const message = await parseMembershipError(response);
+          const error = await parseMembershipError(response);
 
           previewWindow.close();
 
-          throw new Error(message);
+          throw error;
         }
 
         const fileBlob = await response.blob();
@@ -1142,7 +1153,8 @@ document.addEventListener('DOMContentLoaded', function () {
         setMembershipMessage(
             'error',
             error.message ||
-            'Could not open the protected document.'
+            'Could not open the protected document.',
+            { focus: true }
         );
       }
     }
@@ -1238,10 +1250,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     photoButton.addEventListener('click', function () {
       openProtectedDocument('photo');
-    });
-
-    signatureButton.addEventListener('click', function () {
-      openProtectedDocument('signature');
     });
 
     if (cancelIdConfirmationButton) {
@@ -1368,8 +1376,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (!response.ok) {
-          const message = await parseMembershipError(response);
-          throw new Error(message);
+          throw await parseMembershipError(response);
         }
 
         const pdfBlob = await response.blob();
@@ -1407,7 +1414,8 @@ document.addEventListener('DOMContentLoaded', function () {
         setMembershipMessage(
             'error',
             error.message ||
-            'Could not generate the ID application PDF.'
+            'Could not generate the ID application PDF.',
+            { focus: true }
         );
       }
     }
@@ -1456,9 +1464,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (!response.ok) {
-          throw new Error(
-              await parseMembershipError(response)
-          );
+          throw await parseMembershipError(response);
         }
 
         const photoBlob = await response.blob();
@@ -1504,115 +1510,9 @@ document.addEventListener('DOMContentLoaded', function () {
         setMembershipMessage(
             'error',
             error.message ||
-            'Could not download the ID photograph.'
+            'Could not download the ID photograph.',
+            { focus: true }
         );
-      }
-    }
-
-    async function confirmIdApplicationGenerated() {
-      if (!selectedApplication) {
-        setMembershipMessage(
-            'error',
-            'Select an application first.'
-        );
-        return;
-      }
-
-      if (
-          selectedApplication.applicationStatus !==
-          'approved'
-      ) {
-        setMembershipMessage(
-            'error',
-            'Only approved membership applications can have an ID application created.'
-        );
-        return;
-      }
-
-      if (
-          selectedApplication.idApplicationStatus ===
-          'created'
-      ) {
-        setMembershipMessage(
-            'error',
-            'The ID application has already been confirmed as created.'
-        );
-        return;
-      }
-
-      if (confirmIdApplicationButton) {
-        confirmIdApplicationButton.addEventListener(
-            'click',
-            function (event) {
-              event.preventDefault();
-              openIdConfirmationModal();
-            }
-        );
-      }
-      if (!confirmed) {
-        return;
-      }
-
-      confirmIdApplicationButton.disabled = true;
-      confirmIdApplicationButton.textContent =
-          'Confirming ID Application...';
-
-      try {
-        const response = await fetch(
-            membershipUrl(
-                '/membership/admin/applications/' +
-                encodeURIComponent(
-                    selectedApplication.referenceNumber
-                ) +
-                '/id-application'
-            ),
-            {
-              method: 'PATCH',
-              headers: {
-                Authorization: 'Bearer ' + getToken(),
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({})
-            }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-              await parseMembershipError(response)
-          );
-        }
-
-        const data = await response.json();
-
-        setMembershipMessage(
-            'success',
-            data.message ||
-            'ID application generation has been confirmed.'
-        );
-
-        selectedApplication.idApplicationStatus = 'created';
-
-        if (data.application) {
-          selectedApplication.idApplicationCreatedAt =
-              data.application.idApplicationCreatedAt ||
-              selectedApplication.idApplicationCreatedAt;
-        }
-
-        reviewCard.hidden = true;
-        selectedApplication = null;
-
-        await loadApplications();
-
-      } catch (error) {
-        setMembershipMessage(
-            'error',
-            error.message ||
-            'Could not confirm ID application generation.'
-        );
-      } finally {
-        confirmIdApplicationButton.disabled = false;
-        confirmIdApplicationButton.textContent =
-            'Confirm ID Application Generated';
       }
     }
 
@@ -1698,9 +1598,7 @@ document.addEventListener('DOMContentLoaded', function () {
         );
 
         if (!response.ok) {
-          throw new Error(
-              await parseMembershipError(response)
-          );
+          throw await parseMembershipError(response);
         }
 
         const data = await response.json();
@@ -1730,36 +1628,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    if (confirmIdApplicationButton) {
-      confirmIdApplicationButton.addEventListener(
-          'click',
-          function (event) {
-            event.preventDefault();
-            openIdConfirmationModal();
-          }
-      );
-    }
-
-    if (cancelIdConfirmationButton) {
-      cancelIdConfirmationButton.addEventListener(
-          'click',
-          function (event) {
-            event.preventDefault();
-            closeIdConfirmationModal();
-          }
-      );
-    }
-
-    if (confirmIdModalButton) {
-      confirmIdModalButton.addEventListener(
-          'click',
-          function (event) {
-            event.preventDefault();
-            submitIdApplicationConfirmation();
-          }
-      );
-    }
-
     if (idConfirmationModal) {
       const backdrop = idConfirmationModal.querySelector(
           '.admin-confirm-backdrop'
@@ -1770,6 +1638,43 @@ document.addEventListener('DOMContentLoaded', function () {
             'click',
             closeIdConfirmationModal
         );
+      }
+    }
+
+    membershipNumberInput.addEventListener('input', function () {
+      clearMembershipNumberError();
+    });
+
+    function clearMembershipNumberError() {
+      if (membershipNumberError) {
+        membershipNumberError.textContent = '';
+        membershipNumberError.classList.remove('is-visible');
+      }
+
+      if (membershipNumberInput) {
+        membershipNumberInput.classList.remove('input-error');
+        membershipNumberInput.removeAttribute('aria-invalid');
+      }
+    }
+
+    function showMembershipNumberError(message) {
+      if (membershipNumberError) {
+        membershipNumberError.textContent = message;
+        membershipNumberError.classList.add('is-visible');
+      }
+
+      if (membershipNumberInput) {
+        membershipNumberInput.classList.add('input-error');
+        membershipNumberInput.setAttribute('aria-invalid', 'true');
+
+        membershipNumberInput.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        window.setTimeout(function () {
+          membershipNumberInput.focus();
+        }, 350);
       }
     }
 

@@ -2240,3 +2240,65 @@ fieldset.sex-field .radio-option input[type="radio"] {
     width: 100%;
   }
 }
+
+.membership-field-error {
+  display: none;
+  margin-top: 7px;
+  color: #b42318;
+  font-weight: 600;
+}
+
+.membership-field-error.is-visible {
+  display: block;
+}
+
+#membership-number.input-error {
+  border-color: #b42318;
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+}
+
+.membership-number-group {
+  padding: 16px;
+  border: 1px solid #cbddec;
+  border-radius: 6px;
+  background: #f3f8fd;
+}
+
+.membership-number-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #073f73;
+  font-weight: 700;
+}
+
+.membership-number-group input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.membership-number-group input::placeholder {
+  color: #708396;
+  opacity: 1;
+}
+
+.membership-field-error {
+  display: none;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  color: #ffffff;
+  background: #b42318;
+  border-left: 5px solid #7f1d1d;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.membership-field-error.is-visible {
+  display: block;
+}
+
+#membership-number.input-error {
+  border: 2px solid #b42318;
+  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.18);
+}
