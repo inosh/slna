@@ -367,6 +367,64 @@ document.addEventListener('DOMContentLoaded', function () {
         'confirm-id-application-modal'
     );
 
+    const membershipDecisionModal = document.getElementById(
+        'membership-decision-confirm-modal'
+    );
+
+    const membershipDecisionModalTitle = document.getElementById(
+        'membership-decision-modal-title'
+    );
+
+    const membershipDecisionModalIntroduction = document.getElementById(
+        'membership-decision-modal-introduction'
+    );
+
+    const membershipDecisionModalReference = document.getElementById(
+        'membership-decision-modal-reference'
+    );
+
+    const membershipDecisionModalAction = document.getElementById(
+        'membership-decision-modal-action'
+    );
+
+    const membershipDecisionModalNumberRow = document.getElementById(
+        'membership-decision-modal-number-row'
+    );
+
+    const membershipDecisionModalNumber = document.getElementById(
+        'membership-decision-modal-number'
+    );
+
+    const membershipDecisionModalStatusNoteRow = document.getElementById(
+        'membership-decision-modal-status-note-row'
+    );
+
+    const membershipDecisionModalStatusNote = document.getElementById(
+        'membership-decision-modal-status-note'
+    );
+
+    const membershipDecisionModalAdminNoteRow = document.getElementById(
+        'membership-decision-modal-admin-note-row'
+    );
+
+    const membershipDecisionModalAdminNote = document.getElementById(
+        'membership-decision-modal-admin-note'
+    );
+
+    const membershipDecisionModalWarning = document.getElementById(
+        'membership-decision-modal-warning'
+    );
+
+    const cancelMembershipDecisionButton = document.getElementById(
+        'cancel-membership-decision-confirmation'
+    );
+
+    const confirmMembershipDecisionButton = document.getElementById(
+        'confirm-membership-decision-modal'
+    );
+
+    let pendingMembershipDecision = null;
+
     const membershipDecisionHistory =
         document.getElementById(
             'membership-decision-history'
@@ -1000,7 +1058,33 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    async function updateApplicationStatus(status) {
+    function clearMembershipDecisionModal() {
+      if (!membershipDecisionModal) {
+        return;
+      }
+
+      membershipDecisionModal.hidden = true;
+      membershipDecisionModal.classList.remove(
+          'decision-reject',
+          'decision-more-information',
+          'decision-approve'
+      );
+
+      pendingMembershipDecision = null;
+    }
+
+    function decisionLabel(status) {
+      const labels = {
+        approved: 'Approve Application',
+        rejected: 'Reject Application',
+        more_information_required:
+            'Request More Information'
+      };
+
+      return labels[status] || 'Update Application';
+    }
+
+    function prepareMembershipDecision(status) {
       clearMembershipNumberError();
       clearStatusNoteError();
 
@@ -1010,12 +1094,40 @@ document.addEventListener('DOMContentLoaded', function () {
             'Select an application to review first.',
             { focus: true }
         );
-
         return;
       }
 
+      if (
+          activeStatus === 'id_application' ||
+          selectedApplication.applicationStatus === 'approved' ||
+          selectedApplication.applicationStatus === 'rejected'
+      ) {
+        setMembershipMessage(
+            'error',
+            'This application is read-only in the current workflow.',
+            { focus: true }
+        );
+        return;
+      }
+
+      const membershipNumber =
+          membershipNumberInput.value.trim();
+
       const statusNote =
           statusNoteInput.value.trim();
+
+      const adminNote =
+          adminNoteInput.value.trim();
+
+      if (
+          status === 'approved' &&
+          !membershipNumber
+      ) {
+        showMembershipNumberError(
+            'Enter a membership number before approving this application.'
+        );
+        return;
+      }
 
       if (
           (
@@ -1029,68 +1141,158 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? 'Applicant Status Note is required before rejecting this application.'
                 : 'Applicant Status Note is required before requesting more information.'
         );
-
         return;
       }
 
-      if (!selectedApplication) {
-        setMembershipMessage(
-            'error',
-            'Select an application to review first.'
-        );
-        return;
-      }
+      pendingMembershipDecision = {
+        status: status,
+        membershipNumber: membershipNumber,
+        statusNote: statusNote,
+        adminNote: adminNote
+      };
 
+      openMembershipDecisionModal();
+    }
+
+    function openMembershipDecisionModal() {
       if (
-          activeStatus === 'id_application' ||
-          selectedApplication.applicationStatus === 'approved' ||
-          selectedApplication.applicationStatus === 'rejected'
+          !membershipDecisionModal ||
+          !selectedApplication ||
+          !pendingMembershipDecision
       ) {
+        return;
+      }
+
+      const decision = pendingMembershipDecision;
+      const isApproval = decision.status === 'approved';
+      const isRejection = decision.status === 'rejected';
+      const isMoreInformation =
+          decision.status === 'more_information_required';
+
+      membershipDecisionModal.classList.remove(
+          'decision-reject',
+          'decision-more-information',
+          'decision-approve'
+      );
+
+      if (isRejection) {
+        membershipDecisionModal.classList.add(
+            'decision-reject'
+        );
+      } else if (isMoreInformation) {
+        membershipDecisionModal.classList.add(
+            'decision-more-information'
+        );
+      } else {
+        membershipDecisionModal.classList.add(
+            'decision-approve'
+        );
+      }
+
+      membershipDecisionModalTitle.textContent =
+          isApproval
+              ? 'Confirm Membership Approval'
+              : isRejection
+                  ? 'Confirm Application Rejection'
+                  : 'Confirm Information Request';
+
+      membershipDecisionModalIntroduction.textContent =
+          isApproval
+              ? 'Please confirm that you want to approve this membership application and assign the membership number below.'
+              : isRejection
+                  ? 'Please confirm that you want to reject this membership application.'
+                  : 'Please confirm that you want to request additional information from this applicant.';
+
+      membershipDecisionModalReference.textContent =
+          selectedApplication.referenceNumber;
+
+      membershipDecisionModalAction.textContent =
+          decisionLabel(decision.status);
+
+      membershipDecisionModalNumberRow.hidden =
+          !isApproval;
+
+      membershipDecisionModalNumber.textContent =
+          decision.membershipNumber || '—';
+
+      membershipDecisionModalStatusNoteRow.hidden =
+          !decision.statusNote;
+
+      membershipDecisionModalStatusNote.textContent =
+          decision.statusNote || '—';
+
+      membershipDecisionModalAdminNoteRow.hidden =
+          !decision.adminNote;
+
+      membershipDecisionModalAdminNote.textContent =
+          decision.adminNote || '—';
+
+      membershipDecisionModalWarning.textContent =
+          isApproval
+              ? 'This will approve the application and assign the membership number. This action cannot be undone from this screen.'
+              : isRejection
+                  ? 'This will mark the application as rejected. The applicant will see the Applicant Status Note.'
+                  : 'This will mark the application as requiring more information. The applicant will see the Applicant Status Note.';
+
+      confirmMembershipDecisionButton.textContent =
+          isApproval
+              ? 'Confirm Approval'
+              : isRejection
+                  ? 'Confirm Rejection'
+                  : 'Confirm Information Request';
+
+      membershipDecisionModal.hidden = false;
+
+      window.setTimeout(function () {
+        confirmMembershipDecisionButton.focus();
+      }, 0);
+    }
+
+    async function submitMembershipDecision() {
+      if (!selectedApplication || !pendingMembershipDecision) {
+        clearMembershipDecisionModal();
+
         setMembershipMessage(
             'error',
-            'This application is read-only in the current workflow.'
-        );
-        return;
-      }
-
-      const membershipNumber = membershipNumberInput.value.trim();
-      const adminNote = adminNoteInput.value.trim();
-
-      if (status === 'approved' && !membershipNumber) {
-        showMembershipNumberError(
-            'Enter a membership number before approving this application.'
+            'No membership decision is ready to submit.',
+            { focus: true }
         );
 
         return;
       }
 
-      const actionButtons = [
-        approveButton,
-        rejectButton,
-        moreInformationButton
-      ];
+      const referenceNumber =
+          selectedApplication.referenceNumber;
 
-      actionButtons.forEach(function (button) {
-        if (button) {
-          button.disabled = true;
-        }
-      });
+      const status =
+          pendingMembershipDecision.status;
+
+      const membershipNumber =
+          pendingMembershipDecision.membershipNumber;
+
+      const statusNote =
+          pendingMembershipDecision.statusNote;
+
+      const adminNote =
+          pendingMembershipDecision.adminNote;
+
+      confirmMembershipDecisionButton.disabled = true;
+      confirmMembershipDecisionButton.textContent =
+          'Saving Decision...';
 
       try {
         const response = await fetch(
             membershipUrl(
                 '/membership/admin/applications/' +
-                encodeURIComponent(selectedApplication.referenceNumber) +
+                encodeURIComponent(referenceNumber) +
                 '/status'
             ),
             {
               method: 'PATCH',
-
               headers: {
                 Authorization: 'Bearer ' + getToken(),
                 'Content-Type': 'application/json'
               },
-
               body: JSON.stringify({
                 status: status,
                 membershipNumber: membershipNumber || null,
@@ -1104,9 +1306,11 @@ document.addEventListener('DOMContentLoaded', function () {
           throw await parseMembershipError(response);
         }
 
+        clearMembershipDecisionModal();
+
         setMembershipMessage(
             'success',
-            selectedApplication.referenceNumber +
+            referenceNumber +
             ' has been updated to ' +
             status.replace(/_/g, ' ') +
             '.'
@@ -1121,7 +1325,10 @@ document.addEventListener('DOMContentLoaded', function () {
             status === 'approved' &&
             error.field === 'membershipNumber'
         ) {
+          clearMembershipDecisionModal();
+
           showMembershipNumberError(error.message);
+
           return;
         }
 
@@ -1132,11 +1339,9 @@ document.addEventListener('DOMContentLoaded', function () {
             { focus: true }
         );
       } finally {
-        actionButtons.forEach(function (button) {
-          if (button) {
-            button.disabled = false;
-          }
-        });
+        confirmMembershipDecisionButton.disabled = false;
+        confirmMembershipDecisionButton.textContent =
+            'Confirm Decision';
       }
     }
 
@@ -1295,15 +1500,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     approveButton.addEventListener('click', function () {
-      updateApplicationStatus('approved');
+      prepareMembershipDecision('approved');
     });
 
     rejectButton.addEventListener('click', function () {
-      updateApplicationStatus('rejected');
+      prepareMembershipDecision('rejected');
     });
 
     moreInformationButton.addEventListener('click', function () {
-      updateApplicationStatus('more_information_required');
+      prepareMembershipDecision(
+          'more_information_required'
+      );
     });
 
     receiptButton.addEventListener('click', function () {
@@ -1349,13 +1556,51 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
+    if (cancelMembershipDecisionButton) {
+      cancelMembershipDecisionButton.addEventListener(
+          'click',
+          clearMembershipDecisionModal
+      );
+    }
+
+    if (confirmMembershipDecisionButton) {
+      confirmMembershipDecisionButton.addEventListener(
+          'click',
+          submitMembershipDecision
+      );
+    }
+
+    if (membershipDecisionModal) {
+      const decisionBackdrop =
+          membershipDecisionModal.querySelector(
+              '.admin-confirm-backdrop'
+          );
+
+      if (decisionBackdrop) {
+        decisionBackdrop.addEventListener(
+            'click',
+            clearMembershipDecisionModal
+        );
+      }
+    }
+
     document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
       if (
-          event.key === 'Escape' &&
           idConfirmationModal &&
           !idConfirmationModal.hidden
       ) {
         closeIdConfirmationModal();
+      }
+
+      if (
+          membershipDecisionModal &&
+          !membershipDecisionModal.hidden
+      ) {
+        clearMembershipDecisionModal();
       }
     });
 

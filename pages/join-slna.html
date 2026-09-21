@@ -62,13 +62,40 @@
       </p>
     </div>
 
+    <div class="join-tabs" role="tablist" aria-label="Join SLNA sections">
+      <button
+              type="button"
+              class="join-tab-btn active"
+              data-join-tab="tab-apply"
+              role="tab"
+              aria-selected="true"
+      >
+        Apply for Membership
+      </button>
+
+      <button
+              type="button"
+              class="join-tab-btn"
+              data-join-tab="tab-status"
+              role="tab"
+              aria-selected="false"
+      >
+        Check Application Status
+      </button>
+    </div>
+
     <div id="join-form-alert" aria-live="polite"></div>
 
-    <div class="form-box join-application-form">
-      <form
-              id="join-form"
-              enctype="multipart/form-data"
-      >
+    <div
+            class="join-tab-panel active"
+            id="tab-apply"
+            role="tabpanel"
+    >
+      <div class="form-box join-application-form">
+        <form
+                id="join-form"
+                enctype="multipart/form-data"
+        >
 
         <section
                 class="application-section"
@@ -599,6 +626,100 @@
         </p>
       </form>
     </div>
+    </div>
+
+    <div
+            class="join-tab-panel"
+            id="tab-status"
+            role="tabpanel"
+            hidden
+    >
+      <div class="form-box status-check-box">
+        <h3>Check Your Application Status</h3>
+
+        <p>
+          Enter your SLNA application reference number to view its current
+          status.
+        </p>
+
+        <form id="status-check-form">
+          <div class="form-group">
+            <label for="status-reference-number">
+              SLNA Application Reference Number
+              <span aria-hidden="true">*</span>
+            </label>
+
+            <input
+                    type="text"
+                    id="status-reference-number"
+                    name="referenceNumber"
+                    placeholder="Example: SLNA-LT-20260921-AB12CD34"
+                    autocomplete="off"
+                    required
+            >
+          </div>
+
+          <button
+                  type="submit"
+                  class="btn btn-primary"
+                  id="status-check-submit"
+          >
+            Check Status
+          </button>
+        </form>
+
+        <div
+                id="status-check-alert"
+                aria-live="polite"
+        ></div>
+
+        <div
+                class="status-result-card"
+                id="status-result-card"
+                hidden
+        >
+          <div class="status-result-heading">
+            <div>
+              <span class="status-result-label">Reference Number</span>
+              <strong
+                      id="status-result-reference"
+                      class="status-result-reference"
+              >—</strong>
+            </div>
+
+            <span
+                    class="application-status"
+                    id="status-result-badge"
+            >—</span>
+          </div>
+
+          <dl class="status-result-details">
+            <div>
+              <dt>Submitted On</dt>
+              <dd id="status-result-submitted">—</dd>
+            </div>
+
+            <div
+                    id="status-result-membership-row"
+                    hidden
+            >
+              <dt>SLNA Registration ID</dt>
+              <dd id="status-result-membership-number">—</dd>
+            </div>
+          </dl>
+
+          <div
+                  class="status-result-message"
+                  id="status-result-message-box"
+                  hidden
+          >
+            <h4 id="status-result-message-title">Message from SLNA</h4>
+            <p id="status-result-message-text">—</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 

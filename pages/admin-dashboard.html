@@ -691,6 +691,98 @@
     </div>
   </div>
 
+  <div
+          class="admin-confirm-modal"
+          id="membership-decision-confirm-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="membership-decision-modal-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div
+              class="admin-confirm-icon"
+              id="membership-decision-modal-icon"
+              aria-hidden="true"
+      >
+        !
+      </div>
+
+      <div class="admin-confirm-content">
+        <h2 id="membership-decision-modal-title">
+          Confirm Membership Decision
+        </h2>
+
+        <p id="membership-decision-modal-introduction">
+          Please review this membership application decision before confirming.
+        </p>
+
+        <div class="admin-confirm-reference">
+          <span>Application Reference</span>
+          <strong id="membership-decision-modal-reference">—</strong>
+        </div>
+
+        <dl class="membership-decision-confirm-details">
+          <div>
+            <dt>Decision</dt>
+            <dd id="membership-decision-modal-action">—</dd>
+          </div>
+
+          <div
+                  id="membership-decision-modal-number-row"
+                  hidden
+          >
+            <dt>Membership Number</dt>
+            <dd id="membership-decision-modal-number">—</dd>
+          </div>
+
+          <div
+                  id="membership-decision-modal-status-note-row"
+                  hidden
+          >
+            <dt>Applicant Status Note</dt>
+            <dd id="membership-decision-modal-status-note">—</dd>
+          </div>
+
+          <div
+                  id="membership-decision-modal-admin-note-row"
+                  hidden
+          >
+            <dt>Internal Admin Note</dt>
+            <dd id="membership-decision-modal-admin-note">—</dd>
+          </div>
+        </dl>
+
+        <p
+                class="admin-confirm-warning"
+                id="membership-decision-modal-warning"
+        >
+          This action will update the application's workflow status.
+        </p>
+
+        <div class="admin-confirm-actions">
+          <button
+                  type="button"
+                  class="btn btn-outline"
+                  id="cancel-membership-decision-confirmation"
+          >
+            Cancel
+          </button>
+
+          <button
+                  type="button"
+                  class="btn btn-primary"
+                  id="confirm-membership-decision-modal"
+          >
+            Confirm Decision
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/config.js"></script>
   <script src="../js/admin-auth.js"></script>
   <script src="../js/admin-panel.js"></script>
