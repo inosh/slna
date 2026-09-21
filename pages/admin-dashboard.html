@@ -112,7 +112,11 @@
           </button>
         </div>
 
-        <div id="membership-applications-alert" aria-live="polite"></div>
+        <div
+                id="membership-applications-alert"
+                aria-live="polite"
+                tabindex="-1"
+        ></div>
 
         <div
                 class="tab-buttons membership-status-tabs"
@@ -175,7 +179,7 @@
             <input
                     type="search"
                     id="membership-search"
-                    placeholder="Reference, name, NIC, email or SLNC registration"
+                    placeholder="Search by reference number, applicant name, or NIC"
             >
           </div>
         </div>
@@ -186,7 +190,7 @@
             <tr>
               <th>Reference</th>
               <th>Applicant</th>
-              <th>NIC / SLNC Registration</th>
+              <th>NIC</th>
               <th>Workplace / Designation</th>
               <th>Submitted</th>
               <th>Status</th>
@@ -422,19 +426,6 @@
                     </button>
                   </dd>
                 </div>
-
-                <div>
-                  <dt>Signature Image</dt>
-                  <dd>
-                    <button
-                            class="btn btn-outline btn-sm"
-                            type="button"
-                            id="view-membership-signature"
-                    >
-                      View Signature
-                    </button>
-                  </dd>
-                </div>
               </dl>
             </section>
           </div>
@@ -443,7 +434,7 @@
                   class="membership-decision-grid"
                   id="membership-decision-fields"
           >
-            <div class="form-group">
+            <div class="form-group membership-number-group">
               <label for="membership-number">
                 Membership Number
               </label>
@@ -451,12 +442,15 @@
               <input
                       type="text"
                       id="membership-number"
-                      placeholder="Example: LT-000001"
+                      placeholder="Required only when approving an application."
+                      aria-describedby="membership-number-error"
               >
 
-              <p class="form-help">
-                Required only when approving an application.
-              </p>
+              <p
+                      class="membership-field-error"
+                      id="membership-number-error"
+                      aria-live="polite"
+              ></p>
             </div>
 
             <div class="form-group">
@@ -525,7 +519,7 @@
               <div>
                 <h3>SLNA ID Application</h3>
                 <p class="admin-muted">
-                  Review the approved member details, passport photograph, and signature.
+                  Review the approved member details and passport photograph.
                   Download the completed ID application form when ready.
                 </p>
               </div>
@@ -548,7 +542,7 @@
                   <h4>ID Application Form</h4>
                   <p>
                     Generate and download the completed SLNA ID application form using
-                    the approved application details.
+                    the approved application details and passport photograph.
                   </p>
                 </div>
 

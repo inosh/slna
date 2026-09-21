@@ -17,11 +17,6 @@
             'id-photo-preview-placeholder'
         );
 
-        var signatureInput = document.getElementById('signature-photo');
-        var signatureName = document.getElementById(
-            'signature-photo-name'
-        );
-
         var submitButton = form.querySelector('button[type="submit"]');
         var maxFileSize = 5 * 1024 * 1024;
 
@@ -107,12 +102,6 @@
             });
         }
 
-        if (signatureInput) {
-            signatureInput.addEventListener('change', function () {
-                showSelectedFile(signatureInput, signatureName);
-            });
-        }
-
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
 
@@ -126,22 +115,18 @@
 
             var receipt = receiptInput ? receiptInput.files[0] : null;
             var photo = photoInput ? photoInput.files[0] : null;
-            var signature = signatureInput
-                ? signatureInput.files[0]
-                : null;
 
-            if (!receipt || !photo || !signature) {
+            if (!receipt || !photo) {
                 showMessage(
                     'error',
-                    'Please upload the bank receipt, passport-size photograph, and signature image.'
+                    'Please upload the bank receipt and passport-size photograph.'
                 );
                 return;
             }
 
             if (
                 receipt.size > maxFileSize ||
-                photo.size > maxFileSize ||
-                signature.size > maxFileSize
+                photo.size > maxFileSize
             ) {
                 showMessage(
                     'error',
@@ -162,14 +147,6 @@
                 showMessage(
                     'error',
                     'The passport photograph must be a JPG, JPEG, or PNG image.'
-                );
-                return;
-            }
-
-            if (!isAllowedImage(signature)) {
-                showMessage(
-                    'error',
-                    'The signature image must be a JPG, JPEG, or PNG image.'
                 );
                 return;
             }
@@ -213,7 +190,6 @@
 
                 receiptName.textContent = '';
                 photoName.textContent = '';
-                signatureName.textContent = '';
 
                 photoPreview.removeAttribute('src');
                 photoPreview.style.display = 'none';
