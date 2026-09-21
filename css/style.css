@@ -2241,17 +2241,6 @@ fieldset.sex-field .radio-option input[type="radio"] {
   }
 }
 
-.membership-field-error {
-  display: none;
-  margin-top: 7px;
-  color: #b42318;
-  font-weight: 600;
-}
-
-.membership-field-error.is-visible {
-  display: block;
-}
-
 #membership-number.input-error {
   border-color: #b42318;
   box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
@@ -2283,7 +2272,40 @@ fieldset.sex-field .radio-option input[type="radio"] {
 
 .membership-field-error {
   display: none;
-  margin: 12px 0 0;
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  color: #ffffff;
+  background: #b42318;
+  border-left: 5px solid #7f1d1d;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.membership-field-error.is-visible {
+  display: block;
+}
+
+#membership-number.input-error {
+  border: 2px solid #b42318;
+  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.18);
+}
+
+#membership-status-note.input-error {
+  border: 2px solid #b42318;
+  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.18);
+}
+
+#membership-status-note:focus {
+  outline: 3px solid rgba(180, 35, 24, 0.2);
+  outline-offset: 2px;
+}
+
+#membership-status-note-error {
+  display: none;
+  margin: 10px 0 0;
   padding: 12px 14px;
   color: #ffffff;
   background: #b42318;
@@ -2294,11 +2316,86 @@ fieldset.sex-field .radio-option input[type="radio"] {
   line-height: 1.45;
 }
 
-.membership-field-error.is-visible {
+#membership-status-note-error.is-visible {
   display: block;
 }
 
-#membership-number.input-error {
-  border: 2px solid #b42318;
-  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.18);
+.membership-review-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#membership-status-note-error {
+  display: none;
+}
+
+#membership-status-note-error.is-visible {
+  display: block;
+}
+
+/* Membership review action buttons */
+
+.membership-review-actions {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.membership-review-actions-left {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+.membership-review-actions-right {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-left: auto;
+}
+
+.membership-review-actions .btn {
+  white-space: nowrap;
+}
+
+.membership-review-actions-left .btn {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.membership-review-actions-right
+#approve-membership-application {
+  width: auto;
+  margin: 0;
+}
+
+/* Mobile only */
+@media (max-width: 700px) {
+  .membership-review-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .membership-review-actions-left,
+  .membership-review-actions-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .membership-review-actions-right {
+    margin-left: 0;
+  }
+
+  .membership-review-actions .btn {
+    width: 100%;
+  }
 }

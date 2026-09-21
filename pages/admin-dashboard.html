@@ -149,7 +149,7 @@
             More Information
             <span
                     class="status-count"
-                    id="more-information-status-count"
+                    id="more-information-required-status-count"
             >0</span>
           </button>
 
@@ -461,8 +461,15 @@
               <textarea
                       id="membership-status-note"
                       rows="4"
-                      placeholder="Optional note visible to the applicant, especially if more information is needed or an application is rejected."
+                      placeholder="Required when requesting more information or rejecting an application. Optional when approving."
+                      aria-describedby="membership-status-note-error"
               ></textarea>
+
+              <p
+                      id="membership-status-note-error"
+                      class="membership-field-error"
+                      aria-live="polite"
+              ></p>
             </div>
           </div>
 
@@ -479,6 +486,30 @@
                     rows="4"
                     placeholder="Optional internal note for SLNA administrators. This is not shown to the applicant."
             ></textarea>
+          </div>
+
+          <div
+                  class="membership-decision-history"
+                  id="membership-decision-history"
+                  hidden
+          >
+            <h3>Decision History</h3>
+
+            <div class="read-only-note-group">
+              <h4>Applicant Status Note</h4>
+              <p
+                      id="read-only-status-note"
+                      class="read-only-note"
+              >—</p>
+            </div>
+
+            <div class="read-only-note-group">
+              <h4>Internal Admin Note</h4>
+              <p
+                      id="read-only-admin-note"
+                      class="read-only-note"
+              >—</p>
+            </div>
           </div>
 
           <div
