@@ -18,16 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  var joinForm = document.querySelector('#join-form');
-
-  if (joinForm) {
-    joinForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      alert('Thank you for applying.');
-      joinForm.reset();
-    });
-  }
-
   document.querySelectorAll('.side-menu h3').forEach(function (heading) {
     heading.setAttribute('role', 'button');
     heading.setAttribute('tabindex', '0');
