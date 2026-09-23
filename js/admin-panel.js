@@ -29,7 +29,412 @@ document.addEventListener('DOMContentLoaded', function () {
   loadAdminNewsTable();
   loadAdminAlbumTable();
   initMembershipApplications();
+  initCpdEventsAdmin();
+  initOtherEventsAdmin();
 
+  function initCpdEventsAdmin() {
+    setupEventAdminForm({
+      formId: 'cpd-event-form',
+      alertId: 'cpd-event-alert',
+      tableBodyId: 'cpd-events-table-body',
+      photoInputId: 'cpd-event-photo-input',
+      photoPreviewId: 'cpd-event-photo-preview',
+      endpoint: '/events/cpd',
+      successMessage: 'CPD event published.',
+      submitLabel: 'Publish CPD Event',
+      fields: {
+        title: 'cpd-event-title',
+        type: 'cpd-event-type',
+        event_date: 'cpd-event-date',
+        time: 'cpd-event-time',
+        location: 'cpd-event-location',
+        summary: 'cpd-event-summary',
+        status: 'cpd-event-status'
+      }
+    });
+  }
+
+  function initOtherEventsAdmin() {
+    setupEventAdminForm({
+      formId: 'other-event-form',
+      alertId: 'other-event-alert',
+      tableBodyId: 'other-events-table-body',
+      photoInputId: 'other-event-photo-input',
+      photoPreviewId: 'other-event-photo-preview',
+      endpoint: '/events/other',
+      successMessage: 'Other event published.',
+      submitLabel: 'Publish Other Event',
+      fields: {
+        title: 'other-event-title',
+        type: 'other-event-type',
+        event_date: 'other-event-date',
+        time: 'other-event-time',
+        location: 'other-event-location',
+        summary: 'other-event-summary',
+        status: 'other-event-status'
+      }
+    });
+  }
+
+  function setupEventAdminForm(config) {
+    const form = document.getElementById(config.formId);
+
+    if (!form) {
+      return;
+    }
+
+    const tableBody = document.getElementById(config.tableBodyId);
+    const photoInput = document.getElementById(config.photoInputId);
+    const photoPreview = document.getElementById(config.photoPreviewId);
+
+    let selectedPhoto = null;
+
+    function getValue(fieldName) {
+      const input = document.getElementById(config.fields[fieldName]);
+
+      return input ? input.value.trim() : '';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+    }
+
+    function formatDate(value) {
+      if (!value) {
+        return '—';
+      }
+
+      const date = new Date(value + 'T00:00:00');
+
+      if (Number.isNaN(date.getTime())) {
+        return escapeHtml(value);
+      }
+
+      return date.toLocaleDateString('en-GB');
+    }
+
+    function getItemValue(item, camelCase, snakeCase) {
+      return item[camelCase] || item[snakeCase] || '';
+    }
+
+    function renderPhoto(item) {
+      const storedPhotoUrl =
+          item.photo_url ||
+          item.photoUrl ||
+          item.image_url ||
+          item.imageUrl ||
+          '';
+
+      if (!storedPhotoUrl) {
+        return '—';
+      }
+
+      const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
+
+      const imageUrl = /^https?:\/\//i.test(storedPhotoUrl)
+          ? storedPhotoUrl
+          : apiOrigin + storedPhotoUrl;
+
+      return `
+    <img
+            src="${escapeHtml(imageUrl)}"
+            class="thumb-preview"
+            alt=""
+            style="width:60px;height:45px;object-fit:cover;border-radius:4px;"
+            onerror="this.style.display='none';"
+    >
+  `;
+    }
+
+    function renderRow(item) {
+      const title = getItemValue(item, 'title', 'title');
+      const type = getItemValue(item, 'type', 'event_type');
+      const date = getItemValue(item, 'eventDate', 'event_date');
+      const location = getItemValue(item, 'location', 'location');
+      const status = getItemValue(item, 'status', 'status');
+      const id = item.id;
+
+      return `
+      <tr>
+        <td>${renderPhoto(item)}</td>
+        <td>${escapeHtml(title)}</td>
+        <td>${escapeHtml(type)}</td>
+        <td>${formatDate(date)}</td>
+        <td>${escapeHtml(location)}</td>
+        <td>${escapeHtml(status)}</td>
+        <td>
+          ${
+          id
+              ? `<button
+                       type="button"
+                       class="btn btn-outline btn-sm"
+                       data-event-delete-id="${escapeHtml(id)}"
+                 >
+                       Delete
+                 </button>`
+              : '—'
+      }
+        </td>
+      </tr>
+    `;
+    }
+
+    async function loadItems() {
+      if (!tableBody) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+            SLNA_CONFIG.API_BASE_URL + config.endpoint,
+            {
+              headers: {
+                Authorization: 'Bearer ' + getToken()
+              }
+            }
+        );
+
+        if (!response.ok) {
+          throw new Error('Could not load events.');
+        }
+
+        const data = await response.json();
+        const items = Array.isArray(data)
+            ? data
+            : data.items || data.events || [];
+
+        if (!items.length) {
+          tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="empty-table-state">
+              No events published yet.
+            </td>
+          </tr>
+        `;
+
+          return;
+        }
+
+        tableBody.innerHTML = items.map(renderRow).join('');
+      } catch (error) {
+        console.error(error);
+
+        tableBody.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty-table-state">
+            Could not load events. The backend endpoint may not be available yet.
+          </td>
+        </tr>
+      `;
+      }
+    }
+
+    if (photoInput) {
+      photoInput.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+          selectedPhoto = null;
+
+          if (photoPreview) {
+            photoPreview.innerHTML = '';
+          }
+
+          return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+          showAlert(
+              config.alertId,
+              'Please select an image file.',
+              'error'
+          );
+
+          event.target.value = '';
+          return;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+          showAlert(
+              config.alertId,
+              'The photo must be smaller than 15 MB.',
+              'error'
+          );
+
+          event.target.value = '';
+          return;
+        }
+
+        selectedPhoto = file;
+
+        const reader = new FileReader();
+
+        reader.onload = function (readerEvent) {
+          if (!photoPreview) {
+            return;
+          }
+
+          photoPreview.innerHTML = `
+          <img
+                  src="${readerEvent.target.result}"
+                  alt="Selected event photo preview"
+                  style="max-width:160px;max-height:100px;object-fit:cover;border-radius:6px;"
+          >
+        `;
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const formData = new FormData();
+      let hasMissingField = false;
+
+      Object.keys(config.fields).forEach(function (fieldName) {
+        const value = getValue(fieldName);
+
+        if (!value) {
+          hasMissingField = true;
+        }
+
+        formData.append(fieldName, value);
+      });
+
+      if (hasMissingField) {
+        showAlert(
+            config.alertId,
+            'Please complete all required fields.',
+            'error'
+        );
+
+        return;
+      }
+
+      if (selectedPhoto) {
+        formData.append('photo', selectedPhoto);
+      }
+
+      const submitButton = form.querySelector(
+          'button[type="submit"]'
+      );
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Publishing...';
+      }
+
+      try {
+        const response = await fetch(
+            SLNA_CONFIG.API_BASE_URL + config.endpoint,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: 'Bearer ' + getToken()
+              },
+              body: formData
+            }
+        );
+
+        if (!response.ok) {
+          let message = 'Could not publish this event.';
+
+          try {
+            const data = await response.json();
+            message = data.error || data.message || message;
+          } catch (parseError) {
+            // Use the default message.
+          }
+
+          throw new Error(message);
+        }
+
+        showAlert(
+            config.alertId,
+            config.successMessage,
+            'success'
+        );
+
+        form.reset();
+        selectedPhoto = null;
+
+        if (photoPreview) {
+          photoPreview.innerHTML = '';
+        }
+
+        await loadItems();
+      } catch (error) {
+        console.error(error);
+
+        showAlert(
+            config.alertId,
+            error.message || 'Could not publish this event.',
+            'error'
+        );
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = config.submitLabel;
+        }
+      }
+    });
+
+    if (tableBody) {
+      tableBody.addEventListener('click', async function (event) {
+        const deleteButton = event.target.closest(
+            '[data-event-delete-id]'
+        );
+
+        if (!deleteButton) {
+          return;
+        }
+
+        const eventId = deleteButton.getAttribute(
+            'data-event-delete-id'
+        );
+
+        if (!eventId || !window.confirm('Delete this event?')) {
+          return;
+        }
+
+        try {
+          const response = await fetch(
+              SLNA_CONFIG.API_BASE_URL +
+              config.endpoint +
+              '/' +
+              encodeURIComponent(eventId),
+              {
+                method: 'DELETE',
+                headers: {
+                  Authorization: 'Bearer ' + getToken()
+                }
+              }
+          );
+
+          if (!response.ok) {
+            throw new Error('Could not delete this event.');
+          }
+
+          await loadItems();
+        } catch (error) {
+          showAlert(
+              config.alertId,
+              error.message || 'Could not delete this event.',
+              'error'
+          );
+        }
+      });
+    }
+
+    loadItems();
+  }
   // Helper: turns any fetch/response failure into a clear message for the admin.
   async function parseApiError(res) {
     try {
