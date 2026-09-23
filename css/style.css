@@ -2628,3 +2628,529 @@ fieldset.sex-field .radio-option input[type="radio"] {
     gap: 4px;
   }
 }
+
+/* =========================================================
+   EVENTS & PROGRAMMES
+   ========================================================= */
+
+.events-list-section {
+  margin-top: 32px;
+}
+
+.events-list-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--secondary);
+}
+
+.events-list-heading h3 {
+  margin: 0 0 5px;
+  color: var(--primary-dark);
+}
+
+.events-list-introduction {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.events-empty-state,
+.empty-events-state,
+.events-loading-state {
+  padding: 36px 28px;
+  color: #526578;
+  background: #f8fafc;
+  border: 1px dashed #b9c9d8;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.events-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 14px;
+  color: #ffffff;
+  background: var(--primary);
+  border-radius: 50%;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+.events-empty-state h3,
+.events-empty-state h4,
+.empty-events-state h3 {
+  margin: 0 0 8px;
+  color: var(--primary-dark);
+  font-size: 1.08rem;
+}
+
+.events-empty-state p,
+.empty-events-state p {
+  max-width: 620px;
+  margin: 0 auto;
+  color: #526578;
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.events-information-section {
+  margin-top: 34px;
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+}
+
+.events-information-section h3 {
+  margin-top: 0;
+}
+
+/* =========================================================
+   CPD EVENT POSTER CARDS
+   Used by: training-workshops.html / cpd-events.js
+   ========================================================= */
+
+.events-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.event-list-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid #d9e2eb;
+  border-radius: 5px;
+  box-shadow: 0 3px 12px rgba(8, 50, 94, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.event-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(8, 50, 94, 0.14);
+}
+
+/*
+  Fixed poster area:
+  object-fit: contain ensures tall/long flyers are fully visible.
+*/
+.cpd-card-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 285px;
+  overflow: hidden;
+  background: #f4f7fa;
+}
+
+.cpd-card-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #f4f7fa;
+}
+
+.cpd-card-image-placeholder {
+  flex-direction: column;
+  gap: 8px;
+  color: #ffffff;
+  background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+  );
+  text-align: center;
+}
+
+.cpd-card-image-placeholder span {
+  color: var(--secondary);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.cpd-card-image-placeholder strong {
+  font-size: 1.25rem;
+  letter-spacing: 0.03em;
+}
+
+/* Date block and event details under the poster */
+.cpd-card-info {
+  display: grid;
+  grid-template-columns: 135px minmax(0, 1fr);
+  gap: 22px;
+  padding: 18px 20px 20px;
+}
+
+.cpd-card-date {
+  align-self: start;
+  color: #111111;
+  text-align: left;
+}
+
+.cpd-date-day {
+  display: block;
+  font-size: 3.9rem;
+  font-weight: 700;
+  line-height: 0.95;
+}
+
+.cpd-date-month {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.cpd-date-year {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.cpd-card-content {
+  min-width: 0;
+}
+
+.event-card-topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.event-type-badge,
+.event-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.event-type-badge {
+  color: #07577d;
+  background: #d9f1ff;
+}
+
+.event-status-badge.status-open {
+  color: #176638;
+  background: #dff5e7;
+}
+
+.event-status-badge.status-soon {
+  color: #765600;
+  background: #fff4c7;
+}
+
+.event-status-badge.status-closed {
+  color: #8a2730;
+  background: #fde7e9;
+}
+
+.event-status-badge.status-default {
+  color: #46576a;
+  background: #e8eef4;
+}
+
+.cpd-card-content h4 {
+  margin: 0 0 10px;
+  color: var(--primary-dark);
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px !important;
+  color: #526578 !important;
+  font-size: 0.9rem !important;
+  font-weight: 700;
+}
+
+.cpd-card-content > p:not(.event-meta) {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 12px 0 16px;
+  color: #526578;
+  font-size: 0.93rem;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* =========================================================
+   CONFERENCE LISTING CARDS
+   Keep this only if conferences.html still uses .conference-card
+   ========================================================= */
+
+.conferences-list-section {
+  margin-top: 18px;
+}
+
+.conferences-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.conference-card {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #d8e3ed;
+  border-left: 6px solid var(--primary);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(8, 50, 94, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.conference-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(8, 50, 94, 0.14);
+}
+
+.conference-card-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 18px 22px 14px;
+  background: linear-gradient(
+          135deg,
+          rgba(11, 76, 140, 0.06),
+          rgba(8, 50, 94, 0.08)
+  );
+  border-bottom: 1px solid #e6eef5;
+}
+
+.conference-date-venue {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.conference-dates {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  padding: 10px 12px;
+  color: #ffffff;
+  background: linear-gradient(
+          135deg,
+          rgba(11, 76, 140, 0.96),
+          rgba(8, 50, 94, 0.98)
+  );
+  border-radius: 6px;
+  text-align: center;
+}
+
+.conference-day {
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.conference-month {
+  margin-top: 4px;
+  color: var(--secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.conference-year {
+  margin-top: 2px;
+  color: #c9ddf4;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.conference-venue {
+  overflow: hidden;
+  color: var(--primary);
+  font-size: 0.98rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conference-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.conference-card-body {
+  padding: 20px 22px 22px;
+}
+
+.conference-card-body h4 {
+  margin: 0 0 10px;
+  color: var(--primary-dark);
+  font-size: 1.22rem;
+  line-height: 1.35;
+}
+
+.conference-theme {
+  margin: 0 0 12px;
+  color: var(--primary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.conference-card-body p {
+  margin: 0 0 14px;
+  color: #334e68;
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.conference-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* =========================================================
+   EVENT / CONFERENCE RESPONSIVE RULES
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .events-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .conference-card-header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .conference-date-venue {
+    gap: 12px;
+  }
+
+  .conference-badges {
+    justify-content: flex-start;
+  }
+
+  .conference-venue {
+    white-space: normal;
+  }
+
+  .conference-actions {
+    flex-direction: column;
+  }
+
+  .conference-actions .btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 620px) {
+  .events-list-heading {
+    display: block;
+  }
+
+  .events-list-introduction {
+    margin-top: 7px;
+  }
+
+  .events-empty-state,
+  .empty-events-state,
+  .events-loading-state {
+    padding: 30px 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .cpd-card-image {
+    height: 250px;
+  }
+
+  .cpd-card-info {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .cpd-date-day {
+    font-size: 3rem;
+  }
+
+  .cpd-date-month,
+  .cpd-date-year {
+    font-size: 1.35rem;
+  }
+
+  .cpd-card-content h4 {
+    font-size: 1rem;
+  }
+
+  .event-card-topline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.cpd-card-image {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 285px;
+  max-height: 560px;
+  overflow: hidden;
+  background: #f4f7fa;
+}
+
+.cpd-card-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 560px;
+  object-fit: contain;
+  background: #f4f7fa;
+}
+
+@media (max-width: 560px) {
+  .cpd-card-image {
+    min-height: 230px;
+    max-height: 480px;
+  }
+
+  .cpd-card-image img {
+    max-height: 480px;
+  }
+}

@@ -19,6 +19,23 @@
     <div class="main-tab-buttons" role="tablist" aria-label="Admin dashboard sections">
       <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">Add News</button>
       <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Add Photos / Albums</button>
+      <button
+              class="main-tab-btn"
+              data-maintab="maintab-cpd-events"
+              role="tab"
+              aria-selected="false"
+      >
+        CPD Events
+      </button>
+
+      <button
+              class="main-tab-btn"
+              data-maintab="maintab-other-events"
+              role="tab"
+              aria-selected="false"
+      >
+        Other Events
+      </button>
       <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
     </div>
 
@@ -88,6 +105,301 @@
         <h2>Published Albums</h2>
         <div class="table-scroll">
           <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Photos</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div
+            class="main-tab-panel"
+            id="maintab-cpd-events"
+            role="tabpanel"
+    >
+      <div class="admin-card">
+        <h2>Add CPD Event</h2>
+
+        <p class="admin-muted">
+          Add workshops, training sessions, webinars, seminars, study days,
+          and CPD conferences.
+        </p>
+
+        <div id="cpd-event-alert" aria-live="polite"></div>
+
+        <form id="cpd-event-form">
+          <div class="form-group">
+            <label for="cpd-event-title">Title</label>
+            <input
+                    type="text"
+                    id="cpd-event-title"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="cpd-event-type">Type</label>
+            <select id="cpd-event-type" required>
+              <option value="">Select type</option>
+              <option value="Workshop">Workshop</option>
+              <option value="Training">Training</option>
+              <option value="Webinar">Webinar</option>
+              <option value="Seminar">Seminar</option>
+              <option value="Study Day">Study Day</option>
+              <option value="Conference">Conference</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="cpd-event-date">Date</label>
+            <input
+                    type="date"
+                    id="cpd-event-date"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="cpd-event-time">Time</label>
+            <input
+                    type="text"
+                    id="cpd-event-time"
+                    placeholder="e.g. 9.00 AM – 1.00 PM"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="cpd-event-location">
+              Location / Format
+            </label>
+            <input
+                    type="text"
+                    id="cpd-event-location"
+                    placeholder="e.g. SLNA Secretariat or Online Session"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="cpd-event-summary">
+              Short Description
+            </label>
+            <textarea
+                    id="cpd-event-summary"
+                    rows="3"
+                    required
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="cpd-event-status">Status</label>
+            <select id="cpd-event-status" required>
+              <option value="Registration Open">
+                Registration Open
+              </option>
+              <option value="Registration Opening Soon">
+                Registration Opening Soon
+              </option>
+              <option value="Programme Announced Soon">
+                Programme Announced Soon
+              </option>
+              <option value="Closed">
+                Registration Closed
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="cpd-event-photo-input">
+              Photo (optional)
+            </label>
+            <input
+                    type="file"
+                    id="cpd-event-photo-input"
+                    accept="image/*"
+            >
+            <div
+                    id="cpd-event-photo-preview"
+                    style="margin-top:8px;"
+            ></div>
+          </div>
+
+          <button
+                  type="submit"
+                  class="btn btn-primary"
+          >
+            Publish CPD Event
+          </button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h2>Published CPD Events</h2>
+
+        <div class="table-scroll">
+          <table class="news-table">
+            <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+
+            <tbody id="cpd-events-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div
+            class="main-tab-panel"
+            id="maintab-other-events"
+            role="tabpanel"
+    >
+      <div class="admin-card">
+        <h2>Add Other Event</h2>
+
+        <p class="admin-muted">
+          Add SLNA events that are not part of continuing professional development.
+        </p>
+
+        <div id="other-event-alert" aria-live="polite"></div>
+
+        <form id="other-event-form">
+          <div class="form-group">
+            <label for="other-event-title">Title</label>
+            <input
+                    type="text"
+                    id="other-event-title"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="other-event-type">Type</label>
+            <select id="other-event-type" required>
+              <option value="">Select type</option>
+              <option value="Annual Conference">
+                Annual Conference
+              </option>
+              <option value="International Nurses Day">
+                International Nurses Day
+              </option>
+              <option value="General Meeting">
+                General Meeting
+              </option>
+              <option value="Annual General Meeting">
+                Annual General Meeting
+              </option>
+              <option value="Other Event">
+                Other Event
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="other-event-date">Date</label>
+            <input
+                    type="date"
+                    id="other-event-date"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="other-event-time">Time</label>
+            <input
+                    type="text"
+                    id="other-event-time"
+                    placeholder="e.g. 9.00 AM – 1.00 PM"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="other-event-location">
+              Location / Format
+            </label>
+            <input
+                    type="text"
+                    id="other-event-location"
+                    placeholder="e.g. BMICH, Colombo or Online"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="other-event-summary">
+              Short Description
+            </label>
+            <textarea
+                    id="other-event-summary"
+                    rows="3"
+                    required
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="other-event-status">Status</label>
+            <select id="other-event-status" required>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Registration Open">
+                Registration Open
+              </option>
+              <option value="Announcement Soon">
+                Announcement Soon
+              </option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="other-event-photo-input">
+              Photo (optional)
+            </label>
+            <input
+                    type="file"
+                    id="other-event-photo-input"
+                    accept="image/*"
+            >
+            <div
+                    id="other-event-photo-preview"
+                    style="margin-top:8px;"
+            ></div>
+          </div>
+
+          <button
+                  type="submit"
+                  class="btn btn-primary"
+          >
+            Publish Other Event
+          </button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h2>Published Other Events</h2>
+
+        <div class="table-scroll">
+          <table class="news-table">
+            <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+
+            <tbody id="other-events-table-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
