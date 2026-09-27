@@ -107,6 +107,23 @@
             });
         }
 
+        function centerFirstInvalidField() {
+            var invalidField = document.activeElement && document.activeElement.matches(':invalid')
+                ? document.activeElement
+                : form.querySelector(':invalid');
+
+            if (!invalidField) {
+                return;
+            }
+
+            var container = invalidField.closest('.form-group, fieldset') || invalidField;
+
+            container.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
 
@@ -115,6 +132,7 @@
 
             if (!form.checkValidity()) {
                 form.reportValidity();
+                centerFirstInvalidField();
                 return;
             }
 
@@ -156,7 +174,7 @@
                 return;
             }
 
-            var apiBase = window.SLNA_API_BASE_URL || 'http://localhost:3000';
+            var apiBase = SLNA_CONFIG.API_BASE_URL;
             var formData = new FormData(form);
 
             if (submitButton) {
@@ -166,7 +184,7 @@
 
             try {
                 var response = await fetch(
-                    apiBase + '/api/membership/applications',
+                    apiBase + '/membership/applications',
                     {
                         method: 'POST',
                         body: formData
@@ -500,8 +518,7 @@
                 return;
             }
 
-            var apiBase =
-                window.SLNA_API_BASE_URL || 'http://localhost:3000';
+            var apiBase = SLNA_CONFIG.API_BASE_URL;
 
             submitButton.disabled = true;
             submitButton.textContent = 'Checking...';
@@ -509,7 +526,7 @@
             try {
                 var response = await fetch(
                     apiBase +
-                    '/api/membership/applications/status/' +
+                    '/membership/applications/status/' +
                     encodeURIComponent(referenceNumber)
                 );
 

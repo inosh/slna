@@ -271,12 +271,14 @@
             <div class="form-group application-grid-full">
               <label for="official-address">
                 Official Address
+                <span aria-hidden="true">*</span>
               </label>
 
               <textarea
                       id="official-address"
                       name="officialAddress"
                       rows="3"
+                      required
               ></textarea>
             </div>
 
@@ -366,12 +368,14 @@
             <div class="form-group">
               <label for="slnc-registration-date">
                 SLNC Registration Date
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="date"
                       id="slnc-registration-date"
                       name="slncRegistrationDate"
+                      required
               >
             </div>
 
@@ -392,46 +396,56 @@
             <div class="form-group">
               <label for="first-appointment-date">
                 First Appointment Date
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="date"
                       id="first-appointment-date"
                       name="firstAppointmentDate"
+                      required
               >
             </div>
 
             <div class="form-group application-grid-full">
               <label for="first-appointment-place">
                 First Appointment Place
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="text"
                       id="first-appointment-place"
                       name="firstAppointmentPlace"
+                      required
               >
             </div>
 
             <div class="form-group">
               <label for="nursing-school">
                 Nursing School / University
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="text"
                       id="nursing-school"
                       name="nursingSchool"
+                      required
               >
             </div>
 
             <div class="form-group">
-              <label for="batch">Batch</label>
+              <label for="batch">
+                Batch
+                <span aria-hidden="true">*</span>
+              </label>
 
               <input
                       type="text"
                       id="batch"
                       name="batch"
+                      required
               >
             </div>
 
@@ -487,34 +501,6 @@
           </div>
 
           <div class="application-grid">
-            <div class="form-group">
-              <label for="payment-reference">
-                Bank Transfer Reference Number
-                <span aria-hidden="true">*</span>
-              </label>
-
-              <input
-                      type="text"
-                      id="payment-reference"
-                      name="paymentReference"
-                      required
-              >
-            </div>
-
-            <div class="form-group">
-              <label for="transfer-date">
-                Bank Transfer Date
-                <span aria-hidden="true">*</span>
-              </label>
-
-              <input
-                      type="date"
-                      id="transfer-date"
-                      name="transferDate"
-                      required
-              >
-            </div>
-
             <div class="form-group application-grid-full">
               <label for="payment-receipt">
                 Bank Receipt
