@@ -36,6 +36,15 @@
       >
         Other Events
       </button>
+      <button
+              class="main-tab-btn"
+              data-maintab="maintab-event-registrations"
+              role="tab"
+              aria-selected="false"
+      >
+        Event Registrations
+      </button>
+
       <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
     </div>
 
@@ -47,7 +56,7 @@
           <button class="tab-btn" data-tab="tab-upload">Upload File (Word / PDF / Text)</button>
         </div>
         <div class="tab-panel active" id="tab-type">
-          <div id="type-alert"></div>
+          <div id="type-alert" aria-live="polite" tabindex="-1"></div>
           <form id="type-news-form">
             <div class="form-group"><label>Title</label><input type="text" id="type-title" required></div>
             <div class="form-group"><label>Date</label><input type="date" id="type-date" required></div>
@@ -58,7 +67,7 @@
           </form>
         </div>
         <div class="tab-panel" id="tab-upload">
-          <div id="file-alert"></div>
+          <div id="file-alert" aria-live="polite" tabindex="-1"></div>
           <form id="file-news-form">
             <div class="form-group"><label>Title</label><input type="text" id="file-title" required></div>
             <div class="form-group"><label>Date</label><input type="date" id="file-date" required></div>
@@ -78,6 +87,7 @@
 
       <div class="admin-card">
         <h2>Published News Items</h2>
+        <div id="news-table-alert" aria-live="polite" tabindex="-1"></div>
         <div class="table-scroll">
           <table class="news-table"><thead><tr><th>Photo</th><th>Title</th><th>Date</th><th>Source</th><th>Attachment</th><th>Actions</th></tr></thead><tbody id="news-table-body"></tbody></table>
         </div>
@@ -87,7 +97,7 @@
     <div class="main-tab-panel" id="maintab-photos" role="tabpanel">
       <div class="admin-card">
         <h2>Add Photo Album</h2>
-        <div id="album-alert"></div>
+        <div id="album-alert" aria-live="polite" tabindex="-1"></div>
         <form id="album-form">
           <div class="form-group"><label>Album Title</label><input type="text" id="album-title" required></div>
           <div class="form-group"><label>Date</label><input type="date" id="album-date" required></div>
@@ -122,7 +132,7 @@
           and CPD conferences.
         </p>
 
-        <div id="cpd-event-alert" aria-live="polite"></div>
+        <div id="cpd-event-alert" aria-live="polite" tabindex="-1"></div>
 
         <form id="cpd-event-form">
           <div class="form-group">
@@ -149,6 +159,15 @@
           </div>
 
           <div class="form-group">
+            <label for="cpd-event-audience">Event Audience</label>
+            <select id="cpd-event-audience" required>
+              <option value="">Select audience</option>
+              <option value="Open for Public">Open for Public</option>
+              <option value="Members Only">Members Only</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="cpd-event-date">Date</label>
             <input
                     type="date"
@@ -157,15 +176,31 @@
             >
           </div>
 
-          <div class="form-group">
-            <label for="cpd-event-time">Time</label>
-            <input
-                    type="text"
-                    id="cpd-event-time"
-                    placeholder="e.g. 9.00 AM – 1.00 PM"
-                    required
-            >
-          </div>
+          <fieldset class="form-group">
+            <legend>Time</legend>
+            <div class="time-range-row">
+              <div class="time-range-field">
+                <label for="cpd-event-start-hour">Start Time</label>
+                <div class="time-select-group">
+                  <select id="cpd-event-start-hour" aria-label="Start time hour"></select>
+                  <span class="time-select-sep" aria-hidden="true">:</span>
+                  <select id="cpd-event-start-minute" aria-label="Start time minute"></select>
+                  <select id="cpd-event-start-period" aria-label="Start time AM or PM"></select>
+                </div>
+              </div>
+              <span class="time-range-sep" aria-hidden="true">to</span>
+              <div class="time-range-field">
+                <label for="cpd-event-end-hour">End Time</label>
+                <div class="time-select-group">
+                  <select id="cpd-event-end-hour" aria-label="End time hour"></select>
+                  <span class="time-select-sep" aria-hidden="true">:</span>
+                  <select id="cpd-event-end-minute" aria-label="End time minute"></select>
+                  <select id="cpd-event-end-period" aria-label="End time AM or PM"></select>
+                </div>
+              </div>
+            </div>
+            <p class="time-range-preview" id="cpd-event-time-preview"></p>
+          </fieldset>
 
           <div class="form-group">
             <label for="cpd-event-location">
@@ -178,6 +213,34 @@
                     required
             >
           </div>
+
+          <fieldset class="form-group">
+            <legend>Event Fees</legend>
+            <div class="fee-row">
+              <div class="fee-field">
+                <label for="cpd-event-member-fee">Member Fee (LKR)</label>
+                <input
+                        type="number"
+                        id="cpd-event-member-fee"
+                        min="0"
+                        step="0.01"
+                        placeholder="e.g. 0"
+                        required
+                >
+              </div>
+              <div class="fee-field">
+                <label for="cpd-event-non-member-fee">Non-Member Fee (LKR)</label>
+                <input
+                        type="number"
+                        id="cpd-event-non-member-fee"
+                        min="0"
+                        step="0.01"
+                        placeholder="e.g. 0"
+                        required
+                >
+              </div>
+            </div>
+          </fieldset>
 
           <div class="form-group">
             <label for="cpd-event-summary">
@@ -223,6 +286,21 @@
             ></div>
           </div>
 
+          <div class="form-group">
+            <label for="cpd-event-attachment-input">
+              Attachment (PDF, optional)
+            </label>
+            <input
+                    type="file"
+                    id="cpd-event-attachment-input"
+                    accept="application/pdf"
+            >
+            <div
+                    id="cpd-event-attachment-preview"
+                    style="margin-top:8px;"
+            ></div>
+          </div>
+
           <button
                   type="submit"
                   class="btn btn-primary"
@@ -244,6 +322,8 @@
               <th>Type</th>
               <th>Date</th>
               <th>Location</th>
+              <th>Audience</th>
+              <th>Fees (LKR)</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -267,7 +347,7 @@
           Add SLNA events that are not part of continuing professional development.
         </p>
 
-        <div id="other-event-alert" aria-live="polite"></div>
+        <div id="other-event-alert" aria-live="polite" tabindex="-1"></div>
 
         <form id="other-event-form">
           <div class="form-group">
@@ -310,15 +390,31 @@
             >
           </div>
 
-          <div class="form-group">
-            <label for="other-event-time">Time</label>
-            <input
-                    type="text"
-                    id="other-event-time"
-                    placeholder="e.g. 9.00 AM – 1.00 PM"
-                    required
-            >
-          </div>
+          <fieldset class="form-group">
+            <legend>Time</legend>
+            <div class="time-range-row">
+              <div class="time-range-field">
+                <label for="other-event-start-hour">Start Time</label>
+                <div class="time-select-group">
+                  <select id="other-event-start-hour" aria-label="Start time hour"></select>
+                  <span class="time-select-sep" aria-hidden="true">:</span>
+                  <select id="other-event-start-minute" aria-label="Start time minute"></select>
+                  <select id="other-event-start-period" aria-label="Start time AM or PM"></select>
+                </div>
+              </div>
+              <span class="time-range-sep" aria-hidden="true">to</span>
+              <div class="time-range-field">
+                <label for="other-event-end-hour">End Time</label>
+                <div class="time-select-group">
+                  <select id="other-event-end-hour" aria-label="End time hour"></select>
+                  <span class="time-select-sep" aria-hidden="true">:</span>
+                  <select id="other-event-end-minute" aria-label="End time minute"></select>
+                  <select id="other-event-end-period" aria-label="End time AM or PM"></select>
+                </div>
+              </div>
+            </div>
+            <p class="time-range-preview" id="other-event-time-preview"></p>
+          </fieldset>
 
           <div class="form-group">
             <label for="other-event-location">
@@ -399,6 +495,36 @@
             </thead>
 
             <tbody id="other-events-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-tab-panel" id="maintab-event-registrations" role="tabpanel">
+      <div class="admin-card">
+        <h2>CPD Event Registrations</h2>
+
+        <p class="admin-muted">
+          Review registrations submitted for each CPD event, verify the uploaded
+          bank receipt, then confirm or reject the payment.
+        </p>
+
+        <div id="event-registrations-alert" aria-live="polite" tabindex="-1"></div>
+
+        <div class="table-scroll">
+          <table class="news-table">
+            <thead>
+            <tr>
+              <th>Title</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Fees (LKR)</th>
+              <th>Registrations</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+
+            <tbody id="event-registrations-events-body"></tbody>
           </table>
         </div>
       </div>
@@ -1091,6 +1217,204 @@
             Confirm Decision
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="event-edit-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-edit-modal-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog admin-edit-dialog">
+      <div class="admin-edit-header">
+        <h2 id="event-edit-modal-title">Update Event</h2>
+
+        <button
+                type="button"
+                class="admin-edit-close"
+                id="event-edit-close"
+                aria-label="Close"
+        >
+          &times;
+        </button>
+      </div>
+
+      <div id="event-edit-alert" aria-live="polite" tabindex="-1"></div>
+
+      <form id="event-edit-form">
+        <div class="form-group">
+          <label for="event-edit-title">Title</label>
+          <input type="text" id="event-edit-title" required>
+        </div>
+
+        <div class="form-group">
+          <label for="event-edit-type">Type</label>
+          <select id="event-edit-type" required></select>
+        </div>
+
+        <div class="form-group" id="event-edit-audience-group">
+          <label for="event-edit-audience">Event Audience</label>
+          <select id="event-edit-audience" required>
+            <option value="Open for Public">Open for Public</option>
+            <option value="Members Only">Members Only</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="event-edit-date">Date</label>
+          <input type="date" id="event-edit-date" required>
+        </div>
+
+        <fieldset class="form-group">
+          <legend>Time</legend>
+          <div class="time-range-row">
+            <div class="time-range-field">
+              <label for="event-edit-start-hour">Start Time</label>
+              <div class="time-select-group">
+                <select id="event-edit-start-hour" aria-label="Start time hour"></select>
+                <span class="time-select-sep" aria-hidden="true">:</span>
+                <select id="event-edit-start-minute" aria-label="Start time minute"></select>
+                <select id="event-edit-start-period" aria-label="Start time AM or PM"></select>
+              </div>
+            </div>
+            <span class="time-range-sep" aria-hidden="true">to</span>
+            <div class="time-range-field">
+              <label for="event-edit-end-hour">End Time</label>
+              <div class="time-select-group">
+                <select id="event-edit-end-hour" aria-label="End time hour"></select>
+                <span class="time-select-sep" aria-hidden="true">:</span>
+                <select id="event-edit-end-minute" aria-label="End time minute"></select>
+                <select id="event-edit-end-period" aria-label="End time AM or PM"></select>
+              </div>
+            </div>
+          </div>
+          <p class="time-range-preview" id="event-edit-time-preview"></p>
+        </fieldset>
+
+        <div class="form-group">
+          <label for="event-edit-location">Location / Format</label>
+          <input type="text" id="event-edit-location" required>
+        </div>
+
+        <fieldset class="form-group" id="event-edit-fees-group">
+          <legend>Event Fees</legend>
+          <div class="fee-row">
+            <div class="fee-field">
+              <label for="event-edit-member-fee">Member Fee (LKR)</label>
+              <input type="number" id="event-edit-member-fee" min="0" step="0.01" required>
+            </div>
+            <div class="fee-field">
+              <label for="event-edit-non-member-fee">Non-Member Fee (LKR)</label>
+              <input type="number" id="event-edit-non-member-fee" min="0" step="0.01" required>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-group">
+          <label for="event-edit-summary">Short Description</label>
+          <textarea id="event-edit-summary" rows="3" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="event-edit-status">Status</label>
+          <select id="event-edit-status" required></select>
+        </div>
+
+        <div class="form-group">
+          <label>Photo</label>
+          <div class="admin-edit-current-photo" id="event-edit-current-photo"></div>
+          <input type="file" id="event-edit-photo-input" accept="image/*" style="margin-top:8px;">
+          <div id="event-edit-photo-preview" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="form-group" id="event-edit-attachment-group">
+          <label>Attachment (PDF)</label>
+          <div class="admin-edit-current-photo" id="event-edit-current-attachment"></div>
+          <input type="file" id="event-edit-attachment-input" accept="application/pdf" style="margin-top:8px;">
+        </div>
+
+        <div class="admin-edit-actions">
+          <button type="button" class="btn btn-outline" id="event-edit-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="registration-review-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="registration-review-modal-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog admin-edit-dialog admin-registrations-dialog">
+      <div class="admin-edit-header">
+        <h2 id="registration-review-modal-title">Registrations</h2>
+
+        <button
+                type="button"
+                class="admin-edit-close"
+                id="registration-review-close"
+                aria-label="Close"
+        >
+          &times;
+        </button>
+      </div>
+
+      <p class="admin-muted" id="registration-review-fees"></p>
+
+      <div id="registration-review-alert" aria-live="polite" tabindex="-1"></div>
+
+      <div class="registration-review-toolbar">
+        <div class="tab-buttons registration-status-filter" role="tablist" aria-label="Filter registrations by status">
+          <button type="button" class="tab-btn active" data-registration-filter="All">All</button>
+          <button type="button" class="tab-btn" data-registration-filter="Pending">Pending</button>
+          <button type="button" class="tab-btn" data-registration-filter="Confirmed">Confirmed</button>
+          <button type="button" class="tab-btn" data-registration-filter="Rejected">Rejected</button>
+        </div>
+
+        <div class="form-group registration-search-group">
+          <input
+                  type="search"
+                  id="registration-review-search"
+                  placeholder="Search by NIC, name, or membership number"
+          >
+        </div>
+
+        <div class="registration-export-group">
+          <button type="button" class="btn btn-outline btn-sm" id="registration-export-pdf">Download PDF</button>
+          <button type="button" class="btn btn-outline btn-sm" id="registration-export-excel">Download Excel</button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="news-table">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>NIC</th>
+            <th>Type</th>
+            <th>Membership #</th>
+            <th>Paid Amount</th>
+            <th>Pay By</th>
+            <th>Receipt</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+
+          <tbody id="registration-review-body"></tbody>
+        </table>
       </div>
     </div>
   </div>

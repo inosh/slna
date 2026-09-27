@@ -146,8 +146,10 @@ document.addEventListener('DOMContentLoaded', function () {
       <strong>CPD EVENTS</strong>
     </div>
   `;
+        const detailUrl = 'event-detail.html?category=cpd&id=' + encodeURIComponent(event.id);
+
         return `
-    <article class="event-list-card">
+    <a class="event-list-card" href="${detailUrl}">
       ${photoMarkup}
 
       <div class="cpd-card-info">
@@ -191,15 +193,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
           <p>${summary}</p>
 
-          <a
-                  class="btn btn-outline btn-sm"
-                  href="event-detail.html?id=${encodeURIComponent(event.id)}"
-          >
+          <span class="btn btn-outline btn-sm event-card-cta">
             View Details
-          </a>
+          </span>
         </div>
       </div>
-    </article>
+    </a>
   `;
     }
 

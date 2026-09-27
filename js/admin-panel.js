@@ -29,8 +29,100 @@ document.addEventListener('DOMContentLoaded', function () {
   loadAdminNewsTable();
   loadAdminAlbumTable();
   initMembershipApplications();
-  initCpdEventsAdmin();
-  initOtherEventsAdmin();
+
+  function populateTimeSelectGroup(group) {
+    if (!group) {
+      return;
+    }
+
+    const hourSelect = document.getElementById(group.hour);
+    const minuteSelect = document.getElementById(group.minute);
+    const periodSelect = document.getElementById(group.period);
+
+    if (!hourSelect || !minuteSelect || !periodSelect) {
+      return;
+    }
+
+    for (let hour = 1; hour <= 12; hour++) {
+      const value = String(hour);
+      hourSelect.appendChild(new Option(value, value, hour === 12, hour === 12));
+    }
+
+    for (let minute = 0; minute < 60; minute++) {
+      const value = String(minute).padStart(2, '0');
+      minuteSelect.appendChild(new Option(value, value, minute === 0, minute === 0));
+    }
+
+    ['AM', 'PM'].forEach(function (period) {
+      periodSelect.appendChild(
+          new Option(period, period, period === 'AM', period === 'AM')
+      );
+    });
+  }
+
+  function getTimeGroupValue(group) {
+    if (!group) {
+      return '';
+    }
+
+    const hourSelect = document.getElementById(group.hour);
+    const minuteSelect = document.getElementById(group.minute);
+    const periodSelect = document.getElementById(group.period);
+
+    if (!hourSelect || !minuteSelect || !periodSelect) {
+      return '';
+    }
+
+    return hourSelect.value + ':' + minuteSelect.value + ' ' + periodSelect.value;
+  }
+
+  function parseTimeToken(token) {
+    const match = /^(\d{1,2}):?(\d{2})?\s*([AP]M)$/i.exec(String(token || '').trim());
+
+    if (!match) {
+      return null;
+    }
+
+    return {
+      hour: String(parseInt(match[1], 10)),
+      minute: (match[2] || '00').padStart(2, '0'),
+      period: match[3].toUpperCase()
+    };
+  }
+
+  function parseTimeRange(value) {
+    if (!value) {
+      return null;
+    }
+
+    const parts = String(value)
+        .split(/[–—-]/)
+        .map(function (part) { return part.trim(); })
+        .filter(Boolean);
+
+    if (parts.length < 2) {
+      return null;
+    }
+
+    const start = parseTimeToken(parts[0]);
+    const end = parseTimeToken(parts[parts.length - 1]);
+
+    return start && end ? { start: start, end: end } : null;
+  }
+
+  function setTimeGroupValue(group, parsed) {
+    if (!group || !parsed) {
+      return;
+    }
+
+    const hourSelect = document.getElementById(group.hour);
+    const minuteSelect = document.getElementById(group.minute);
+    const periodSelect = document.getElementById(group.period);
+
+    if (hourSelect) hourSelect.value = parsed.hour;
+    if (minuteSelect) minuteSelect.value = parsed.minute;
+    if (periodSelect) periodSelect.value = parsed.period;
+  }
 
   function initCpdEventsAdmin() {
     setupEventAdminForm({
@@ -39,18 +131,37 @@ document.addEventListener('DOMContentLoaded', function () {
       tableBodyId: 'cpd-events-table-body',
       photoInputId: 'cpd-event-photo-input',
       photoPreviewId: 'cpd-event-photo-preview',
+      attachmentInputId: 'cpd-event-attachment-input',
+      attachmentPreviewId: 'cpd-event-attachment-preview',
       endpoint: '/events/cpd',
       successMessage: 'CPD event published.',
       submitLabel: 'Publish CPD Event',
+      typeOptions: ['Workshop', 'Training', 'Webinar', 'Seminar', 'Study Day', 'Conference', 'Other'],
+      statusOptions: ['Registration Open', 'Registration Opening Soon', 'Programme Announced Soon', 'Closed'],
       fields: {
         title: 'cpd-event-title',
         type: 'cpd-event-type',
+        audience: 'cpd-event-audience',
         event_date: 'cpd-event-date',
-        time: 'cpd-event-time',
+        time: {
+          start: {
+            hour: 'cpd-event-start-hour',
+            minute: 'cpd-event-start-minute',
+            period: 'cpd-event-start-period'
+          },
+          end: {
+            hour: 'cpd-event-end-hour',
+            minute: 'cpd-event-end-minute',
+            period: 'cpd-event-end-period'
+          }
+        },
         location: 'cpd-event-location',
+        member_fee: 'cpd-event-member-fee',
+        non_member_fee: 'cpd-event-non-member-fee',
         summary: 'cpd-event-summary',
         status: 'cpd-event-status'
-      }
+      },
+      timePreviewId: 'cpd-event-time-preview'
     });
   }
 
@@ -64,17 +175,946 @@ document.addEventListener('DOMContentLoaded', function () {
       endpoint: '/events/other',
       successMessage: 'Other event published.',
       submitLabel: 'Publish Other Event',
+      typeOptions: ['Annual Conference', 'International Nurses Day', 'General Meeting', 'Annual General Meeting', 'Other Event'],
+      statusOptions: ['Upcoming', 'Registration Open', 'Announcement Soon', 'Completed'],
       fields: {
         title: 'other-event-title',
         type: 'other-event-type',
         event_date: 'other-event-date',
-        time: 'other-event-time',
+        time: {
+          start: {
+            hour: 'other-event-start-hour',
+            minute: 'other-event-start-minute',
+            period: 'other-event-start-period'
+          },
+          end: {
+            hour: 'other-event-end-hour',
+            minute: 'other-event-end-minute',
+            period: 'other-event-end-period'
+          }
+        },
         location: 'other-event-location',
         summary: 'other-event-summary',
         status: 'other-event-status'
+      },
+      timePreviewId: 'other-event-time-preview'
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Shared "Update Event" modal (used by both CPD and Other events)
+  // ------------------------------------------------------------------
+
+  const EVENT_EDIT_TIME_FIELDS = {
+    start: {
+      hour: 'event-edit-start-hour',
+      minute: 'event-edit-start-minute',
+      period: 'event-edit-start-period'
+    },
+    end: {
+      hour: 'event-edit-end-hour',
+      minute: 'event-edit-end-minute',
+      period: 'event-edit-end-period'
+    }
+  };
+
+  let activeEditConfig = null;
+  let activeEditItem = null;
+  let editSelectedPhoto = null;
+  let editSelectedAttachment = null;
+
+  function escapeHtmlForModal(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+  }
+
+  function getEventEditTimeValue() {
+    const start = getTimeGroupValue(EVENT_EDIT_TIME_FIELDS.start);
+    const end = getTimeGroupValue(EVENT_EDIT_TIME_FIELDS.end);
+
+    return start && end ? start + '–' + end : '';
+  }
+
+  function updateEventEditTimePreview() {
+    const previewEl = document.getElementById('event-edit-time-preview');
+
+    if (!previewEl) {
+      return;
+    }
+
+    const range = getEventEditTimeValue();
+
+    previewEl.innerHTML = range
+        ? 'Will be shown as: <strong>' + range + '</strong>'
+        : '';
+  }
+
+  function openEventEditModal(config, item) {
+    const modal = document.getElementById('event-edit-modal');
+
+    if (!modal) {
+      return;
+    }
+
+    activeEditConfig = config;
+    activeEditItem = item;
+    editSelectedPhoto = null;
+    editSelectedAttachment = null;
+
+    const isCpd = !!config.fields.audience;
+
+    document.getElementById('event-edit-modal-title').textContent =
+        isCpd ? 'Update CPD Event' : 'Update Other Event';
+
+    document.getElementById('event-edit-alert').innerHTML = '';
+
+    document.getElementById('event-edit-title').value = item.title || '';
+
+    const typeSelect = document.getElementById('event-edit-type');
+    const currentType = item.type || item.event_type || '';
+
+    typeSelect.innerHTML = '';
+    (config.typeOptions || []).forEach(function (type) {
+      typeSelect.appendChild(new Option(type, type, false, currentType === type));
+    });
+
+    const audienceGroup = document.getElementById('event-edit-audience-group');
+
+    if (isCpd) {
+      audienceGroup.hidden = false;
+      document.getElementById('event-edit-audience').value = item.audience || 'Open for Public';
+    } else {
+      audienceGroup.hidden = true;
+    }
+
+    document.getElementById('event-edit-date').value =
+        String(item.event_date || item.eventDate || '').slice(0, 10);
+
+    const defaultTime = { hour: '12', minute: '00', period: 'AM' };
+    const parsedTime = parseTimeRange(item.time);
+
+    setTimeGroupValue(EVENT_EDIT_TIME_FIELDS.start, parsedTime ? parsedTime.start : defaultTime);
+    setTimeGroupValue(EVENT_EDIT_TIME_FIELDS.end, parsedTime ? parsedTime.end : defaultTime);
+    updateEventEditTimePreview();
+
+    document.getElementById('event-edit-location').value = item.location || '';
+
+    const feesGroup = document.getElementById('event-edit-fees-group');
+
+    if (isCpd) {
+      feesGroup.hidden = false;
+
+      const memberFee = item.member_fee !== undefined && item.member_fee !== null
+          ? Number(item.member_fee)
+          : 0;
+
+      const nonMemberFee = item.non_member_fee !== undefined && item.non_member_fee !== null
+          ? Number(item.non_member_fee)
+          : 0;
+
+      document.getElementById('event-edit-member-fee').value = memberFee.toFixed(2);
+      document.getElementById('event-edit-non-member-fee').value = nonMemberFee.toFixed(2);
+    } else {
+      feesGroup.hidden = true;
+    }
+
+    document.getElementById('event-edit-summary').value = item.summary || '';
+
+    const statusSelect = document.getElementById('event-edit-status');
+
+    statusSelect.innerHTML = '';
+    (config.statusOptions || []).forEach(function (status) {
+      statusSelect.appendChild(new Option(status, status, false, item.status === status));
+    });
+
+    const currentPhotoEl = document.getElementById('event-edit-current-photo');
+    const photoUrl = item.photo_url || item.photoUrl;
+
+    if (photoUrl) {
+      const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
+      const imageUrl = /^https?:\/\//i.test(photoUrl) ? photoUrl : apiOrigin + photoUrl;
+
+      currentPhotoEl.innerHTML =
+          '<img src="' + imageUrl + '" alt="" onerror="this.style.display=\'none\';">' +
+          '<span>Current photo &mdash; choose a new file below to replace it.</span>';
+    } else {
+      currentPhotoEl.innerHTML = '<span>No photo uploaded yet.</span>';
+    }
+
+    document.getElementById('event-edit-photo-input').value = '';
+    document.getElementById('event-edit-photo-preview').innerHTML = '';
+
+    const attachmentGroup = document.getElementById('event-edit-attachment-group');
+
+    if (isCpd) {
+      attachmentGroup.hidden = false;
+
+      const currentAttachmentEl = document.getElementById('event-edit-current-attachment');
+      const attachmentUrl = item.attachment_url;
+
+      if (attachmentUrl) {
+        const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
+        const fileUrl = /^https?:\/\//i.test(attachmentUrl) ? attachmentUrl : apiOrigin + attachmentUrl;
+
+        currentAttachmentEl.innerHTML =
+            '<a href="' + fileUrl + '" target="_blank" rel="noopener">' +
+            escapeHtmlForModal(item.attachment_filename || 'Current attachment') +
+            '</a><span> &mdash; choose a new file below to replace it.</span>';
+      } else {
+        currentAttachmentEl.innerHTML = '<span>No attachment uploaded yet.</span>';
+      }
+
+      document.getElementById('event-edit-attachment-input').value = '';
+    } else {
+      attachmentGroup.hidden = true;
+    }
+
+    modal.hidden = false;
+
+    window.setTimeout(function () {
+      document.getElementById('event-edit-title').focus();
+    }, 0);
+  }
+
+  function closeEventEditModal() {
+    const modal = document.getElementById('event-edit-modal');
+
+    if (modal) {
+      modal.hidden = true;
+    }
+
+    activeEditConfig = null;
+    activeEditItem = null;
+    editSelectedPhoto = null;
+    editSelectedAttachment = null;
+  }
+
+  function initEventEditModal() {
+    const modal = document.getElementById('event-edit-modal');
+
+    if (!modal) {
+      return;
+    }
+
+    populateTimeSelectGroup(EVENT_EDIT_TIME_FIELDS.start);
+    populateTimeSelectGroup(EVENT_EDIT_TIME_FIELDS.end);
+
+    [EVENT_EDIT_TIME_FIELDS.start, EVENT_EDIT_TIME_FIELDS.end].forEach(function (group) {
+      [group.hour, group.minute, group.period].forEach(function (id) {
+        const select = document.getElementById(id);
+
+        if (select) {
+          select.addEventListener('change', updateEventEditTimePreview);
+        }
+      });
+    });
+
+    ['event-edit-member-fee', 'event-edit-non-member-fee'].forEach(function (id) {
+      const input = document.getElementById(id);
+
+      if (!input) {
+        return;
+      }
+
+      input.addEventListener('blur', function () {
+        if (input.value === '') {
+          return;
+        }
+
+        const parsed = parseFloat(input.value);
+
+        if (Number.isNaN(parsed)) {
+          return;
+        }
+
+        input.value = parsed.toFixed(2);
+      });
+    });
+
+    const photoInput = document.getElementById('event-edit-photo-input');
+    const photoPreview = document.getElementById('event-edit-photo-preview');
+
+    if (photoInput) {
+      photoInput.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+          editSelectedPhoto = null;
+
+          if (photoPreview) {
+            photoPreview.innerHTML = '';
+          }
+
+          return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+          showAlert('event-edit-alert', 'Please select an image file.', 'error');
+          event.target.value = '';
+          return;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+          showAlert('event-edit-alert', 'The photo must be smaller than 15 MB.', 'error');
+          event.target.value = '';
+          return;
+        }
+
+        editSelectedPhoto = file;
+
+        const reader = new FileReader();
+
+        reader.onload = function (readerEvent) {
+          if (photoPreview) {
+            photoPreview.innerHTML =
+                '<img src="' + readerEvent.target.result + '" alt="Selected event photo preview" style="max-width:160px;max-height:100px;object-fit:cover;border-radius:6px;">';
+          }
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const attachmentInput = document.getElementById('event-edit-attachment-input');
+
+    if (attachmentInput) {
+      attachmentInput.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+          editSelectedAttachment = null;
+          return;
+        }
+
+        if (file.type !== 'application/pdf') {
+          showAlert('event-edit-alert', 'Please select a PDF file for the attachment.', 'error');
+          event.target.value = '';
+          return;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+          showAlert('event-edit-alert', 'The attachment must be smaller than 15 MB.', 'error');
+          event.target.value = '';
+          return;
+        }
+
+        editSelectedAttachment = file;
+      });
+    }
+
+    const closeButton = document.getElementById('event-edit-close');
+    const cancelButton = document.getElementById('event-edit-cancel');
+    const backdrop = modal.querySelector('.admin-confirm-backdrop');
+
+    if (closeButton) closeButton.addEventListener('click', closeEventEditModal);
+    if (cancelButton) cancelButton.addEventListener('click', closeEventEditModal);
+    if (backdrop) backdrop.addEventListener('click', closeEventEditModal);
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !modal.hidden) {
+        closeEventEditModal();
+      }
+    });
+
+    const form = document.getElementById('event-edit-form');
+
+    if (!form) {
+      return;
+    }
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      if (!activeEditConfig || !activeEditItem) {
+        return;
+      }
+
+      const config = activeEditConfig;
+      const isCpd = !!config.fields.audience;
+
+      const editFields = {
+        title: 'event-edit-title',
+        type: 'event-edit-type',
+        event_date: 'event-edit-date',
+        time: EVENT_EDIT_TIME_FIELDS,
+        location: 'event-edit-location',
+        summary: 'event-edit-summary',
+        status: 'event-edit-status'
+      };
+
+      if (isCpd) {
+        editFields.audience = 'event-edit-audience';
+        editFields.member_fee = 'event-edit-member-fee';
+        editFields.non_member_fee = 'event-edit-non-member-fee';
+      }
+
+      const formData = new FormData();
+      let hasMissingField = false;
+
+      Object.keys(editFields).forEach(function (fieldName) {
+        let value;
+
+        if (fieldName === 'time') {
+          value = getEventEditTimeValue();
+        } else {
+          const input = document.getElementById(editFields[fieldName]);
+          value = input ? input.value.trim() : '';
+        }
+
+        if (!value) {
+          hasMissingField = true;
+        }
+
+        formData.append(fieldName, value);
+      });
+
+      if (hasMissingField) {
+        showAlert('event-edit-alert', 'Please complete all required fields.', 'error');
+        return;
+      }
+
+      if (editSelectedPhoto) {
+        formData.append('photo', editSelectedPhoto);
+      }
+
+      if (isCpd && editSelectedAttachment) {
+        formData.append('attachment', editSelectedAttachment);
+      }
+
+      const submitButton = form.querySelector('button[type="submit"]');
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+      }
+
+      try {
+        const response = await fetch(
+            SLNA_CONFIG.API_BASE_URL + config.endpoint + '/' + encodeURIComponent(activeEditItem.id),
+            {
+              method: 'PUT',
+              headers: {
+                Authorization: 'Bearer ' + getToken()
+              },
+              body: formData
+            }
+        );
+
+        if (!response.ok) {
+          throw new Error(await parseApiError(response));
+        }
+
+        closeEventEditModal();
+        showAlert(config.alertId, 'Event updated.', 'success');
+
+        if (typeof config.reload === 'function') {
+          await config.reload();
+        }
+      } catch (error) {
+        const message = error instanceof TypeError
+            ? networkErrorMessage(error)
+            : (error.message || 'Could not update this event.');
+
+        showAlert('event-edit-alert', message, 'error');
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save Changes';
+        }
       }
     });
   }
+
+  initCpdEventsAdmin();
+  initOtherEventsAdmin();
+  initEventEditModal();
+
+  // ------------------------------------------------------------------
+  // Event Registrations admin: list CPD events, view/confirm/reject
+  // registrations (and their bank receipts) submitted for each one.
+  // ------------------------------------------------------------------
+
+  let registrationEventsById = {};
+  let registrationsByEventId = {};
+  let activeRegistrationEventId = null;
+  let registrationStatusFilter = 'All';
+  let registrationSearchTerm = '';
+
+  function formatRegistrationFee(value) {
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed.toFixed(2) : '0.00';
+  }
+
+  function formatRegistrationDate(value) {
+    if (!value) {
+      return '—';
+    }
+
+    const date = new Date(String(value).slice(0, 10) + 'T00:00:00');
+
+    if (Number.isNaN(date.getTime())) {
+      return escapeHtmlForModal(value);
+    }
+
+    return date.toLocaleDateString('en-GB');
+  }
+
+  function registrationStatusClass(status) {
+    const value = String(status || '').toLowerCase();
+
+    if (value === 'confirmed') return 'status-confirmed';
+    if (value === 'rejected') return 'status-rejected';
+
+    return 'status-pending';
+  }
+
+  function resolveReceiptUrl(receiptUrl) {
+    if (!receiptUrl) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(receiptUrl)) {
+      return receiptUrl;
+    }
+
+    return SLNA_CONFIG.API_BASE_URL.replace('/api', '') + receiptUrl;
+  }
+
+  function renderRegistrationEventsTable() {
+    const tbody = document.getElementById('event-registrations-events-body');
+
+    if (!tbody) {
+      return;
+    }
+
+    const events = Object.values(registrationEventsById);
+
+    if (!events.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="empty-table-state">
+            No CPD events published yet.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    events.sort(function (a, b) {
+      return new Date(a.event_date) - new Date(b.event_date);
+    });
+
+    tbody.innerHTML = events.map(function (event) {
+      const count = (registrationsByEventId[event.id] || []).length;
+
+      return `
+        <tr>
+          <td>${escapeHtmlForModal(event.title)}</td>
+          <td>${formatRegistrationDate(event.event_date)}</td>
+          <td>${escapeHtmlForModal(event.status)}</td>
+          <td>Member: ${formatRegistrationFee(event.member_fee)}<br>Non-Member: ${formatRegistrationFee(event.non_member_fee)}</td>
+          <td>${count}</td>
+          <td>
+            <button
+                    type="button"
+                    class="btn btn-outline btn-sm"
+                    data-registration-event-id="${event.id}"
+            >
+              View Registrations
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderRegistrationReviewBody() {
+    const tbody = document.getElementById('registration-review-body');
+
+    if (!tbody) {
+      return;
+    }
+
+    const all = registrationsByEventId[activeRegistrationEventId] || [];
+
+    const searchTerm = registrationSearchTerm.trim().toLowerCase();
+
+    let registrations = all.filter(function (registration) {
+      const status = registration.status || 'Pending';
+
+      if (registrationStatusFilter !== 'All' && status !== registrationStatusFilter) {
+        return false;
+      }
+
+      if (!searchTerm) {
+        return true;
+      }
+
+      const haystack = [
+        registration.nic,
+        registration.full_name,
+        registration.membership_number
+      ].join(' ').toLowerCase();
+
+      return haystack.indexOf(searchTerm) !== -1;
+    });
+
+    registrations = registrations.slice().sort(function (a, b) {
+      const aPending = (a.status || 'Pending') === 'Pending' ? 0 : 1;
+      const bPending = (b.status || 'Pending') === 'Pending' ? 0 : 1;
+
+      return aPending - bPending;
+    });
+
+    if (!registrations.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="empty-table-state">
+            ${all.length
+              ? 'No registrations match this filter or search.'
+              : 'No registrations submitted for this event yet.'}
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = registrations.map(function (registration) {
+      const receiptUrl = resolveReceiptUrl(registration.receipt_url);
+      const status = registration.status || 'Pending';
+      const isNonMember = registration.registrant_type === 'Non-Member';
+
+      return `
+        <tr class="${isNonMember ? 'registration-row-non-member' : ''}">
+          <td>${escapeHtmlForModal(registration.full_name)}</td>
+          <td>${escapeHtmlForModal(registration.nic)}</td>
+          <td>${escapeHtmlForModal(registration.registrant_type)}</td>
+          <td>${escapeHtmlForModal(registration.membership_number || '—')}</td>
+          <td>${formatRegistrationFee(registration.paid_amount)}</td>
+          <td>${escapeHtmlForModal(registration.pay_by)}</td>
+          <td>
+            ${receiptUrl
+              ? `<a href="${receiptUrl}" target="_blank" rel="noopener">View Receipt</a>`
+              : '—'}
+          </td>
+          <td>
+            <span class="registration-status-badge ${registrationStatusClass(status)}">
+              ${escapeHtmlForModal(status)}
+            </span>
+          </td>
+          <td>
+            <div class="row-actions">
+              ${status === 'Rejected'
+                ? `
+                  <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          data-registration-action="Confirmed"
+                          data-registration-id="${registration.id}"
+                  >
+                    Confirm Back
+                  </button>
+                `
+                : `
+                  <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          data-registration-action="Confirmed"
+                          data-registration-id="${registration.id}"
+                          ${status === 'Confirmed' ? 'disabled' : ''}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          data-registration-action="Rejected"
+                          data-registration-id="${registration.id}"
+                  >
+                    Reject
+                  </button>
+                `}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function openRegistrationReviewModal(eventId) {
+    const modal = document.getElementById('registration-review-modal');
+    const event = registrationEventsById[eventId];
+
+    if (!modal || !event) {
+      return;
+    }
+
+    activeRegistrationEventId = eventId;
+    registrationStatusFilter = 'All';
+    registrationSearchTerm = '';
+
+    document.getElementById('registration-review-modal-title').textContent =
+        'Registrations — ' + event.title;
+
+    document.getElementById('registration-review-alert').innerHTML = '';
+
+    document.getElementById('registration-review-fees').textContent =
+        'Event Fee — Member: LKR ' + formatRegistrationFee(event.member_fee) +
+        '  |  Non-Member: LKR ' + formatRegistrationFee(event.non_member_fee);
+
+    const searchInput = document.getElementById('registration-review-search');
+
+    if (searchInput) {
+      searchInput.value = '';
+    }
+
+    document.querySelectorAll('[data-registration-filter]').forEach(function (button) {
+      button.classList.toggle('active', button.getAttribute('data-registration-filter') === 'All');
+    });
+
+    renderRegistrationReviewBody();
+
+    modal.hidden = false;
+  }
+
+  function closeRegistrationReviewModal() {
+    const modal = document.getElementById('registration-review-modal');
+
+    if (modal) {
+      modal.hidden = true;
+    }
+
+    activeRegistrationEventId = null;
+  }
+
+  async function downloadRegistrationExport(format) {
+    if (!activeRegistrationEventId) {
+      return;
+    }
+
+    const url = SLNA_CONFIG.API_BASE_URL + '/event-registrations/export/' + format +
+        '?category=cpd&event_id=' + encodeURIComponent(activeRegistrationEventId) +
+        '&status=' + encodeURIComponent(registrationStatusFilter);
+
+    try {
+      const response = await fetch(url, {
+        headers: { Authorization: 'Bearer ' + getToken() }
+      });
+
+      if (!response.ok) {
+        throw new Error(await parseApiError(response));
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match ? match[1] : ('registrations.' + (format === 'excel' ? 'xlsx' : 'pdf'));
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.setTimeout(function () {
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+    } catch (error) {
+      const message = error instanceof TypeError
+          ? networkErrorMessage(error)
+          : (error.message || 'Could not generate the export.');
+
+      showAlert('registration-review-alert', message, 'error');
+    }
+  }
+
+  async function loadEventRegistrationsAdmin() {
+    try {
+      const [eventsResponse, registrationsResponse] = await Promise.all([
+        fetch(SLNA_CONFIG.API_BASE_URL + '/events/cpd', {
+          headers: { Authorization: 'Bearer ' + getToken() }
+        }),
+        fetch(SLNA_CONFIG.API_BASE_URL + '/event-registrations?category=cpd', {
+          headers: { Authorization: 'Bearer ' + getToken() }
+        })
+      ]);
+
+      if (!eventsResponse.ok || !registrationsResponse.ok) {
+        throw new Error('Could not load events or registrations.');
+      }
+
+      const events = await eventsResponse.json();
+      const registrations = await registrationsResponse.json();
+
+      registrationEventsById = {};
+      events.forEach(function (event) {
+        registrationEventsById[event.id] = event;
+      });
+
+      registrationsByEventId = {};
+      registrations.forEach(function (registration) {
+        if (!registrationsByEventId[registration.event_id]) {
+          registrationsByEventId[registration.event_id] = [];
+        }
+        registrationsByEventId[registration.event_id].push(registration);
+      });
+
+      renderRegistrationEventsTable();
+    } catch (error) {
+      const tbody = document.getElementById('event-registrations-events-body');
+
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty-table-state">
+              Could not load CPD events or registrations.
+            </td>
+          </tr>
+        `;
+      }
+
+      console.error(error);
+    }
+  }
+
+  function initEventRegistrationsAdmin() {
+    const panel = document.getElementById('maintab-event-registrations');
+
+    if (!panel) {
+      return;
+    }
+
+    const eventsBody = document.getElementById('event-registrations-events-body');
+
+    if (eventsBody) {
+      eventsBody.addEventListener('click', function (event) {
+        const viewButton = event.target.closest('[data-registration-event-id]');
+
+        if (!viewButton) {
+          return;
+        }
+
+        openRegistrationReviewModal(Number(viewButton.getAttribute('data-registration-event-id')));
+      });
+    }
+
+    const modal = document.getElementById('registration-review-modal');
+    const closeButton = document.getElementById('registration-review-close');
+    const backdrop = modal ? modal.querySelector('.admin-confirm-backdrop') : null;
+    const reviewBody = document.getElementById('registration-review-body');
+
+    if (closeButton) closeButton.addEventListener('click', closeRegistrationReviewModal);
+    if (backdrop) backdrop.addEventListener('click', closeRegistrationReviewModal);
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && modal && !modal.hidden) {
+        closeRegistrationReviewModal();
+      }
+    });
+
+    if (reviewBody) {
+      reviewBody.addEventListener('click', async function (event) {
+        const actionButton = event.target.closest('[data-registration-action]');
+
+        if (!actionButton) {
+          return;
+        }
+
+        const status = actionButton.getAttribute('data-registration-action');
+        const registrationId = actionButton.getAttribute('data-registration-id');
+
+        try {
+          const response = await fetch(
+              SLNA_CONFIG.API_BASE_URL + '/event-registrations/' + encodeURIComponent(registrationId) + '/status',
+              {
+                method: 'PATCH',
+                headers: {
+                  Authorization: 'Bearer ' + getToken(),
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: status })
+              }
+          );
+
+          if (!response.ok) {
+            throw new Error(await parseApiError(response));
+          }
+
+          const data = await response.json();
+          const updated = data.registration;
+
+          const list = registrationsByEventId[activeRegistrationEventId] || [];
+          const index = list.findIndex(function (item) { return item.id === updated.id; });
+
+          if (index !== -1) {
+            list[index] = updated;
+          }
+
+          renderRegistrationReviewBody();
+
+          showAlert(
+              'registration-review-alert',
+              'Registration marked as ' + status + '.',
+              'success'
+          );
+        } catch (error) {
+          const message = error instanceof TypeError
+              ? networkErrorMessage(error)
+              : (error.message || 'Could not update the registration.');
+
+          showAlert('registration-review-alert', message, 'error');
+        }
+      });
+    }
+
+    document.querySelectorAll('[data-registration-filter]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        registrationStatusFilter = button.getAttribute('data-registration-filter');
+
+        document.querySelectorAll('[data-registration-filter]').forEach(function (other) {
+          other.classList.toggle('active', other === button);
+        });
+
+        renderRegistrationReviewBody();
+      });
+    });
+
+    const searchInput = document.getElementById('registration-review-search');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        registrationSearchTerm = searchInput.value;
+        renderRegistrationReviewBody();
+      });
+    }
+
+    const exportPdfButton = document.getElementById('registration-export-pdf');
+    const exportExcelButton = document.getElementById('registration-export-excel');
+
+    if (exportPdfButton) {
+      exportPdfButton.addEventListener('click', function () {
+        downloadRegistrationExport('pdf');
+      });
+    }
+
+    if (exportExcelButton) {
+      exportExcelButton.addEventListener('click', function () {
+        downloadRegistrationExport('excel');
+      });
+    }
+
+    loadEventRegistrationsAdmin();
+  }
+
+  initEventRegistrationsAdmin();
 
   function setupEventAdminForm(config) {
     const form = document.getElementById(config.formId);
@@ -86,14 +1126,98 @@ document.addEventListener('DOMContentLoaded', function () {
     const tableBody = document.getElementById(config.tableBodyId);
     const photoInput = document.getElementById(config.photoInputId);
     const photoPreview = document.getElementById(config.photoPreviewId);
+    const attachmentInput = config.attachmentInputId
+        ? document.getElementById(config.attachmentInputId)
+        : null;
+    const attachmentPreview = config.attachmentPreviewId
+        ? document.getElementById(config.attachmentPreviewId)
+        : null;
 
     let selectedPhoto = null;
+    let selectedAttachment = null;
+    let currentItems = [];
+
+    if (config.fields.time && typeof config.fields.time === 'object') {
+      populateTimeSelectGroup(config.fields.time.start);
+      populateTimeSelectGroup(config.fields.time.end);
+    }
 
     function getValue(fieldName) {
-      const input = document.getElementById(config.fields[fieldName]);
+      const fieldRef = config.fields[fieldName];
+
+      if (fieldName === 'time' && fieldRef && typeof fieldRef === 'object') {
+        const start = getTimeGroupValue(fieldRef.start);
+        const end = getTimeGroupValue(fieldRef.end);
+
+        return start && end ? start + '–' + end : '';
+      }
+
+      const input = document.getElementById(fieldRef);
 
       return input ? input.value.trim() : '';
     }
+
+    function updateTimePreview() {
+      if (!config.timePreviewId) {
+        return;
+      }
+
+      const previewEl = document.getElementById(config.timePreviewId);
+
+      if (!previewEl) {
+        return;
+      }
+
+      const range = getValue('time');
+
+      previewEl.innerHTML = range
+          ? 'Will be shown as: <strong>' + escapeHtml(range) + '</strong>'
+          : '';
+    }
+
+    if (config.timePreviewId && config.fields.time && typeof config.fields.time === 'object') {
+      [config.fields.time.start, config.fields.time.end].forEach(function (group) {
+        if (!group) {
+          return;
+        }
+
+        [group.hour, group.minute, group.period].forEach(function (id) {
+          const select = document.getElementById(id);
+
+          if (select) {
+            select.addEventListener('change', updateTimePreview);
+          }
+        });
+      });
+
+      updateTimePreview();
+    }
+
+    [config.fields.member_fee, config.fields.non_member_fee].forEach(function (id) {
+      if (!id) {
+        return;
+      }
+
+      const input = document.getElementById(id);
+
+      if (!input) {
+        return;
+      }
+
+      input.addEventListener('blur', function () {
+        if (input.value === '') {
+          return;
+        }
+
+        const parsed = parseFloat(input.value);
+
+        if (Number.isNaN(parsed)) {
+          return;
+        }
+
+        input.value = parsed.toFixed(2);
+      });
+    });
 
     function escapeHtml(value) {
       return String(value || '')
@@ -151,12 +1275,24 @@ document.addEventListener('DOMContentLoaded', function () {
   `;
     }
 
+    const hasAudienceFeeColumns = !!config.fields.audience;
+    const columnCount = hasAudienceFeeColumns ? 9 : 7;
+
+    function formatFee(value) {
+      const parsed = Number(value);
+
+      return Number.isFinite(parsed) ? parsed.toFixed(2) : '0.00';
+    }
+
     function renderRow(item) {
       const title = getItemValue(item, 'title', 'title');
       const type = getItemValue(item, 'type', 'event_type');
       const date = getItemValue(item, 'eventDate', 'event_date');
       const location = getItemValue(item, 'location', 'location');
       const status = getItemValue(item, 'status', 'status');
+      const audience = getItemValue(item, 'audience', 'audience');
+      const memberFee = getItemValue(item, 'memberFee', 'member_fee');
+      const nonMemberFee = getItemValue(item, 'nonMemberFee', 'non_member_fee');
       const id = item.id;
 
       return `
@@ -166,17 +1302,43 @@ document.addEventListener('DOMContentLoaded', function () {
         <td>${escapeHtml(type)}</td>
         <td>${formatDate(date)}</td>
         <td>${escapeHtml(location)}</td>
+        ${
+        hasAudienceFeeColumns
+            ? `<td>${escapeHtml(audience)}</td>
+               <td>Member: ${formatFee(memberFee)}<br>Non-Member: ${formatFee(nonMemberFee)}</td>`
+            : ''
+      }
         <td>${escapeHtml(status)}</td>
         <td>
           ${
           id
-              ? `<button
-                       type="button"
-                       class="btn btn-outline btn-sm"
-                       data-event-delete-id="${escapeHtml(id)}"
-                 >
-                       Delete
-                 </button>`
+              ? `<div class="row-actions">
+                   <button
+                           type="button"
+                           class="btn btn-outline btn-sm"
+                           data-event-edit-id="${escapeHtml(id)}"
+                   >
+                         Update
+                   </button>
+                   ${
+                  hasAudienceFeeColumns && status === 'Registration Open'
+                      ? `<button
+                               type="button"
+                               class="btn btn-outline btn-sm"
+                               data-event-close-registration-id="${escapeHtml(id)}"
+                         >
+                               Close Registration
+                         </button>`
+                      : ''
+              }
+                   <button
+                           type="button"
+                           class="btn btn-outline btn-sm"
+                           data-event-delete-id="${escapeHtml(id)}"
+                   >
+                         Delete
+                   </button>
+                 </div>`
               : '—'
       }
         </td>
@@ -208,10 +1370,12 @@ document.addEventListener('DOMContentLoaded', function () {
             ? data
             : data.items || data.events || [];
 
+        currentItems = items;
+
         if (!items.length) {
           tableBody.innerHTML = `
           <tr>
-            <td colspan="7" class="empty-table-state">
+            <td colspan="${columnCount}" class="empty-table-state">
               No events published yet.
             </td>
           </tr>
@@ -226,13 +1390,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tableBody.innerHTML = `
         <tr>
-          <td colspan="7" class="empty-table-state">
+          <td colspan="${columnCount}" class="empty-table-state">
             Could not load events. The backend endpoint may not be available yet.
           </td>
         </tr>
       `;
       }
     }
+
+    config.reload = loadItems;
 
     if (photoInput) {
       photoInput.addEventListener('change', function (event) {
@@ -292,6 +1458,50 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
+    if (attachmentInput) {
+      attachmentInput.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+          selectedAttachment = null;
+
+          if (attachmentPreview) {
+            attachmentPreview.innerHTML = '';
+          }
+
+          return;
+        }
+
+        if (file.type !== 'application/pdf') {
+          showAlert(
+              config.alertId,
+              'Please select a PDF file for the attachment.',
+              'error'
+          );
+
+          event.target.value = '';
+          return;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+          showAlert(
+              config.alertId,
+              'The attachment must be smaller than 15 MB.',
+              'error'
+          );
+
+          event.target.value = '';
+          return;
+        }
+
+        selectedAttachment = file;
+
+        if (attachmentPreview) {
+          attachmentPreview.textContent = 'Selected: ' + file.name;
+        }
+      });
+    }
+
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
 
@@ -322,6 +1532,10 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('photo', selectedPhoto);
       }
 
+      if (selectedAttachment) {
+        formData.append('attachment', selectedAttachment);
+      }
+
       const submitButton = form.querySelector(
           'button[type="submit"]'
       );
@@ -344,16 +1558,7 @@ document.addEventListener('DOMContentLoaded', function () {
         );
 
         if (!response.ok) {
-          let message = 'Could not publish this event.';
-
-          try {
-            const data = await response.json();
-            message = data.error || data.message || message;
-          } catch (parseError) {
-            // Use the default message.
-          }
-
-          throw new Error(message);
+          throw new Error(await parseApiError(response));
         }
 
         showAlert(
@@ -364,20 +1569,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
         form.reset();
         selectedPhoto = null;
+        selectedAttachment = null;
 
         if (photoPreview) {
           photoPreview.innerHTML = '';
         }
 
+        if (attachmentPreview) {
+          attachmentPreview.innerHTML = '';
+        }
+
+        updateTimePreview();
+
         await loadItems();
       } catch (error) {
-        console.error(error);
+        const message = error instanceof TypeError
+            ? networkErrorMessage(error)
+            : (error.message || 'Could not publish this event.');
 
-        showAlert(
-            config.alertId,
-            error.message || 'Could not publish this event.',
-            'error'
-        );
+        showAlert(config.alertId, message, 'error');
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
@@ -388,6 +1598,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (tableBody) {
       tableBody.addEventListener('click', async function (event) {
+        const editButton = event.target.closest('[data-event-edit-id]');
+
+        if (editButton) {
+          const eventId = editButton.getAttribute('data-event-edit-id');
+
+          const item = currentItems.find(function (candidate) {
+            return String(candidate.id) === String(eventId);
+          });
+
+          if (item) {
+            openEventEditModal(config, item);
+          }
+
+          return;
+        }
+
+        const closeRegistrationButton = event.target.closest(
+            '[data-event-close-registration-id]'
+        );
+
+        if (closeRegistrationButton) {
+          const eventId = closeRegistrationButton.getAttribute(
+              'data-event-close-registration-id'
+          );
+
+          if (!eventId || !window.confirm('Close registration for this event?')) {
+            return;
+          }
+
+          try {
+            const response = await fetch(
+                SLNA_CONFIG.API_BASE_URL +
+                config.endpoint +
+                '/' +
+                encodeURIComponent(eventId) +
+                '/status',
+                {
+                  method: 'PATCH',
+                  headers: {
+                    Authorization: 'Bearer ' + getToken(),
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ status: 'Closed' })
+                }
+            );
+
+            if (!response.ok) {
+              throw new Error(await parseApiError(response));
+            }
+
+            showAlert(config.alertId, 'Registration closed.', 'success');
+
+            await loadItems();
+          } catch (error) {
+            const message = error instanceof TypeError
+                ? networkErrorMessage(error)
+                : (error.message || 'Could not close registration.');
+
+            showAlert(config.alertId, message, 'error');
+          }
+
+          return;
+        }
+
         const deleteButton = event.target.closest(
             '[data-event-delete-id]'
         );
@@ -419,16 +1693,18 @@ document.addEventListener('DOMContentLoaded', function () {
           );
 
           if (!response.ok) {
-            throw new Error('Could not delete this event.');
+            throw new Error(await parseApiError(response));
           }
+
+          showAlert(config.alertId, 'Event deleted.', 'success');
 
           await loadItems();
         } catch (error) {
-          showAlert(
-              config.alertId,
-              error.message || 'Could not delete this event.',
-              'error'
-          );
+          const message = error instanceof TypeError
+              ? networkErrorMessage(error)
+              : (error.message || 'Could not delete this event.');
+
+          showAlert(config.alertId, message, 'error');
         }
       });
     }
@@ -2465,8 +3741,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function showAlert(elId, message, type) {
   const el = document.getElementById(elId);
+
+  if (!el) return;
+
   el.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
-  setTimeout(() => { el.innerHTML = ''; }, 6000);
+
+  if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+  if (!el.hasAttribute('aria-live')) el.setAttribute('aria-live', 'polite');
+
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  window.setTimeout(() => { el.focus({ preventScroll: true }); }, 300);
+
+  clearTimeout(el._alertTimeout);
+  el._alertTimeout = setTimeout(() => { el.innerHTML = ''; }, 6000);
 }
 
 async function loadAdminNewsTable() {
@@ -2495,10 +3782,15 @@ async function handleDeleteNews(id) {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + getToken() },
     });
-    if (!res.ok) { alert('Could not delete this item. It may have already been removed.'); return; }
+    if (!res.ok) {
+      showAlert('news-table-alert', 'Could not delete this item. It may have already been removed.', 'error');
+      return;
+    }
+    showAlert('news-table-alert', 'News item deleted.', 'success');
     loadAdminNewsTable();
   } catch (err) {
-    alert('Could not reach the server. Please check that the backend is running.');
+    console.error(err);
+    showAlert('news-table-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
   }
 }
 
@@ -2526,9 +3818,14 @@ async function handleDeleteAlbum(id) {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + getToken() },
     });
-    if (!res.ok) { alert('Could not delete this album. It may have already been removed.'); return; }
+    if (!res.ok) {
+      showAlert('album-alert', 'Could not delete this album. It may have already been removed.', 'error');
+      return;
+    }
+    showAlert('album-alert', 'Album deleted.', 'success');
     loadAdminAlbumTable();
   } catch (err) {
-    alert('Could not reach the server. Please check that the backend is running.');
+    console.error(err);
+    showAlert('album-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
   }
 }
