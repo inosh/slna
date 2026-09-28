@@ -51,7 +51,7 @@
     <div class="main-tab-panel active" id="maintab-news" role="tabpanel">
       <div class="admin-card">
         <h2>Add News Item</h2>
-        <div class="tab-buttons">
+        <div class="tab-buttons" style="display:none;">
           <button class="tab-btn active" data-tab="tab-type">Type in UI</button>
           <button class="tab-btn" data-tab="tab-upload">Upload File (Word / PDF / Text)</button>
         </div>
@@ -66,7 +66,7 @@
             <button type="submit" class="btn btn-primary">Publish News Item</button>
           </form>
         </div>
-        <div class="tab-panel" id="tab-upload">
+        <div class="tab-panel" id="tab-upload" style="display:none;">
           <div id="file-alert" aria-live="polite" tabindex="-1"></div>
           <form id="file-news-form">
             <div class="form-group"><label>Title</label><input type="text" id="file-title" required></div>
