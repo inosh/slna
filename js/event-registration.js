@@ -158,10 +158,18 @@ document.addEventListener('DOMContentLoaded', function () {
             <label for="reg-membership-number">Membership Number *</label>
             <input type="text" id="reg-membership-number">
           </div>
-
+          
           <div class="form-group">
-            <label for="reg-nic">NIC *</label>
-            <input type="text" id="reg-nic" required>
+              <label for="reg-nic">NIC *</label>
+              <input
+                      type="text"
+                      id="reg-nic"
+                      placeholder="e.g. 855420159V or 199554200159"
+                      pattern="^([0-9]{9}[VXvx]|[0-9]{12})$"
+                      title="Enter a valid Sri Lankan NIC: 9 digits followed by V or X (old format), or 12 digits (new format)"
+                      maxlength="12"
+                      required
+              >
           </div>
 
           <div class="form-group">
@@ -178,12 +186,20 @@ document.addEventListener('DOMContentLoaded', function () {
             <label for="reg-email">Email Address *</label>
             <input type="email" id="reg-email" required>
           </div>
-
+          
           <div class="form-group">
-            <label for="reg-mobile">Mobile *</label>
-            <input type="tel" id="reg-mobile" required>
+              <label for="reg-mobile">Mobile</label>
+              <input
+                      type="tel"
+                      id="reg-mobile"
+                      placeholder="07XXXXXXXX or +947XXXXXXXX"
+                      pattern="^(?:\\\\+94|0)7[0-8][0-9]{7}$"
+                      title="Enter a valid Sri Lankan mobile number, e.g. 0771234567 or +94771234567"
+                      maxlength="13"
+                      required
+              >
           </div>
-
+          
           <div class="form-group">
             <label for="reg-certificate-name">Certificate Issue Name *</label>
             <input type="text" id="reg-certificate-name" required>
@@ -289,6 +305,42 @@ document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('event-registration-form');
 
         let selectedReceipt = null;
+
+        // ---- Sri Lankan NIC formatting ----
+        const nicInput = document.getElementById('reg-nic');
+
+        if (nicInput) {
+            nicInput.addEventListener('input', function () {
+                const cursorPos = nicInput.selectionStart;
+                const cleaned = nicInput.value
+                    .replace(/\s/g, '')
+                    .toUpperCase();
+
+                if (cleaned !== nicInput.value) {
+                    nicInput.value = cleaned;
+                    if (cursorPos !== null) {
+                        nicInput.setSelectionRange(cursorPos, cursorPos);
+                    }
+                }
+            });
+        }
+
+        // ---- Sri Lankan mobile number validation ----
+        const mobileInput = document.getElementById('reg-mobile');
+
+        if (mobileInput) {
+            mobileInput.addEventListener('input', function () {
+                const cursorPos = mobileInput.selectionStart;
+                const cleaned = mobileInput.value.replace(/[\s-]/g, '');
+
+                if (cleaned !== mobileInput.value) {
+                    mobileInput.value = cleaned;
+                    if (cursorPos !== null) {
+                        mobileInput.setSelectionRange(cursorPos - 1, cursorPos - 1);
+                    }
+                }
+            });
+        }
 
         registrantTypeSelect.addEventListener('change', function () {
             const isMember = registrantTypeSelect.value === 'Member';

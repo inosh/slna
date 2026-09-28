@@ -20,6 +20,172 @@
         var submitButton = form.querySelector('button[type="submit"]');
         var maxFileSize = 5 * 1024 * 1024;
 
+        // ---- Reusable inline field-error display ----
+        function getOrCreateErrorElement(input) {
+            var existing = document.getElementById(input.id + '-error');
+
+            if (existing) {
+                return existing;
+            }
+
+            var errorEl = document.createElement('p');
+            errorEl.id = input.id + '-error';
+            errorEl.className = 'field-error-message';
+            errorEl.setAttribute('role', 'alert');
+
+            input.insertAdjacentElement('afterend', errorEl);
+
+            return errorEl;
+        }
+
+        function showFieldError(input, message) {
+            var errorEl = getOrCreateErrorElement(input);
+
+            errorEl.textContent = message;
+            errorEl.hidden = false;
+
+            input.classList.add('input-error');
+            input.setAttribute('aria-invalid', 'true');
+            input.setAttribute('aria-describedby', errorEl.id);
+
+            // Keep the native validity in sync so form.checkValidity() still blocks submit.
+            input.setCustomValidity(message);
+        }
+
+        function clearFieldError(input) {
+            var errorEl = document.getElementById(input.id + '-error');
+
+            if (errorEl) {
+                errorEl.hidden = true;
+                errorEl.textContent = '';
+            }
+
+            input.classList.remove('input-error');
+            input.removeAttribute('aria-invalid');
+            input.setCustomValidity('');
+        }
+
+        // ---- Sri Lankan phone number handling ----
+        var phoneFieldIds = [
+            'mobile-number',
+            'whatsapp-number',
+            'residential-number',
+            'office-number'
+        ];
+
+        function stripPhoneSeparators(input) {
+            input.addEventListener('input', function () {
+                var cursorPos = input.selectionStart;
+                var cleaned = input.value.replace(/[\s-]/g, '');
+
+                if (cleaned !== input.value) {
+                    input.value = cleaned;
+                    if (cursorPos !== null) {
+                        input.setSelectionRange(cursorPos - 1, cursorPos - 1);
+                    }
+                }
+            });
+        }
+
+        phoneFieldIds.forEach(function (id) {
+            var input = document.getElementById(id);
+            if (input) {
+                stripPhoneSeparators(input);
+            }
+        });
+
+        // ---- Sri Lankan NIC formatting ----
+        var nicInput = document.getElementById('nic-number');
+
+        if (nicInput) {
+            nicInput.addEventListener('input', function () {
+                var cursorPos = nicInput.selectionStart;
+                var cleaned = nicInput.value
+                    .replace(/\s/g, '')
+                    .toUpperCase();
+
+                if (cleaned !== nicInput.value) {
+                    nicInput.value = cleaned;
+                    if (cursorPos !== null) {
+                        nicInput.setSelectionRange(cursorPos, cursorPos);
+                    }
+                }
+            });
+        }
+
+        // // ---- Sri Lankan NIC formatting + structural validation ----
+        // var nicInput = document.getElementById('nic-number');
+        //
+        // function isValidSriLankanNic(value) {
+        //     var v = String(value || '').trim().toUpperCase();
+        //     var currentYear = new Date().getFullYear();
+        //
+        //     var oldMatch = /^([0-9]{2})([0-9]{3})([0-9]{4})[VX]$/.exec(v);
+        //     var newMatch = /^(19|20)([0-9]{2})([0-9]{3})([0-9]{4})$/.exec(v);
+        //
+        //     function isValidDayField(dayField) {
+        //         var day = parseInt(dayField, 10);
+        //         var isFemale = day > 500;
+        //         var normalizedDay = isFemale ? day - 500 : day;
+        //         return normalizedDay >= 1 && normalizedDay <= 366;
+        //     }
+        //
+        //     if (oldMatch) {
+        //         // Old NIC only covers 1900s births (issued before year 2000 rollout).
+        //         return isValidDayField(oldMatch[2]);
+        //     }
+        //
+        //     if (newMatch) {
+        //         var century = newMatch[1]; // "19" or "20"
+        //         var yearSuffix = newMatch[2]; // last two digits
+        //         var fullYear = parseInt(century + yearSuffix, 10);
+        //         var dayField = newMatch[3];
+        //
+        //         if (fullYear < 1900 || fullYear > currentYear) {
+        //             return false;
+        //         }
+        //
+        //         return isValidDayField(dayField);
+        //     }
+        //
+        //     return false;
+        // }
+        //
+        // if (nicInput) {
+        //     nicInput.addEventListener('input', function () {
+        //         var cursorPos = nicInput.selectionStart;
+        //         var cleaned = nicInput.value
+        //             .replace(/\s/g, '')
+        //             .toUpperCase();
+        //
+        //         if (cleaned !== nicInput.value) {
+        //             nicInput.value = cleaned;
+        //             if (cursorPos !== null) {
+        //                 nicInput.setSelectionRange(cursorPos, cursorPos);
+        //             }
+        //         }
+        //
+        //         // Clear any previous structural-validity error while the user is typing.
+        //         nicInput.setCustomValidity('');
+        //     });
+        //
+        //     nicInput.addEventListener('blur', function () {
+        //         var value = nicInput.value.trim();
+        //
+        //         if (!value) {
+        //             return;
+        //         }
+        //
+        //         if (!isValidSriLankanNic(value)) {
+        //             nicInput.setCustomValidity(
+        //                 'Enter a valid Sri Lankan NIC number.'
+        //             );
+        //         } else {
+        //             nicInput.setCustomValidity('');
+        //         }
+        //     });
+        // }
+
         function showMessage(type, message, allowHtml) {
             alertBox.className = 'alert alert-' + type;
 
@@ -107,6 +273,23 @@
             });
         }
 
+        function centerFirstInvalidField() {
+            var invalidField = document.activeElement && document.activeElement.matches(':invalid')
+                ? document.activeElement
+                : form.querySelector(':invalid');
+
+            if (!invalidField) {
+                return;
+            }
+
+            var container = invalidField.closest('.form-group, fieldset') || invalidField;
+
+            container.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
 
@@ -115,6 +298,7 @@
 
             if (!form.checkValidity()) {
                 form.reportValidity();
+                centerFirstInvalidField();
                 return;
             }
 
@@ -156,7 +340,7 @@
                 return;
             }
 
-            var apiBase = window.SLNA_API_BASE_URL || 'http://localhost:3000';
+            var apiBase = SLNA_CONFIG.API_BASE_URL;
             var formData = new FormData(form);
 
             if (submitButton) {
@@ -166,7 +350,7 @@
 
             try {
                 var response = await fetch(
-                    apiBase + '/api/membership/applications',
+                    apiBase + '/membership/applications',
                     {
                         method: 'POST',
                         body: formData
@@ -500,8 +684,7 @@
                 return;
             }
 
-            var apiBase =
-                window.SLNA_API_BASE_URL || 'http://localhost:3000';
+            var apiBase = SLNA_CONFIG.API_BASE_URL;
 
             submitButton.disabled = true;
             submitButton.textContent = 'Checking...';
@@ -509,7 +692,7 @@
             try {
                 var response = await fetch(
                     apiBase +
-                    '/api/membership/applications/status/' +
+                    '/membership/applications/status/' +
                     encodeURIComponent(referenceNumber)
                 );
 

@@ -158,6 +158,10 @@
                       type="text"
                       id="nic-number"
                       name="nicNumber"
+                      placeholder="e.g. 855420159V or 199554200159"
+                      pattern="^([0-9]{9}[VXvx]|[0-9]{12})$"
+                      title="Enter a valid Sri Lankan NIC: 9 digits followed by V or X (old format), or 12 digits (new format)"
+                      maxlength="12"
                       required
               >
             </div>
@@ -271,12 +275,14 @@
             <div class="form-group application-grid-full">
               <label for="official-address">
                 Official Address
+                <span aria-hidden="true">*</span>
               </label>
 
               <textarea
                       id="official-address"
                       name="officialAddress"
                       rows="3"
+                      required
               ></textarea>
             </div>
 
@@ -291,6 +297,10 @@
                       id="mobile-number"
                       name="mobileNumber"
                       autocomplete="tel"
+                      placeholder="07XXXXXXXX or +947XXXXXXXX"
+                      pattern="^(?:\+94|0)7[0-8][0-9]{7}$"
+                      title="Enter a valid Sri Lankan mobile number, e.g. 0771234567 or +94771234567"
+                      maxlength="13"
                       required
               >
             </div>
@@ -302,6 +312,10 @@
                       type="tel"
                       id="whatsapp-number"
                       name="whatsappNumber"
+                      placeholder="07XXXXXXXX or +947XXXXXXXX"
+                      pattern="^(?:\+94|0)[1-9][0-9]{8}$"
+                      title="Enter a valid Sri Lankan phone number, e.g. 0771234567 or +94771234567"
+                      maxlength="13"
               >
             </div>
 
@@ -312,6 +326,10 @@
                       type="tel"
                       id="residential-number"
                       name="residentialNumber"
+                      placeholder="0XXXXXXXXX or +94XXXXXXXXX"
+                      pattern="^(?:\+94|0)[1-9][0-9]{8}$"
+                      title="Enter a valid Sri Lankan phone number, e.g. 0112345678 or +94112345678"
+                      maxlength="13"
               >
             </div>
 
@@ -322,6 +340,10 @@
                       type="tel"
                       id="office-number"
                       name="officeNumber"
+                      placeholder="0XXXXXXXXX or +94XXXXXXXXX"
+                      pattern="^(?:\+94|0)[1-9][0-9]{8}$"
+                      title="Enter a valid Sri Lankan phone number, e.g. 0112345678 or +94112345678"
+                      maxlength="13"
               >
             </div>
 
@@ -366,12 +388,14 @@
             <div class="form-group">
               <label for="slnc-registration-date">
                 SLNC Registration Date
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="date"
                       id="slnc-registration-date"
                       name="slncRegistrationDate"
+                      required
               >
             </div>
 
@@ -392,46 +416,56 @@
             <div class="form-group">
               <label for="first-appointment-date">
                 First Appointment Date
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="date"
                       id="first-appointment-date"
                       name="firstAppointmentDate"
+                      required
               >
             </div>
 
             <div class="form-group application-grid-full">
               <label for="first-appointment-place">
                 First Appointment Place
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="text"
                       id="first-appointment-place"
                       name="firstAppointmentPlace"
+                      required
               >
             </div>
 
             <div class="form-group">
               <label for="nursing-school">
                 Nursing School / University
+                <span aria-hidden="true">*</span>
               </label>
 
               <input
                       type="text"
                       id="nursing-school"
                       name="nursingSchool"
+                      required
               >
             </div>
 
             <div class="form-group">
-              <label for="batch">Batch</label>
+              <label for="batch">
+                Batch
+                <span aria-hidden="true">*</span>
+              </label>
 
               <input
                       type="text"
                       id="batch"
                       name="batch"
+                      required
               >
             </div>
 
@@ -487,34 +521,6 @@
           </div>
 
           <div class="application-grid">
-            <div class="form-group">
-              <label for="payment-reference">
-                Bank Transfer Reference Number
-                <span aria-hidden="true">*</span>
-              </label>
-
-              <input
-                      type="text"
-                      id="payment-reference"
-                      name="paymentReference"
-                      required
-              >
-            </div>
-
-            <div class="form-group">
-              <label for="transfer-date">
-                Bank Transfer Date
-                <span aria-hidden="true">*</span>
-              </label>
-
-              <input
-                      type="date"
-                      id="transfer-date"
-                      name="transferDate"
-                      required
-              >
-            </div>
-
             <div class="form-group application-grid-full">
               <label for="payment-receipt">
                 Bank Receipt
