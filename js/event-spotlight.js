@@ -20,12 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const label = banner.dataset.label || 'Event';
-
-    const dayEl = banner.querySelector('.event-spotlight-day');
-    const monthEl = banner.querySelector('.event-spotlight-month');
-    const yearEl = banner.querySelector('.event-spotlight-year');
-    const eyebrowEl = banner.querySelector('.event-spotlight-eyebrow');
-    const statusEl = banner.querySelector('.event-spotlight-status');
+    const MAX_SLIDES = 6;
+    const AUTO_ADVANCE_MS = 6000;
 
     function parseEventDate(value) {
         if (!value) {
@@ -78,10 +74,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'status-default';
     }
 
-    function render(event) {
-        const type = String(event.type || event.event_type || '').trim();
-        const title = event.title || type || label;
-        const dateValue = event.event_date;
+    // Builds one slide for either a news item or a fallback calendar event.
+    // `index` is only used to vary the news kicker text (Latest vs Earlier).
+    function buildSlide(item, kind, index) {
+        const isNews = kind === 'news';
+        const type = String(item.type || item.event_type || '').trim();
+        const title = item.title || type || label;
+        const dateValue = item.event_date;
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -89,70 +88,193 @@ document.addEventListener('DOMContentLoaded', function () {
         const eventDate = parseEventDate(dateValue);
         const isUpcoming = !!(eventDate && eventDate >= today);
 
-        const photoUrl = resolvePhotoUrl(event.photo_url || event.photoUrl);
-        const category = event.category || 'other';
+        const photoUrl = resolvePhotoUrl(item.photo_url || item.photoUrl);
 
-        const detailUrl = 'event-detail.html?category=' +
-            encodeURIComponent(category) +
-            '&id=' + encodeURIComponent(event.id);
+        const detailUrl = isNews
+            ? 'news-detail.html?id=' + encodeURIComponent(item.id)
+            : 'event-detail.html?category=' + encodeURIComponent(item.category || 'other') +
+              '&id=' + encodeURIComponent(item.id);
 
-        banner.href = detailUrl;
-        banner.setAttribute('aria-label', title + ' – view event details');
+        const slide = document.createElement('a');
+        slide.className = 'spotlight-slide' + (photoUrl ? ' has-photo' : '');
+        slide.href = detailUrl;
+        slide.setAttribute('aria-label', title + ' – view details');
 
         if (photoUrl) {
-            banner.classList.add('has-photo');
-            banner.style.backgroundImage = "url('" + photoUrl.replace(/'/g, '%27') + "')";
+            slide.style.backgroundImage = "url('" + photoUrl.replace(/'/g, '%27') + "')";
         }
 
-        if (dayEl) dayEl.textContent = formatDatePart(dateValue, { day: '2-digit' });
-        if (monthEl) monthEl.textContent = formatDatePart(dateValue, { month: 'short' }).toUpperCase();
-        const yearValue = formatDatePart(dateValue, { year: 'numeric' });
+        const dateBox = document.createElement('div');
+        dateBox.className = 'event-spotlight-date';
 
-        if (yearEl) yearEl.textContent = yearValue;
-        if (eyebrowEl) {
-            const eyebrowPrefix = isUpcoming ? 'Upcoming – ' + label : 'Most Recent – ' + label;
-            eyebrowEl.textContent = yearValue ? eyebrowPrefix + ' - ' + yearValue : eyebrowPrefix;
+        const day = document.createElement('span');
+        day.className = 'event-spotlight-day';
+        day.textContent = formatDatePart(dateValue, { day: '2-digit' });
+
+        const month = document.createElement('span');
+        month.className = 'event-spotlight-month';
+        month.textContent = formatDatePart(dateValue, { month: 'short' }).toUpperCase();
+
+        const year = document.createElement('span');
+        year.className = 'event-spotlight-year';
+        year.textContent = formatDatePart(dateValue, { year: 'numeric' });
+
+        dateBox.appendChild(day);
+        dateBox.appendChild(month);
+        dateBox.appendChild(year);
+
+        const divider = document.createElement('div');
+        divider.className = 'event-spotlight-divider';
+
+        const info = document.createElement('div');
+        info.className = 'spotlight-info';
+
+        const kicker = document.createElement('span');
+        kicker.className = 'spotlight-kicker';
+        kicker.textContent = isNews
+            ? (index === 0 ? 'Latest News' : 'Earlier News')
+            : (isUpcoming ? 'Upcoming Event' : 'Past Event');
+
+        const titleEl = document.createElement('span');
+        titleEl.className = 'spotlight-title';
+        titleEl.textContent = title;
+
+        info.appendChild(kicker);
+        info.appendChild(titleEl);
+
+        slide.appendChild(dateBox);
+        slide.appendChild(divider);
+        slide.appendChild(info);
+
+        if (!isNews && item.status) {
+            const statusEl = document.createElement('span');
+            statusEl.className = 'event-spotlight-status ' + statusClass(item.status);
+            statusEl.textContent = item.status === 'Closed' ? 'Registration Closed' : item.status;
+            slide.appendChild(statusEl);
         }
-        if (statusEl) {
-            if (event.status) {
-                statusEl.textContent = event.status === 'Closed' ? 'Registration Closed' : event.status;
-                statusEl.className = 'event-spotlight-status ' + statusClass(event.status);
-                statusEl.hidden = false;
-            } else {
-                statusEl.hidden = true;
+
+        const cta = document.createElement('span');
+        cta.className = 'event-spotlight-cta';
+        cta.appendChild(document.createTextNode((isNews ? 'Read More' : 'View Event') + ' '));
+
+        const arrow = document.createElement('span');
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = '→';
+        cta.appendChild(arrow);
+
+        slide.appendChild(cta);
+
+        return slide;
+    }
+
+    function renderSlides(items, kind) {
+        const track = document.createElement('div');
+        track.className = 'spotlight-track';
+
+        items.forEach(function (item, index) {
+            track.appendChild(buildSlide(item, kind, index));
+        });
+
+        banner.innerHTML = '';
+        banner.appendChild(track);
+
+        const slides = track.querySelectorAll('.spotlight-slide');
+        let current = 0;
+        let autoTimer = null;
+
+        function goTo(index) {
+            current = (index + slides.length) % slides.length;
+            track.style.transform = 'translateX(-' + (current * 100) + '%)';
+
+            const dots = banner.querySelectorAll('.spotlight-dot');
+            dots.forEach(function (dot, dotIndex) {
+                dot.classList.toggle('active', dotIndex === current);
+            });
+        }
+
+        function resetTimer() {
+            if (autoTimer) {
+                clearInterval(autoTimer);
+            }
+            if (slides.length > 1) {
+                autoTimer = setInterval(function () { goTo(current + 1); }, AUTO_ADVANCE_MS);
             }
         }
 
+        if (slides.length > 1) {
+            const dotsWrap = document.createElement('div');
+            dotsWrap.className = 'spotlight-dots';
+
+            slides.forEach(function (_, index) {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.className = 'spotlight-dot' + (index === 0 ? ' active' : '');
+                dot.setAttribute('aria-label', 'Show item ' + (index + 1) + ' of ' + slides.length);
+                dot.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    goTo(index);
+                    resetTimer();
+                });
+                dotsWrap.appendChild(dot);
+            });
+
+            banner.appendChild(dotsWrap);
+
+            banner.addEventListener('mouseenter', function () {
+                if (autoTimer) clearInterval(autoTimer);
+            });
+            banner.addEventListener('mouseleave', resetTimer);
+
+            resetTimer();
+        }
+
+        banner.classList.add('spotlight-banner');
         banner.hidden = false;
+    }
+
+    async function fetchJson(path) {
+        const response = await fetch(apiBaseUrl + path);
+
+        if (!response.ok) {
+            throw new Error('Request failed: ' + path);
+        }
+
+        return response.json();
     }
 
     async function load() {
         try {
-            const response = await fetch(apiBaseUrl + '/events/');
+            const [newsData, eventsData] = await Promise.all([
+                fetchJson('/news').catch(function () { return []; }),
+                fetchJson('/events/').catch(function () { return []; })
+            ]);
 
-            if (!response.ok) {
-                throw new Error('Could not load events.');
+            const newsMatches = (Array.isArray(newsData) ? newsData : [])
+                .filter(function (item) {
+                    const newsType = String(item.news_type || '').trim().toLowerCase();
+                    return matchTypes.indexOf(newsType) !== -1 && parseEventDate(item.event_date);
+                })
+                .sort(function (a, b) { return new Date(b.event_date) - new Date(a.event_date); })
+                .slice(0, MAX_SLIDES);
+
+            if (newsMatches.length) {
+                renderSlides(newsMatches, 'news');
+                return;
             }
 
-            const data = await response.json();
-            const events = Array.isArray(data) ? data : [];
-
-            const matches = events
+            const eventMatches = (Array.isArray(eventsData) ? eventsData : [])
                 .filter(function (event) {
                     const type = String(event.type || event.event_type || '').trim().toLowerCase();
                     return matchTypes.indexOf(type) !== -1 && parseEventDate(event.event_date);
                 })
-                .sort(function (a, b) {
-                    return new Date(b.event_date) - new Date(a.event_date);
-                });
+                .sort(function (a, b) { return new Date(b.event_date) - new Date(a.event_date); })
+                .slice(0, MAX_SLIDES);
 
-            if (!matches.length) {
-                return;
+            if (eventMatches.length) {
+                renderSlides(eventMatches, 'event');
             }
-
-            render(matches[0]);
         } catch (error) {
-            console.error('Could not load featured event:', error);
+            console.error('Could not load spotlight banner:', error);
         }
     }
 
