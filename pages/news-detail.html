@@ -11,7 +11,13 @@
 <!-- Shared header will be inserted here -->
 </div>
 
-<div class="page-hero"><div class="container"><h1>News Detail</h1><div class="breadcrumb"><a href="../index.html">Home</a> / <a href="news.html">News</a> / <span id="news-detail-breadcrumb">Article</span></div></div></div><div class="container" style="padding:44px 20px;"><div class="news-detail" id="news-detail-container"><div class="news-empty">Loading article...</div></div><div style="text-align:center; margin-top:18px;"><a href="news.html" class="btn btn-outline">&larr; Back to News</a></div></div>
+<div class="page-hero"><div class="container"><h1>News Detail</h1><div class="breadcrumb"><a href="../index.html">Home</a> / <a href="news.html">News</a> / <span id="news-detail-breadcrumb">Article</span></div></div></div><div class="container" style="padding:44px 20px;"><div class="news-detail" id="news-detail-container"><div class="news-empty">Loading article...</div></div><div style="text-align:center; margin-top:18px;"><a href="news.html" class="btn btn-outline">&larr; Back to News</a></div></div><div class="lightbox-overlay" id="lightbox-overlay">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <span class="lightbox-counter" id="lightbox-counter"></span>
+  <button class="lightbox-nav lightbox-prev" onclick="lightboxPrev()">&#8249;</button>
+  <div class="lightbox-content"><img id="lightbox-img" src="" alt=""></div>
+  <button class="lightbox-nav lightbox-next" onclick="lightboxNext()">&#8250;</button>
+</div>
 
 <div id="site-footer">
   <!-- Shared footer will be inserted here -->

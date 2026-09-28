@@ -1746,20 +1746,52 @@ document.addEventListener('DOMContentLoaded', function () {
       reader.readAsDataURL(typePhotoFile);
     }
   });
+
+  // Gallery photos become a linked photo album when the news item is published.
+  let typeGalleryFiles = [];
+  const typeGalleryInput = document.getElementById('type-gallery-input');
+  typeGalleryInput.addEventListener('change', function (e) {
+    const files = Array.from(e.target.files);
+    const oversized = files.filter(f => f.size > 15 * 1024 * 1024);
+    const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+    if (oversized.length) {
+      showAlert('type-alert', oversized.length + ' photo(s) are over the 15MB limit and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
+    }
+    typeGalleryFiles = typeGalleryFiles.concat(validFiles);
+    renderTypeGalleryPicker();
+    typeGalleryInput.value = '';
+  });
+  function renderTypeGalleryPicker() {
+    const picker = document.getElementById('type-gallery-picker');
+    Promise.all(typeGalleryFiles.map(file => new Promise((resolve) => {
+      const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsDataURL(file);
+    }))).then(previews => {
+      picker.innerHTML = previews.map((p, idx) =>
+        '<div class="photo-picker-item"><img src="' + p + '"><button type="button" onclick="window._removeTypeGalleryPhoto(' + idx + ')">X</button></div>'
+      ).join('');
+      const countEl = document.getElementById('type-gallery-count');
+      if (countEl) countEl.textContent = typeGalleryFiles.length + ' photo(s) selected';
+    });
+  }
+  window._removeTypeGalleryPhoto = function (idx) { typeGalleryFiles.splice(idx, 1); renderTypeGalleryPicker(); };
+
   typeForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     const title = document.getElementById('type-title').value.trim();
+    const news_type = document.getElementById('type-news-type').value;
     const event_date = document.getElementById('type-date').value;
     const summary = document.getElementById('type-summary').value.trim();
     const body = document.getElementById('type-body').value.trim();
-    if (!title || !event_date || !body) { showAlert('type-alert', 'Please fill in title, date, and content.', 'error'); return; }
+    if (!title || !news_type || !event_date || !body) { showAlert('type-alert', 'Please fill in title, type, date, and content.', 'error'); return; }
 
     const formData = new FormData();
     formData.append('title', title);
+    formData.append('news_type', news_type);
     formData.append('event_date', event_date);
     formData.append('summary', summary);
     formData.append('body', body);
     if (typePhotoFile) formData.append('photo', typePhotoFile);
+    typeGalleryFiles.forEach(file => formData.append('photos', file));
 
     try {
       const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/typed', {
@@ -1769,8 +1801,9 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       if (!res.ok) { showAlert('type-alert', await parseApiError(res), 'error'); return; }
       showAlert('type-alert', 'News item published.', 'success');
-      typeForm.reset(); typePhotoFile = null;
+      typeForm.reset(); typePhotoFile = null; typeGalleryFiles = [];
       document.getElementById('type-photo-preview').innerHTML = '';
+      renderTypeGalleryPicker();
       loadAdminNewsTable();
     } catch (err) {
       showAlert('type-alert', networkErrorMessage(err), 'error');
@@ -1828,22 +1861,53 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // Gallery photos become a linked photo album when the news item is published.
+  let fileGalleryFiles = [];
+  const fileGalleryInput = document.getElementById('file-gallery-input');
+  fileGalleryInput.addEventListener('change', function (e) {
+    const files = Array.from(e.target.files);
+    const oversized = files.filter(f => f.size > 15 * 1024 * 1024);
+    const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+    if (oversized.length) {
+      showAlert('file-alert', oversized.length + ' photo(s) are over the 15MB limit and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
+    }
+    fileGalleryFiles = fileGalleryFiles.concat(validFiles);
+    renderFileGalleryPicker();
+    fileGalleryInput.value = '';
+  });
+  function renderFileGalleryPicker() {
+    const picker = document.getElementById('file-gallery-picker');
+    Promise.all(fileGalleryFiles.map(file => new Promise((resolve) => {
+      const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsDataURL(file);
+    }))).then(previews => {
+      picker.innerHTML = previews.map((p, idx) =>
+        '<div class="photo-picker-item"><img src="' + p + '"><button type="button" onclick="window._removeFileGalleryPhoto(' + idx + ')">X</button></div>'
+      ).join('');
+      const countEl = document.getElementById('file-gallery-count');
+      if (countEl) countEl.textContent = fileGalleryFiles.length + ' photo(s) selected';
+    });
+  }
+  window._removeFileGalleryPhoto = function (idx) { fileGalleryFiles.splice(idx, 1); renderFileGalleryPicker(); };
+
   fileForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!selectedDocument) { showAlert('file-alert', 'Please select a document to upload.', 'error'); return; }
     const title = document.getElementById('file-title').value.trim();
+    const news_type = document.getElementById('file-news-type').value;
     const event_date = document.getElementById('file-date').value;
     const summary = document.getElementById('file-summary').value.trim();
     const body = document.getElementById('file-body-preview').value.trim();
-    if (!title || !event_date) { showAlert('file-alert', 'Please provide a title and date.', 'error'); return; }
+    if (!title || !news_type || !event_date) { showAlert('file-alert', 'Please provide a title, type, and date.', 'error'); return; }
 
     const formData = new FormData();
     formData.append('title', title);
+    formData.append('news_type', news_type);
     formData.append('event_date', event_date);
     formData.append('summary', summary);
     formData.append('body', body);
     formData.append('document', selectedDocument);
     if (filePhotoFile) formData.append('photo', filePhotoFile);
+    fileGalleryFiles.forEach(file => formData.append('photos', file));
 
     try {
       const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/upload', {
@@ -1853,8 +1917,9 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       if (!res.ok) { showAlert('file-alert', await parseApiError(res), 'error'); return; }
       showAlert('file-alert', 'News item published with attachment.', 'success');
-      fileForm.reset(); fileNameDisplay.textContent = ''; selectedDocument = null; filePhotoFile = null;
+      fileForm.reset(); fileNameDisplay.textContent = ''; selectedDocument = null; filePhotoFile = null; fileGalleryFiles = [];
       document.getElementById('file-photo-preview').innerHTML = '';
+      renderFileGalleryPicker();
       loadAdminNewsTable();
     } catch (err) {
       showAlert('file-alert', networkErrorMessage(err), 'error');
@@ -3762,16 +3827,19 @@ async function loadAdminNewsTable() {
     const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news');
     if (!res.ok) throw new Error('bad status');
     const items = await res.json();
-    if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888;">No news items yet.</td></tr>'; return; }
+    if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">No news items yet.</td></tr>'; return; }
     const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
     tbody.innerHTML = items.map(item => {
       const badgeClass = item.source === 'file' ? 'badge-file' : 'badge-typed';
       const badgeLabel = item.source === 'file' ? 'FILE UPLOAD' : 'TYPED';
       const thumb = item.photo_url ? '<img src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:40px;height:40px;">' : '-';
-      return '<tr><td>' + thumb + '</td><td>' + item.title + '</td><td>' + item.event_date + '</td><td><span class="badge-source ' + badgeClass + '">' + badgeLabel + '</span></td><td>' + (item.file_name || '-') + '</td><td><button class="btn btn-danger btn-sm" onclick="handleDeleteNews(' + item.id + ')">Delete</button></td></tr>';
+      const gallery = item.album_id
+          ? '<a href="album.html?id=' + item.album_id + '" target="_blank" rel="noopener">View Album</a>'
+          : '-';
+      return '<tr><td>' + thumb + '</td><td>' + item.title + '</td><td>' + (item.news_type || '-') + '</td><td>' + item.event_date + '</td><td><span class="badge-source ' + badgeClass + '">' + badgeLabel + '</span></td><td>' + gallery + '</td><td>' + (item.file_name || '-') + '</td><td><button class="btn btn-danger btn-sm" onclick="handleDeleteNews(' + item.id + ')">Delete</button></td></tr>';
     }).join('');
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#c0392b;">Could not load news. Is the backend server running?</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#c0392b;">Could not load news. Is the backend server running?</td></tr>';
   }
 }
 
