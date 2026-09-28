@@ -1,35 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Events Calendar | SLNA</title><meta name="description" content="Events Calendar - EVENTS - SLNA"><link rel="stylesheet" href="../css/style.css"></head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events Calendar | SLNA</title>
+  <meta name="description" content="A combined, calendar-ordered listing of all upcoming SLNA events, both CPD-accredited and general events.">
+  <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
 <div id="site-header">
   <!-- Shared header will be inserted here -->
 </div>
 
-<!-- Shared header will be inserted here -->
+<div class="page-hero">
+  <div class="container">
+    <h1>Events Calendar</h1>
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a> / <span>Events Calendar</span>
+    </div>
+  </div>
 </div>
 
-<div class="page-hero"><div class="container"><h1>Events Calendar</h1><div class="breadcrumb"><a href="../index.html">Home</a> / <span>Events Calendar</span></div></div></div>
+<div class="container content-layout">
+  <aside class="side-menu">
+    <h3>EVENTS</h3>
+    <ul>
+      <li><a class="active" href="events-calendar.html">Events Calendar</a></li>
+      <li><a href="annual-conference.html">Annual General Meeting</a></li>
+      <li><a href="international-nurses-day.html">International Nurses Day</a></li>
+      <li><a href="training-workshops.html">CPD Events</a></li>
+<!--    <li><a href="workshops-seminars.html">Workshops & Seminars</a></li>-->
+      <li><a href="past-events.html">Past Events</a></li>
+    </ul>
+  </aside>
 
-<div class="container content-layout"><aside class="side-menu">
-  <h3>EVENTS</h3>
-  <ul>
-    <li><a class="active" href="events-calendar.html">Events Calendar</a></li>
-    <li><a class="" href="annual-conference.html">Annual Conference</a></li>
-    <li><a class="" href="international-nurses-day.html">International Nurses Day</a></li>
-    <li><a class="" href="cpd-events.html">CPD Events</a></li>
-<!--    <li><a class="" href="workshops-seminars.html">Workshops & Seminars</a></li>-->
-    <li><a class="" href="past-events.html">Past Events</a></li>
-  </ul>
-</aside><div class="content-main"><h2>Events Calendar</h2><p>Stay up to date with all upcoming SLNA events, from CPD workshops to the flagship Annual Conference.</p><table><tr><th>Date</th><th>Event</th><th>Location</th></tr><tr><td>12 Oct 2026</td><td>Workshop on Infection Control</td><td>Colombo</td></tr><tr><td>05 Nov 2026</td><td>SLNA AGM</td><td>Colombo</td></tr></table></div></div>
+  <main class="content-main">
+    <h2>Events Calendar</h2>
+    <p>
+      Every upcoming SLNA event in one place, CPD-accredited and general
+      events alike, listed in calendar order. Select an event for full
+      details.
+    </p>
+
+    <div class="events-calendar-filters" role="tablist" aria-label="Filter events by category">
+      <button type="button" class="events-filter-btn active" data-filter="all" role="tab" aria-selected="true">
+        All Events
+      </button>
+      <button type="button" class="events-filter-btn" data-filter="cpd" role="tab" aria-selected="false">
+        CPD Events
+      </button>
+      <button type="button" class="events-filter-btn" data-filter="other" role="tab" aria-selected="false">
+        Other Events
+      </button>
+    </div>
+
+    <section class="events-list-section" aria-label="Upcoming events">
+      <div id="events-calendar-groups" aria-live="polite">
+        <div class="events-loading-state">Loading events...</div>
+      </div>
+    </section>
+  </main>
+</div>
 
 <div id="site-footer">
   <!-- Shared footer will be inserted here -->
-</div>
-
-<!-- Shared footer will be inserted here -->
 </div>
 
 <div class="back-to-top">&uarr;</div>
@@ -37,5 +71,6 @@
 <script src="../js/config.js"></script>
 <script src="../js/include-header.js"></script>
 <script src="../js/main.js"></script>
+<script src="../js/events-calendar.js"></script>
 </body>
 </html>
