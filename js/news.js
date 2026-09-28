@@ -90,6 +90,47 @@ async function renderHomeNewsPreview() {
     }).join('') + '</div>';
   } catch (err) { container.innerHTML = '<div class="news-empty">Could not load news. Is the backend server running?</div>'; console.error(err); }
 }
+// Builds a Facebook-style multi-photo grid for a news item's linked album:
+// 1 photo full-width, 2/3/4 as an equal row/grid, 5+ as 2 large tiles on
+// top and 3 below with a "+N" overlay on the last tile for any photos
+// beyond the 5 shown. Clicking any tile opens the shared lightbox (see
+// openLightbox below) over the *full* photo set, not just the visible tiles.
+function renderNewsGallery(photos) {
+  if (!photos || photos.length === 0) return '';
+
+  _currentAlbumPhotos = photos.map(p => fullUrl(p.photo_url));
+  const count = photos.length;
+
+  function tile(idx, overlayCount) {
+    const overlay = overlayCount
+        ? '<div class="gallery-more-overlay">+' + overlayCount + '</div>'
+        : '';
+    return '<div class="gallery-tile" onclick="openLightbox(' + idx + ')">' +
+        '<img src="' + _currentAlbumPhotos[idx] + '" alt="">' + overlay + '</div>';
+  }
+  function row(indexes, extraStyle) {
+    return '<div class="gallery-row" style="grid-template-columns:repeat(' + indexes.length + ',1fr);' + (extraStyle || '') + '">' +
+        indexes.map(i => tile(i)).join('') + '</div>';
+  }
+
+  let rowsHtml;
+  if (count <= 4) {
+    rowsHtml = row(photos.map((_, i) => i));
+  } else {
+    const remaining = count - 5;
+    rowsHtml =
+        row([0, 1]) +
+        '<div class="gallery-row" style="grid-template-columns:repeat(3,1fr);">' +
+        tile(2) + tile(3) +
+        '<div class="gallery-tile" onclick="openLightbox(4)"><img src="' + _currentAlbumPhotos[4] + '" alt="">' +
+        (remaining > 0 ? '<div class="gallery-more-overlay">+' + remaining + '</div>' : '') +
+        '</div></div>';
+  }
+
+  const countClass = count === 1 ? 'count-1' : (count >= 5 ? 'count-5plus' : 'count-' + count);
+  return '<div class="news-photo-gallery ' + countClass + '">' + rowsHtml + '</div>' +
+      '<div class="news-gallery-caption">' + count + ' photo' + (count === 1 ? '' : 's') + ' from this event</div>';
+}
 async function renderNewsDetail() {
   const container = document.getElementById('news-detail-container');
   if (!container) return;
@@ -99,9 +140,10 @@ async function renderNewsDetail() {
     document.title = item.title + ' | SLNA';
     const photoHtml = item.photo_url ? '<div class="detail-photo"><img src="' + fullUrl(item.photo_url) + '" alt=""></div>' : '';
     const attachmentHtml = item.file_name ? '<div class="detail-attachment">Attachment: ' + item.file_name + '</div>' : '';
+    const galleryHtml = renderNewsGallery(item.photos);
     const bcEl = document.getElementById('news-detail-breadcrumb');
     if (bcEl) bcEl.textContent = item.title;
-    container.innerHTML = photoHtml + '<div class="detail-date">' + formatDateLong(item.event_date) + '</div><h1>' + item.title + '</h1><div class="detail-body">' + item.body + '</div>' + attachmentHtml;
+    container.innerHTML = photoHtml + '<div class="detail-date">' + formatDateLong(item.event_date) + '</div><h1>' + item.title + '</h1><div class="detail-body">' + item.body + '</div>' + galleryHtml + attachmentHtml;
   } catch (err) { container.innerHTML = '<div class="news-empty">News item not found.</div>'; console.error(err); }
 }
 async function renderAlbumGrid() {
