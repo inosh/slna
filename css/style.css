@@ -3817,54 +3817,74 @@ tr.registration-row-non-member {
 }
 
 /* =========================================================
-   Event Spotlight Banner
+   Spotlight Banner (news / event carousel)
    Used by: annual-conference.html / international-nurses-day.html
-   (js/event-spotlight.js). Highlights the latest available
-   instance of a recurring event (e.g. the newest AGM year).
+   (js/event-spotlight.js). Shows the latest matching news item(s)
+   for the page's topic, falling back to matching calendar events
+   when no news item exists yet. Auto-advances between multiple
+   matches with a sliding transition; a slow drifting gradient
+   keeps a single match feeling alive.
    ========================================================= */
 
-.event-spotlight-banner {
+.spotlight-banner {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 20px;
   margin: 0 0 28px;
-  padding: 14px 24px;
   overflow: hidden;
   border-radius: 14px;
-  background: linear-gradient(120deg, var(--primary-dark) 0%, var(--primary) 60%, var(--primary-light) 100%);
-  background-size: cover;
-  background-position: center;
-  color: #fff;
-  text-decoration: none;
   box-shadow: 0 10px 26px rgba(8, 50, 94, 0.22);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.event-spotlight-banner[hidden] {
+.spotlight-banner[hidden] {
   display: none;
 }
 
-.event-spotlight-banner:hover,
-.event-spotlight-banner:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 34px rgba(8, 50, 94, 0.3);
+.spotlight-track {
+  display: flex;
+  transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-.event-spotlight-banner.has-photo::before {
+.spotlight-slide {
+  position: relative;
+  display: flex;
+  flex: 0 0 100%;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 24px;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--primary-dark) 0%, var(--primary) 45%, var(--primary-light) 100%);
+  background-size: 240% 240%;
+  animation: spotlightDrift 10s ease-in-out infinite;
+  color: #fff;
+  text-decoration: none;
+  transition: filter 0.2s ease;
+}
+
+@keyframes spotlightDrift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.spotlight-slide.has-photo {
+  background-size: cover;
+  background-position: center;
+  animation: none;
+}
+
+.spotlight-slide.has-photo::before {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(115deg, rgba(6, 32, 61, 0.93) 0%, rgba(8, 50, 94, 0.88) 55%, rgba(8, 50, 94, 0.8) 100%);
 }
 
-.event-spotlight-banner.has-photo .event-spotlight-eyebrow {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+.spotlight-slide:hover,
+.spotlight-slide:focus-visible {
+  filter: brightness(1.05);
 }
 
 .event-spotlight-date,
 .event-spotlight-divider,
-.event-spotlight-info,
+.spotlight-info,
 .event-spotlight-status,
 .event-spotlight-cta {
   position: relative;
@@ -3911,19 +3931,32 @@ tr.registration-row-non-member {
   background: rgba(255, 255, 255, 0.22);
 }
 
-.event-spotlight-info {
+.spotlight-info {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
 }
 
-.event-spotlight-eyebrow {
-  display: -webkit-box;
+.spotlight-kicker {
   overflow: hidden;
   color: var(--secondary-light);
-  font-size: 1.08rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.spotlight-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
 }
@@ -3980,17 +4013,55 @@ tr.registration-row-non-member {
   transition: transform 0.15s ease;
 }
 
-.event-spotlight-banner:hover .event-spotlight-cta {
+.spotlight-slide:hover .event-spotlight-cta,
+.spotlight-slide:focus-visible .event-spotlight-cta {
   background: rgba(255, 255, 255, 0.14);
   border-color: #fff;
 }
 
-.event-spotlight-banner:hover .event-spotlight-cta span {
+.spotlight-slide:hover .event-spotlight-cta span,
+.spotlight-slide:focus-visible .event-spotlight-cta span {
   transform: translateX(3px);
 }
 
+.spotlight-dots {
+  position: absolute;
+  right: 20px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+
+.spotlight-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.spotlight-dot.active {
+  width: 20px;
+  border-radius: 5px;
+  background: var(--secondary-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-slide {
+    animation: none;
+  }
+
+  .spotlight-track {
+    transition: none;
+  }
+}
+
 @media (max-width: 680px) {
-  .event-spotlight-banner {
+  .spotlight-slide {
     flex-wrap: wrap;
     padding: 20px;
   }
@@ -3999,7 +4070,7 @@ tr.registration-row-non-member {
     display: none;
   }
 
-  .event-spotlight-eyebrow {
+  .spotlight-title {
     -webkit-line-clamp: 2;
   }
 
@@ -4011,5 +4082,10 @@ tr.registration-row-non-member {
     order: 4;
     width: 100%;
     justify-content: center;
+  }
+
+  .spotlight-dots {
+    right: 50%;
+    transform: translateX(50%);
   }
 }
