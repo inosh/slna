@@ -8,8 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const apiBaseUrl = String(SLNA_CONFIG.API_BASE_URL || '')
         .replace(/\/+$/, '');
 
-    const apiOrigin = apiBaseUrl.replace(/\/api$/, '');
-
     const matchTypes = (banner.dataset.matchTypes || '')
         .split(',')
         .map(function (value) { return value.trim().toLowerCase(); })
@@ -20,8 +18,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const label = banner.dataset.label || 'Event';
-    const MAX_SLIDES = 6;
-    const AUTO_ADVANCE_MS = 6000;
+    const MAX_ITEMS = 6;
+    const SECONDS_PER_ITEM = 8;
 
     function parseEventDate(value) {
         if (!value) {
@@ -34,201 +32,110 @@ document.addEventListener('DOMContentLoaded', function () {
         return Number.isNaN(date.getTime()) ? null : date;
     }
 
-    function formatDatePart(value, options) {
+    function formatFullDate(value) {
         const date = parseEventDate(value);
 
         if (!date) {
             return '';
         }
 
-        return date.toLocaleDateString('en-GB', options);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
-    function resolvePhotoUrl(photoUrl) {
-        if (!photoUrl) {
-            return '';
-        }
-
-        if (/^https?:\/\//i.test(photoUrl)) {
-            return photoUrl;
-        }
-
-        return apiOrigin + photoUrl;
-    }
-
-    function statusClass(status) {
-        const value = String(status || '').toLowerCase();
-
-        if (value.includes('open') && !value.includes('soon')) {
-            return 'status-open';
-        }
-
-        if (value.includes('soon') || value.includes('announced')) {
-            return 'status-soon';
-        }
-
-        if (value.includes('closed')) {
-            return 'status-closed';
-        }
-
-        return 'status-default';
-    }
-
-    // Builds one slide for either a news item or a fallback calendar event.
-    // `index` is only used to vary the news kicker text (Latest vs Earlier).
-    function buildSlide(item, kind, index) {
+    // Builds one ticker entry (date, kicker, title, and an optional status tag)
+    // linking to the news or event's own detail page. Every entry reads as
+    // "Latest" — the ticker only ever shows the latest available items, so
+    // there's no need to distinguish earlier/past ones from the first.
+    function buildTickerItem(item, kind) {
         const isNews = kind === 'news';
         const type = String(item.type || item.event_type || '').trim();
         const title = item.title || type || label;
         const dateValue = item.event_date;
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const eventDate = parseEventDate(dateValue);
-        const isUpcoming = !!(eventDate && eventDate >= today);
-
-        const photoUrl = resolvePhotoUrl(item.photo_url || item.photoUrl);
+        const kickerText = 'Latest';
 
         const detailUrl = isNews
             ? 'news-detail.html?id=' + encodeURIComponent(item.id)
             : 'event-detail.html?category=' + encodeURIComponent(item.category || 'other') +
               '&id=' + encodeURIComponent(item.id);
 
-        const slide = document.createElement('a');
-        slide.className = 'spotlight-slide' + (photoUrl ? ' has-photo' : '');
-        slide.href = detailUrl;
-        slide.setAttribute('aria-label', title + ' – view details');
+        const link = document.createElement('a');
+        link.className = 'ticker-item';
+        link.href = detailUrl;
+        link.setAttribute('aria-label', kickerText + ' – ' + title);
 
-        if (photoUrl) {
-            slide.style.backgroundImage = "url('" + photoUrl.replace(/'/g, '%27') + "')";
-        }
+        const dateEl = document.createElement('span');
+        dateEl.className = 'tdate';
+        dateEl.textContent = formatFullDate(dateValue);
+        link.appendChild(dateEl);
 
-        const dateBox = document.createElement('div');
-        dateBox.className = 'event-spotlight-date';
+        link.appendChild(document.createTextNode(' — '));
 
-        const day = document.createElement('span');
-        day.className = 'event-spotlight-day';
-        day.textContent = formatDatePart(dateValue, { day: '2-digit' });
+        const kickerEl = document.createElement('b');
+        kickerEl.textContent = kickerText + ':';
+        link.appendChild(kickerEl);
 
-        const month = document.createElement('span');
-        month.className = 'event-spotlight-month';
-        month.textContent = formatDatePart(dateValue, { month: 'short' }).toUpperCase();
+        link.appendChild(document.createTextNode(' ' + title));
 
-        const year = document.createElement('span');
-        year.className = 'event-spotlight-year';
-        year.textContent = formatDatePart(dateValue, { year: 'numeric' });
-
-        dateBox.appendChild(day);
-        dateBox.appendChild(month);
-        dateBox.appendChild(year);
-
-        const divider = document.createElement('div');
-        divider.className = 'event-spotlight-divider';
-
-        const info = document.createElement('div');
-        info.className = 'spotlight-info';
-
-        const kicker = document.createElement('span');
-        kicker.className = 'spotlight-kicker';
-        kicker.textContent = isNews
-            ? (index === 0 ? 'Latest News' : 'Earlier News')
-            : (isUpcoming ? 'Upcoming Event' : 'Past Event');
-
-        const titleEl = document.createElement('span');
-        titleEl.className = 'spotlight-title';
-        titleEl.textContent = title;
-
-        info.appendChild(kicker);
-        info.appendChild(titleEl);
-
-        slide.appendChild(dateBox);
-        slide.appendChild(divider);
-        slide.appendChild(info);
-
-        if (!isNews && item.status) {
+        if (!isNews && item.status && item.status !== 'Completed') {
             const statusEl = document.createElement('span');
-            statusEl.className = 'event-spotlight-status ' + statusClass(item.status);
-            statusEl.textContent = item.status === 'Closed' ? 'Registration Closed' : item.status;
-            slide.appendChild(statusEl);
+            statusEl.className = 'tstatus';
+            statusEl.textContent = ' · ' + (item.status === 'Closed' ? 'Registration Closed' : item.status);
+            link.appendChild(statusEl);
         }
 
-        const cta = document.createElement('span');
-        cta.className = 'event-spotlight-cta';
-        cta.appendChild(document.createTextNode((isNews ? 'Read More' : 'View Event') + ' '));
-
-        const arrow = document.createElement('span');
-        arrow.setAttribute('aria-hidden', 'true');
-        arrow.textContent = '→';
-        cta.appendChild(arrow);
-
-        slide.appendChild(cta);
-
-        return slide;
+        return link;
     }
 
-    function renderSlides(items, kind) {
-        const track = document.createElement('div');
-        track.className = 'spotlight-track';
+    function renderTicker(items, kind) {
+        const ticker = document.createElement('div');
+        ticker.className = 'ticker';
 
-        items.forEach(function (item, index) {
-            track.appendChild(buildSlide(item, kind, index));
+        const badge = document.createElement('span');
+        badge.className = 'ticker-badge';
+
+        const dot = document.createElement('span');
+        dot.className = 'live-dot';
+        badge.appendChild(dot);
+
+        const badgeLabel = document.createElement('span');
+        badgeLabel.className = 'badge-label';
+        badgeLabel.textContent = kind === 'news' ? 'News' : 'Events';
+        badge.appendChild(badgeLabel);
+
+        ticker.appendChild(badge);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'ticker-wrap';
+
+        const track = document.createElement('div');
+        track.className = 'ticker-track';
+        track.style.animationDuration = Math.max(items.length * SECONDS_PER_ITEM, 14) + 's';
+
+        // Two identical sets back to back; translating the track by exactly
+        // -50% loops seamlessly since both halves are the same width.
+        [0, 1].forEach(function (setIndex) {
+            const set = document.createElement('div');
+            set.className = 'ticker-set';
+            if (setIndex === 1) {
+                set.setAttribute('aria-hidden', 'true');
+            }
+            items.forEach(function (item) {
+                set.appendChild(buildTickerItem(item, kind));
+            });
+            track.appendChild(set);
         });
 
+        wrap.appendChild(track);
+        ticker.appendChild(wrap);
+
+        const cta = document.createElement('a');
+        cta.className = 'ticker-cta';
+        cta.href = kind === 'news' ? 'news.html' : 'events-calendar.html';
+        cta.textContent = 'View All';
+        ticker.appendChild(cta);
+
         banner.innerHTML = '';
-        banner.appendChild(track);
-
-        const slides = track.querySelectorAll('.spotlight-slide');
-        let current = 0;
-        let autoTimer = null;
-
-        function goTo(index) {
-            current = (index + slides.length) % slides.length;
-            track.style.transform = 'translateX(-' + (current * 100) + '%)';
-
-            const dots = banner.querySelectorAll('.spotlight-dot');
-            dots.forEach(function (dot, dotIndex) {
-                dot.classList.toggle('active', dotIndex === current);
-            });
-        }
-
-        function resetTimer() {
-            if (autoTimer) {
-                clearInterval(autoTimer);
-            }
-            if (slides.length > 1) {
-                autoTimer = setInterval(function () { goTo(current + 1); }, AUTO_ADVANCE_MS);
-            }
-        }
-
-        if (slides.length > 1) {
-            const dotsWrap = document.createElement('div');
-            dotsWrap.className = 'spotlight-dots';
-
-            slides.forEach(function (_, index) {
-                const dot = document.createElement('button');
-                dot.type = 'button';
-                dot.className = 'spotlight-dot' + (index === 0 ? ' active' : '');
-                dot.setAttribute('aria-label', 'Show item ' + (index + 1) + ' of ' + slides.length);
-                dot.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    goTo(index);
-                    resetTimer();
-                });
-                dotsWrap.appendChild(dot);
-            });
-
-            banner.appendChild(dotsWrap);
-
-            banner.addEventListener('mouseenter', function () {
-                if (autoTimer) clearInterval(autoTimer);
-            });
-            banner.addEventListener('mouseleave', resetTimer);
-
-            resetTimer();
-        }
-
-        banner.classList.add('spotlight-banner');
+        banner.appendChild(ticker);
         banner.hidden = false;
     }
 
@@ -255,10 +162,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     return matchTypes.indexOf(newsType) !== -1 && parseEventDate(item.event_date);
                 })
                 .sort(function (a, b) { return new Date(b.event_date) - new Date(a.event_date); })
-                .slice(0, MAX_SLIDES);
+                .slice(0, MAX_ITEMS);
 
             if (newsMatches.length) {
-                renderSlides(newsMatches, 'news');
+                renderTicker(newsMatches, 'news');
                 return;
             }
 
@@ -268,10 +175,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     return matchTypes.indexOf(type) !== -1 && parseEventDate(event.event_date);
                 })
                 .sort(function (a, b) { return new Date(b.event_date) - new Date(a.event_date); })
-                .slice(0, MAX_SLIDES);
+                .slice(0, MAX_ITEMS);
 
             if (eventMatches.length) {
-                renderSlides(eventMatches, 'event');
+                renderTicker(eventMatches, 'event');
             }
         } catch (error) {
             console.error('Could not load spotlight banner:', error);
