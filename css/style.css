@@ -3088,6 +3088,190 @@ tr.registration-row-non-member {
 }
 
 /* =========================================================
+   Events Calendar (combined CPD + Other overview)
+   Used by: events-calendar.html / events-calendar.js
+   ========================================================= */
+
+.events-calendar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 26px;
+}
+
+.events-filter-btn {
+  padding: 8px 18px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.events-filter-btn:hover {
+  border-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.events-filter-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.events-calendar-month-group {
+  margin-bottom: 20px;
+}
+
+.events-calendar-month-group:last-child {
+  margin-bottom: 0;
+}
+
+.events-month-heading {
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--secondary);
+  color: var(--primary-dark);
+  font-size: 0.98rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Compact single-line-per-event list */
+.events-compact-list {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+.events-compact-list .event-row:last-child {
+  border-bottom: none;
+}
+
+.event-row:hover {
+  background: var(--bg-light);
+}
+
+.event-row-date {
+  flex: 0 0 46px;
+  text-align: center;
+}
+
+.event-row-day {
+  display: block;
+  color: var(--primary-dark);
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.event-row-month {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.event-row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.event-row-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.event-row-title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--primary-dark);
+  font-size: 0.94rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-row-meta {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-row-cta {
+  flex: 0 0 auto;
+  color: var(--primary);
+  font-size: 1.1rem;
+  transition: transform 0.15s ease;
+}
+
+.event-row:hover .event-row-cta {
+  transform: translateX(3px);
+}
+
+@media (max-width: 620px) {
+  .event-row {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .event-row-title,
+  .event-row-meta {
+    white-space: normal;
+  }
+
+  .event-row-cta {
+    display: none;
+  }
+}
+
+.event-category-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.event-category-badge.cat-cpd {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.event-category-badge.cat-other {
+  color: var(--primary-dark);
+  background: var(--secondary-light);
+}
+
+/* =========================================================
    Event detail page
    ========================================================= */
 

@@ -96,6 +96,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'status-default';
     }
 
+    function statusLabel(status) {
+        return status === 'Closed' ? 'Registration Closed' : status;
+    }
+
     function eventPhotoMarkup(event) {
         const photoUrl = resolvePhotoUrl(event.photo_url || event.photoUrl);
 
@@ -120,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const type = escapeHtml(
             event.type || event.event_type || 'CPD Event'
         );
-        const status = escapeHtml(event.status || 'Upcoming');
+        const status = escapeHtml(statusLabel(event.status || 'Upcoming'));
         const eventDate = event.event_date || event.eventDate;
         const time = escapeHtml(event.time);
         const location = escapeHtml(event.location);
