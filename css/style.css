@@ -3546,6 +3546,39 @@ tr.registration-row-non-member {
   line-height: 1.5;
 }
 
+/* Portrait poster flyers: "About This Event" sits under the info panel
+   instead of below a very tall image, so both columns end up closer in
+   height. Scoped to this extra class only -- landscape/wide photos keep
+   using .event-detail-layout / .event-detail-media img above, untouched. */
+.event-detail-layout-portrait {
+  grid-template-columns: minmax(320px, 560px) minmax(320px, 600px);
+}
+
+.event-detail-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.event-detail-layout-portrait .event-detail-summary {
+  margin-bottom: 0;
+}
+
+.event-detail-layout-portrait .event-detail-media {
+  display: flex;
+  justify-content: center;
+}
+
+.event-detail-layout-portrait .event-detail-media img {
+  width: auto;
+  max-width: min(600px, 100%);
+  height: auto;
+  max-height: 900px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
 @media (max-width: 760px) {
   .event-detail-layout {
     grid-template-columns: 1fr;
