@@ -288,7 +288,7 @@ ul { list-style:none; }
 @media (max-width: 1100px) { .main-nav .nav-list > li > a { font-size:12px; padding:13px 4px; } }
 @media (max-width: 992px) {
   .content-layout { grid-template-columns:1fr; } .side-menu { position:static; }
-  .grid-3, .grid-4, .album-grid, .photo-grid { grid-template-columns:repeat(2,1fr); }
+  .grid-3, .grid-4, .grid-2, .album-grid, .photo-grid { grid-template-columns:repeat(2,1fr); }
   .stats-grid { grid-template-columns:repeat(2,1fr); } .footer-grid { grid-template-columns:repeat(2,1fr); }
   .main-tab-buttons { flex-direction:column; }
   .carousel { height:420px; }
@@ -316,7 +316,7 @@ ul { list-style:none; }
   .carousel-arrow { padding:9px 12px; font-size:18px; }
   .page-hero { padding:16px 0 14px; }
   .page-hero h1 { font-size:17px; }
-  .grid-3, .grid-4, .album-grid, .photo-grid { grid-template-columns:1fr; }
+  .grid-3, .grid-4, .grid-2, .album-grid, .photo-grid { grid-template-columns:1fr; }
   .footer-grid { grid-template-columns:1fr; }
   .news-feed-item { flex-direction:column; }
   .news-feed-item .news-photo { flex:0 0 auto; height:170px; }
@@ -3817,20 +3817,18 @@ tr.registration-row-non-member {
 }
 
 /* =========================================================
-   Spotlight Banner (news / event carousel)
+   Spotlight Banner — breaking-news ticker
    Used by: annual-conference.html / international-nurses-day.html
-   (js/event-spotlight.js). Shows the latest matching news item(s)
-   for the page's topic, falling back to matching calendar events
-   when no news item exists yet. Auto-advances between multiple
-   matches with a sliding transition; a slow drifting gradient
-   keeps a single match feeling alive.
+   (js/event-spotlight.js). A continuously scrolling marquee of the
+   latest matching news item(s) for the page's topic, falling back
+   to matching calendar events when no news item exists yet.
    ========================================================= */
 
 .spotlight-banner {
   position: relative;
   margin: 0 0 28px;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 10px 26px rgba(8, 50, 94, 0.22);
 }
 
@@ -3838,254 +3836,192 @@ tr.registration-row-non-member {
   display: none;
 }
 
-.spotlight-track {
+.ticker {
   display: flex;
-  transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-.spotlight-slide {
-  position: relative;
-  display: flex;
-  flex: 0 0 100%;
   align-items: center;
-  gap: 20px;
-  padding: 16px 24px;
-  overflow: hidden;
-  background: linear-gradient(120deg, var(--primary-dark) 0%, var(--primary) 45%, var(--primary-light) 100%);
-  background-size: 240% 240%;
-  animation: spotlightDrift 10s ease-in-out infinite;
-  color: #fff;
-  text-decoration: none;
-  transition: filter 0.2s ease;
+  gap: 16px;
+  background: var(--primary-dark);
+  padding-left: 18px;
 }
 
-@keyframes spotlightDrift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.spotlight-slide.has-photo {
-  background-size: cover;
-  background-position: center;
-  animation: none;
-}
-
-.spotlight-slide.has-photo::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, rgba(6, 32, 61, 0.93) 0%, rgba(8, 50, 94, 0.88) 55%, rgba(8, 50, 94, 0.8) 100%);
-}
-
-.spotlight-slide:hover,
-.spotlight-slide:focus-visible {
-  filter: brightness(1.05);
-}
-
-.event-spotlight-date,
-.event-spotlight-divider,
-.spotlight-info,
-.event-spotlight-status,
-.event-spotlight-cta {
-  position: relative;
-  z-index: 1;
-}
-
-.event-spotlight-date {
+.ticker-badge {
   display: flex;
   flex: 0 0 auto;
-  flex-direction: column;
   align-items: center;
-  min-width: 72px;
-  padding: 7px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.12);
-  text-align: center;
-}
-
-.event-spotlight-day {
-  font-size: 1.6rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.event-spotlight-month {
-  margin-top: 3px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.event-spotlight-year {
-  margin-top: 1px;
-  font-size: 0.68rem;
-  color: #cfe0f2;
-}
-
-.event-spotlight-divider {
-  flex: 0 0 auto;
-  width: 1px;
-  align-self: stretch;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.spotlight-info {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.spotlight-kicker {
-  overflow: hidden;
+  gap: 8px;
   color: var(--secondary-light);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.spotlight-title {
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: 1.05rem;
-  font-weight: 800;
-  line-height: 1.3;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-}
-
-.event-spotlight-status {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 3px 10px;
-  border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.event-spotlight-status.status-open {
-  color: #176638;
-  background: #dff5e7;
-}
-
-.event-spotlight-status.status-soon {
-  color: #765600;
-  background: #fff4c7;
-}
-
-.event-spotlight-status.status-closed {
-  color: #8a2730;
-  background: #fde7e9;
-}
-
-.event-spotlight-status.status-default {
-  color: #eaf1fa;
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.event-spotlight-cta {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 999px;
-  color: #fff;
-  font-size: 0.84rem;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.event-spotlight-cta span {
-  transition: transform 0.15s ease;
-}
-
-.spotlight-slide:hover .event-spotlight-cta,
-.spotlight-slide:focus-visible .event-spotlight-cta {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: #fff;
-}
-
-.spotlight-slide:hover .event-spotlight-cta span,
-.spotlight-slide:focus-visible .event-spotlight-cta span {
-  transform: translateX(3px);
-}
-
-.spotlight-dots {
-  position: absolute;
-  right: 20px;
-  bottom: 8px;
-  z-index: 2;
-  display: flex;
-  gap: 6px;
-}
-
-.spotlight-dot {
+.live-dot {
   width: 7px;
   height: 7px;
-  padding: 0;
-  border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
-  cursor: pointer;
-  transition: 0.2s;
+  background: #ff6b5e;
+  animation: spotlightPulseDot 1.8s ease-out infinite;
 }
 
-.spotlight-dot.active {
-  width: 20px;
-  border-radius: 5px;
+@keyframes spotlightPulseDot {
+  0% { box-shadow: 0 0 0 0 rgba(255, 107, 94, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 107, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 107, 94, 0); }
+}
+
+.ticker-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 15px 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation-name: spotlightTickerScroll;
+  animation-duration: 24s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes spotlightTickerScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker-set {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.ticker-item {
+  display: block;
+  margin-right: 28px;
+  padding-right: 28px;
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+  color: #eaf1fb;
+  font-size: 0.92rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.ticker-item:hover,
+.ticker-item:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.ticker-item b {
+  color: var(--secondary-light);
+  font-weight: 700;
+}
+
+.ticker-item .tdate {
+  color: var(--secondary-light);
+  font-weight: 600;
+}
+
+.ticker-item .tstatus {
+  color: #b9d6f0;
+}
+
+.ticker-cta {
+  display: flex;
+  flex: 0 0 auto;
+  align-self: stretch;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--secondary);
+  color: var(--primary-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.ticker-cta:hover,
+.ticker-cta:focus-visible {
   background: var(--secondary-light);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spotlight-slide {
+  .ticker-track {
     animation: none;
   }
 
-  .spotlight-track {
-    transition: none;
+  .live-dot {
+    animation: none;
   }
 }
 
 @media (max-width: 680px) {
-  .spotlight-slide {
-    flex-wrap: wrap;
-    padding: 20px;
+  .ticker {
+    padding-left: 14px;
   }
 
-  .event-spotlight-divider {
+  .ticker-badge .badge-label {
     display: none;
   }
 
-  .spotlight-title {
-    -webkit-line-clamp: 2;
+  .ticker-item {
+    margin-right: 20px;
+    padding-right: 20px;
+    font-size: 0.84rem;
   }
 
-  .event-spotlight-status {
-    order: 3;
+  .ticker-cta {
+    padding: 0 14px;
+    font-size: 0.74rem;
   }
+}
 
-  .event-spotlight-cta {
-    order: 4;
-    width: 100%;
-    justify-content: center;
-  }
+/* Research & Publications section components */
+.eyebrow-tag { display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--secondary); margin-bottom:6px; }
 
-  .spotlight-dots {
-    right: 50%;
-    transform: translateX(50%);
-  }
+.process-steps { display:flex; flex-direction:column; gap:12px; margin:18px 0 22px; }
+.process-step { display:flex; gap:15px; align-items:flex-start; background:#fff; border:1px solid var(--border); border-radius:6px; padding:15px 18px; }
+.process-step .step-num { flex:0 0 32px; width:32px; height:32px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; }
+.process-step h4 { color:var(--primary-dark); font-size:14.5px; margin-bottom:4px; font-weight:700; }
+.process-step p { font-size:13.5px; color:var(--muted); margin-bottom:0; }
+
+.doc-list { display:flex; flex-direction:column; gap:9px; margin:14px 0 22px; }
+.doc-group-label { font-size:12.5px; font-weight:700; color:var(--primary-dark); text-transform:uppercase; letter-spacing:0.3px; margin:20px 0 10px; }
+.doc-group-label:first-child { margin-top:0; }
+.doc-item { display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--border); border-radius:6px; padding:13px 16px; }
+.doc-item .doc-icon { flex:0 0 40px; width:40px; height:40px; border-radius:6px; background:var(--bg-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; }
+.doc-item .doc-info { flex:1; min-width:0; }
+.doc-item .doc-info strong { display:block; font-size:14px; color:var(--primary-dark); }
+.doc-item .doc-info span { font-size:12.5px; color:var(--muted); }
+
+.archive-placeholder { text-align:center; padding:32px 20px; background:var(--bg-light); border:1px dashed var(--border); border-radius:6px; color:var(--muted); font-size:13.5px; margin:14px 0 22px; }
+.archive-placeholder strong { display:block; color:var(--primary-dark); font-size:14.5px; margin-bottom:5px; }
+
+@media (max-width: 480px) {
+  .doc-item { flex-wrap:wrap; }
+}
+
+/* Membership section components */
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.page-tagline { font-style:italic; color:var(--primary); font-weight:600; font-size:15px; margin:-6px 0 16px; }
+.tile p { font-size:12.5px; color:var(--muted); margin-top:2px; margin-bottom:0; }
+
+.cta-banner { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; background:var(--primary-dark); color:#fff; border-radius:8px; padding:26px 30px; margin:22px 0; }
+.cta-banner h3 { color:#fff; font-size:18px; margin-bottom:4px; font-weight:700; }
+.cta-banner p { color:#cfe0f4; font-size:13.5px; margin-bottom:0; }
+.cta-banner .btn-primary { background:var(--secondary); border-color:var(--secondary); color:var(--primary-dark); }
+.cta-banner .btn-primary:hover { background:var(--secondary-light); }
+
+@media (max-width: 600px) {
+  .cta-banner { flex-direction:column; align-items:flex-start; }
 }

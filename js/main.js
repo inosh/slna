@@ -1,23 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-  var loginForm = document.querySelector('#member-login-form');
-
-  if (loginForm) {
-    loginForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      alert('Demo form.');
-    });
-  }
-
-  var contactForm = document.querySelector('#contact-form');
-
-  if (contactForm) {
-    contactForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      alert('Thank you!');
-      contactForm.reset();
-    });
-  }
-
   document.querySelectorAll('.side-menu h3').forEach(function (heading) {
     heading.setAttribute('role', 'button');
     heading.setAttribute('tabindex', '0');
