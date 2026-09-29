@@ -77,7 +77,8 @@
             <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="type-photo-input" accept="image/*"><div id="type-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
               <label>Photo Gallery (optional &mdash; select multiple, or add more separately)</label>
-              <input type="file" id="type-gallery-input" accept="image/*" multiple>
+              <label class="btn btn-outline btn-sm file-input-trigger" for="type-gallery-input">Choose Photos</label>
+              <input type="file" id="type-gallery-input" accept="image/*" multiple class="file-input-hidden">
               <div class="photo-picker-count" id="type-gallery-count">0 photo(s) selected</div>
               <div class="photo-picker-grid" id="type-gallery-picker"></div>
             </div>
@@ -110,7 +111,8 @@
             <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="file-photo-input" accept="image/*"><div id="file-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
               <label>Photo Gallery (optional &mdash; select multiple, or add more separately)</label>
-              <input type="file" id="file-gallery-input" accept="image/*" multiple>
+              <label class="btn btn-outline btn-sm file-input-trigger" for="file-gallery-input">Choose Photos</label>
+              <input type="file" id="file-gallery-input" accept="image/*" multiple class="file-input-hidden">
               <div class="photo-picker-count" id="file-gallery-count">0 photo(s) selected</div>
               <div class="photo-picker-grid" id="file-gallery-picker"></div>
             </div>
@@ -123,8 +125,67 @@
         <h2>Published News Items</h2>
         <div id="news-table-alert" aria-live="polite" tabindex="-1"></div>
         <div class="table-scroll">
-          <table class="news-table"><thead><tr><th>Photo</th><th>Title</th><th>Type</th><th>Date</th><th>Source</th><th>Gallery</th><th>Attachment</th><th>Actions</th></tr></thead><tbody id="news-table-body"></tbody></table>
+          <table class="news-table"><thead><tr><th>Photo</th><th>Title</th><th>Type</th><th>Date</th><th>Source</th><th>Gallery</th><th>Actions</th></tr></thead><tbody id="news-table-body"></tbody></table>
         </div>
+      </div>
+
+      <div class="admin-card" id="edit-news-card" hidden>
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div>
+            <h2>Edit News Item</h2>
+            <p class="admin-muted" id="edit-news-reference">Select a news item to edit.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="close-edit-news" type="button">Close</button>
+        </div>
+
+        <div id="edit-news-alert" aria-live="polite" tabindex="-1"></div>
+
+        <form id="edit-news-form">
+          <div class="form-group"><label>Title</label><input type="text" id="edit-news-title" required></div>
+          <div class="form-group"><label>Type</label>
+            <select id="edit-news-type" required>
+              <option value="" disabled>Select a news type&hellip;</option>
+              <option value="International Nurses Day">International Nurses Day</option>
+              <option value="Annual General Meeting">Annual General Meeting</option>
+              <option value="General Meeting">General Meeting</option>
+              <option value="CPD Event">CPD Event</option>
+              <option value="General News">General News</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Date</label><input type="date" id="edit-news-date" required></div>
+          <div class="form-group"><label>Short Summary</label><input type="text" id="edit-news-summary"></div>
+          <div class="form-group"><label>Full Content</label><textarea id="edit-news-body" rows="6" required></textarea></div>
+
+          <div class="form-group">
+            <label>Cover Photo</label>
+            <div id="edit-news-current-photo" style="margin-bottom:8px;"></div>
+            <input type="file" id="edit-news-photo-input" accept="image/*">
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">Leave blank to keep the current cover photo.</div>
+            <div id="edit-news-photo-preview" style="margin-top:8px;"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Photo Album</label>
+            <div id="edit-news-current-album" style="margin-bottom:8px; font-size:13px; color:var(--muted);"></div>
+
+            <label class="checkbox-label">
+              <input type="checkbox" id="edit-news-override-album">
+              Replace the existing album's photos
+            </label>
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">
+              Default: keep using the existing album as-is. If you check this, <strong>all photos for the album must be uploaded again</strong> &mdash; the ones shown above will be replaced entirely, not merged with the new ones.
+            </div>
+
+            <div id="edit-news-gallery-section" style="display:none; margin-top:10px;">
+              <label class="btn btn-outline btn-sm file-input-trigger" for="edit-news-gallery-input">Choose Photos</label>
+              <input type="file" id="edit-news-gallery-input" accept="image/*" multiple class="file-input-hidden">
+              <div class="photo-picker-count" id="edit-news-gallery-count">0 photo(s) selected</div>
+              <div class="photo-picker-grid" id="edit-news-gallery-picker"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
       </div>
     </div>
 
@@ -137,7 +198,8 @@
           <div class="form-group"><label>Date</label><input type="date" id="album-date" required></div>
           <div class="form-group">
             <label>Photos (select multiple, or add more separately)</label>
-            <input type="file" id="album-photo-input" accept="image/*" multiple>
+            <label class="btn btn-outline btn-sm file-input-trigger" for="album-photo-input">Choose Photos</label>
+            <input type="file" id="album-photo-input" accept="image/*" multiple class="file-input-hidden">
             <div class="photo-picker-count" id="album-photo-count">0 photo(s) selected</div>
             <div class="photo-picker-grid" id="album-photo-picker"></div>
           </div>
@@ -651,7 +713,7 @@
             <input
                     type="search"
                     id="membership-search"
-                    placeholder="Search by reference number, applicant name, or NIC"
+                    placeholder="Search by reference number, applicant name, NIC, or SLNC reg no"
             >
           </div>
         </div>
@@ -661,8 +723,8 @@
             <thead>
             <tr>
               <th>Reference</th>
-              <th>Applicant</th>
-              <th>NIC</th>
+              <th>Applicant / Membership No</th>
+              <th>NIC / SLNC Reg No</th>
               <th>Workplace / Designation</th>
               <th>Submitted</th>
               <th>Status</th>

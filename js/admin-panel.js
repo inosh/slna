@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   loadAdminAlbumTable();
   initMembershipApplications();
   initContactQueries();
+  initEditNewsForm();
 
   function populateTimeSelectGroup(group) {
     if (!group) {
@@ -2494,7 +2495,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const searchable = [
           application.referenceNumber,
           application.fullName,
-          application.nicNumber
+          application.nicNumber,
+          application.membershipNumber,
+          application.slncRegistrationNumber
         ]
             .join(' ')
             .toLowerCase();
@@ -2538,10 +2541,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
             '<td>' +
             escapeHtml(application.fullName) +
+            (
+                application.membershipNumber
+                    ? '<br><span class="admin-muted">' +
+                    escapeHtml(application.membershipNumber) +
+                    '</span>'
+                    : ''
+            ) +
             '</td>' +
 
             '<td>' +
             escapeHtml(application.nicNumber) +
+            (
+                application.slncRegistrationNumber
+                    ? '<br><span class="admin-muted">' +
+                    escapeHtml(application.slncRegistrationNumber) +
+                    '</span>'
+                    : ''
+            ) +
             '</td>' +
 
             '<td>' +
@@ -2727,6 +2744,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       reviewReference.textContent =
           application.referenceNumber +
+          (
+              application.membershipNumber
+                  ? ' · Membership No: ' + application.membershipNumber
+                  : ''
+          ) +
           ' · Submitted ' +
           formatDateTime(application.submittedAt) +
           ' · Status: ' +
@@ -3381,6 +3403,21 @@ document.addEventListener('DOMContentLoaded', function () {
       );
     }
 
+    function buildIdFileBaseName(application) {
+      return (
+        'SLNA-' +
+        application.membershipNumber +
+        '-' +
+        String(
+            application.nameWithInitials ||
+            application.fullName
+        )
+            .replace(/\./g, '')
+            .trim()
+            .replace(/\s+/g, '-')
+      );
+    }
+
     async function downloadIdApplicationPdf() {
       if (!selectedApplication) {
         setMembershipMessage(
@@ -3451,17 +3488,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const link = downloadWindow.document.createElement('a');
         link.href = pdfUrl;
         link.download =
-            'SLNA-' +
-            selectedApplication.membershipNumber +
-            '-' +
-            String(
-                selectedApplication.nameWithInitials ||
-                selectedApplication.fullName
-            )
-                .replace(/\./g, '')
-                .trim()
-                .replace(/\s+/g, '-') +
-            '.pdf';
+            buildIdFileBaseName(selectedApplication) +
+            '-ID-Application.pdf';
 
         downloadWindow.document.body.appendChild(link);
         link.click();
@@ -3536,30 +3564,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const photoBlob = await response.blob();
         const photoUrl = URL.createObjectURL(photoBlob);
 
-        const contentDisposition = response.headers.get(
-            'Content-Disposition'
-        );
-
-        let filename =
-            selectedApplication.membershipNumber +
-            '-' +
-            String(
-                selectedApplication.nameWithInitials ||
-                selectedApplication.fullName
-            )
-                .replace(/\./g, '')
-                .replace(/\s+/g, '') +
+        const filename =
+            buildIdFileBaseName(selectedApplication) +
             '-ID-Photo.jpg';
-
-        if (contentDisposition) {
-          const match = contentDisposition.match(
-              /filename="?([^"]+)"?/i
-          );
-
-          if (match && match[1]) {
-            filename = match[1];
-          }
-        }
 
         const link = document.createElement('a');
         link.href = photoUrl;
@@ -3828,7 +3835,7 @@ async function loadAdminNewsTable() {
     const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news');
     if (!res.ok) throw new Error('bad status');
     const items = await res.json();
-    if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">No news items yet.</td></tr>'; return; }
+    if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888;">No news items yet.</td></tr>'; return; }
     const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
     tbody.innerHTML = items.map(item => {
       const badgeClass = item.source === 'file' ? 'badge-file' : 'badge-typed';
@@ -3837,10 +3844,10 @@ async function loadAdminNewsTable() {
       const gallery = item.album_id
           ? '<a href="album.html?id=' + item.album_id + '" target="_blank" rel="noopener">View Album</a>'
           : '-';
-      return '<tr><td>' + thumb + '</td><td>' + item.title + '</td><td>' + (item.news_type || '-') + '</td><td>' + item.event_date + '</td><td><span class="badge-source ' + badgeClass + '">' + badgeLabel + '</span></td><td>' + gallery + '</td><td>' + (item.file_name || '-') + '</td><td><button class="btn btn-danger btn-sm" onclick="handleDeleteNews(' + item.id + ')">Delete</button></td></tr>';
+      return '<tr><td>' + thumb + '</td><td>' + item.title + '</td><td>' + (item.news_type || '-') + '</td><td>' + item.event_date + '</td><td><span class="badge-source ' + badgeClass + '">' + badgeLabel + '</span></td><td>' + gallery + '</td><td><button class="btn btn-outline btn-sm" onclick="handleEditNews(' + item.id + ')">Edit</button> <button class="btn btn-danger btn-sm" onclick="handleDeleteNews(' + item.id + ')">Delete</button></td></tr>';
     }).join('');
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#c0392b;">Could not load news. Is the backend server running?</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#c0392b;">Could not load news. Is the backend server running?</td></tr>';
   }
 }
 
@@ -3861,6 +3868,176 @@ async function handleDeleteNews(id) {
     console.error(err);
     showAlert('news-table-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
   }
+}
+
+// ---- News: Edit ----
+let editNewsCurrentItem = null;
+let editNewsPhotoFile = null;
+let editNewsGalleryFiles = [];
+
+async function handleEditNews(id) {
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/' + id);
+    if (!res.ok) throw new Error('bad status');
+    const item = await res.json();
+    const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
+
+    editNewsCurrentItem = item;
+    editNewsPhotoFile = null;
+    editNewsGalleryFiles = [];
+
+    document.getElementById('edit-news-alert').innerHTML = '';
+    document.getElementById('edit-news-reference').textContent = 'Editing: ' + item.title;
+    document.getElementById('edit-news-title').value = item.title || '';
+    document.getElementById('edit-news-type').value = item.news_type || '';
+    document.getElementById('edit-news-date').value = (item.event_date || '').slice(0, 10);
+    document.getElementById('edit-news-summary').value = item.summary || '';
+    document.getElementById('edit-news-body').value = item.body || '';
+
+    document.getElementById('edit-news-current-photo').innerHTML = item.photo_url
+        ? '<img src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:80px;height:80px;">'
+        : 'No cover photo set.';
+    document.getElementById('edit-news-photo-preview').innerHTML = '';
+    document.getElementById('edit-news-photo-input').value = '';
+
+    document.getElementById('edit-news-current-album').innerHTML = item.album_id
+        ? 'Current album: <a href="album.html?id=' + item.album_id + '" target="_blank" rel="noopener">' +
+        (item.photos ? item.photos.length : '?') + ' photo(s) &mdash; view</a>'
+        : 'No photo album linked to this news item yet.';
+
+    document.getElementById('edit-news-override-album').checked = false;
+    document.getElementById('edit-news-gallery-section').style.display = 'none';
+    document.getElementById('edit-news-gallery-input').value = '';
+    renderEditNewsGalleryPicker();
+
+    const card = document.getElementById('edit-news-card');
+    card.hidden = false;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    console.error(err);
+    showAlert('news-table-alert', 'Could not load this news item for editing.', 'error');
+  }
+}
+
+function closeEditNewsCard() {
+  document.getElementById('edit-news-card').hidden = true;
+  editNewsCurrentItem = null;
+}
+
+function renderEditNewsGalleryPicker() {
+  const picker = document.getElementById('edit-news-gallery-picker');
+  Promise.all(editNewsGalleryFiles.map(file => new Promise((resolve) => {
+    const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsDataURL(file);
+  }))).then(previews => {
+    picker.innerHTML = previews.map((p, idx) =>
+      '<div class="photo-picker-item"><img src="' + p + '"><button type="button" onclick="window._removeEditNewsGalleryPhoto(' + idx + ')">X</button></div>'
+    ).join('');
+    const countEl = document.getElementById('edit-news-gallery-count');
+    if (countEl) countEl.textContent = editNewsGalleryFiles.length + ' photo(s) selected';
+  });
+}
+window._removeEditNewsGalleryPhoto = function (idx) { editNewsGalleryFiles.splice(idx, 1); renderEditNewsGalleryPicker(); };
+
+function initEditNewsForm() {
+  const form = document.getElementById('edit-news-form');
+  const closeButton = document.getElementById('close-edit-news');
+  const photoInput = document.getElementById('edit-news-photo-input');
+  const overrideCheckbox = document.getElementById('edit-news-override-album');
+  const gallerySection = document.getElementById('edit-news-gallery-section');
+  const galleryInput = document.getElementById('edit-news-gallery-input');
+
+  closeButton.addEventListener('click', closeEditNewsCard);
+
+  photoInput.addEventListener('change', function (e) {
+    if (e.target.files.length) {
+      const file = e.target.files[0];
+      if (file.size > 15 * 1024 * 1024) {
+        showAlert('edit-news-alert', 'That photo is ' + (file.size / (1024 * 1024)).toFixed(1) + 'MB, which is over the 15MB limit. Please choose a smaller photo.', 'error');
+        e.target.value = '';
+        return;
+      }
+      editNewsPhotoFile = file;
+      const reader = new FileReader();
+      reader.onload = (evt) => { document.getElementById('edit-news-photo-preview').innerHTML = '<img src="' + evt.target.result + '" class="thumb-preview">'; };
+      reader.readAsDataURL(editNewsPhotoFile);
+    }
+  });
+
+  overrideCheckbox.addEventListener('change', function () {
+    gallerySection.style.display = overrideCheckbox.checked ? 'block' : 'none';
+    if (!overrideCheckbox.checked) {
+      editNewsGalleryFiles = [];
+      galleryInput.value = '';
+      renderEditNewsGalleryPicker();
+    }
+  });
+
+  galleryInput.addEventListener('change', function (e) {
+    const files = Array.from(e.target.files);
+    const oversized = files.filter(f => f.size > 15 * 1024 * 1024);
+    const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+    if (oversized.length) {
+      showAlert('edit-news-alert', oversized.length + ' photo(s) are over the 15MB limit and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
+    }
+    editNewsGalleryFiles = editNewsGalleryFiles.concat(validFiles);
+    renderEditNewsGalleryPicker();
+    galleryInput.value = '';
+  });
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (!editNewsCurrentItem) return;
+
+    const title = document.getElementById('edit-news-title').value.trim();
+    const news_type = document.getElementById('edit-news-type').value;
+    const event_date = document.getElementById('edit-news-date').value;
+    const summary = document.getElementById('edit-news-summary').value.trim();
+    const body = document.getElementById('edit-news-body').value.trim();
+    const overrideAlbum = overrideCheckbox.checked;
+
+    if (!title || !news_type || !event_date || !body) {
+      showAlert('edit-news-alert', 'Please fill in title, type, date, and content.', 'error');
+      return;
+    }
+    if (overrideAlbum && editNewsGalleryFiles.length === 0) {
+      showAlert('edit-news-alert', 'Please select the photos to upload for the album, or uncheck "Replace the existing album\'s photos" to keep it unchanged.', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('news_type', news_type);
+    formData.append('event_date', event_date);
+    formData.append('summary', summary);
+    formData.append('body', body);
+    formData.append('override_album', overrideAlbum ? 'true' : 'false');
+    if (editNewsPhotoFile) formData.append('photo', editNewsPhotoFile);
+    if (overrideAlbum) editNewsGalleryFiles.forEach(file => formData.append('photos', file));
+
+    try {
+      const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/' + editNewsCurrentItem.id, {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + getToken() },
+        body: formData,
+      });
+      if (!res.ok) {
+        let message = 'Could not update the news item.';
+        try {
+          const data = await res.json();
+          if (data && data.error) message = data.error;
+        } catch (parseErr) {
+          // Response wasn't JSON -- fall back to the generic message above.
+        }
+        showAlert('edit-news-alert', message, 'error');
+        return;
+      }
+      showAlert('edit-news-alert', 'News item updated.', 'success');
+      loadAdminNewsTable();
+    } catch (err) {
+      console.error(err);
+      showAlert('edit-news-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
+    }
+  });
 }
 
 async function loadAdminAlbumTable() {
