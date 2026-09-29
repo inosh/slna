@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
   loadAdminNewsTable();
   loadAdminAlbumTable();
   initMembershipApplications();
+  initContactQueries();
 
   function populateTimeSelectGroup(group) {
     if (!group) {
@@ -3896,4 +3897,158 @@ async function handleDeleteAlbum(id) {
     console.error(err);
     showAlert('album-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
   }
+}
+
+// ---- User Queries (Contact SLNA form submissions) ----
+
+let activeQueryStatus = 'all';
+let contactQueriesCache = [];
+
+const CONTACT_QUERY_SUBJECT_LABELS = {
+  general: 'General Inquiry',
+  feedback: 'Feedback / Suggestion',
+  membership: 'Membership Query',
+  events: 'Events & CPD',
+  other: 'Other'
+};
+
+function escapeHtml(value) {
+  return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+}
+
+function formatQueryDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function updateContactQueriesBadge() {
+  const badge = document.getElementById('queries-new-count');
+  if (!badge) return;
+  const newCount = contactQueriesCache.filter(q => q.status === 'new').length;
+  badge.textContent = String(newCount);
+}
+
+function renderContactQueriesTable() {
+  const tbody = document.getElementById('contact-queries-table-body');
+  if (!tbody) return;
+
+  const filtered = activeQueryStatus === 'all'
+      ? contactQueriesCache
+      : contactQueriesCache.filter(q => q.status === activeQueryStatus);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-table-state">No queries found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(function (item) {
+    const isNew = item.status === 'new';
+    const toggleLabel = isNew ? 'Mark as Read' : 'Mark as New';
+    const toggleStatus = isNew ? 'read' : 'new';
+    const statusBadgeClass = isNew ? 'badge-typed' : 'badge-file';
+    const statusLabel = isNew ? 'New' : 'Read';
+    const subjectLabel = CONTACT_QUERY_SUBJECT_LABELS[item.subject] || item.subject;
+
+    return '<tr>' +
+        '<td>' + escapeHtml(item.full_name) + '</td>' +
+        '<td>' + escapeHtml(item.email) + '<br><span class="admin-muted">' + escapeHtml(item.mobile_number) + '</span></td>' +
+        '<td>' + escapeHtml(subjectLabel) + '</td>' +
+        '<td style="max-width:280px; white-space:pre-wrap;">' + escapeHtml(item.message) + '</td>' +
+        '<td>' + escapeHtml(formatQueryDate(item.created_at)) + '</td>' +
+        '<td><span class="badge-source ' + statusBadgeClass + '">' + statusLabel + '</span></td>' +
+        '<td>' +
+        '<button class="btn btn-outline btn-sm" onclick="handleToggleQueryStatus(' + item.id + ', \'' + toggleStatus + '\')">' + toggleLabel + '</button> ' +
+        '<button class="btn btn-danger btn-sm" onclick="handleDeleteQuery(' + item.id + ')">Delete</button>' +
+        '</td>' +
+        '</tr>';
+  }).join('');
+}
+
+async function loadContactQueries() {
+  const tbody = document.getElementById('contact-queries-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="7" class="empty-table-state">Loading queries...</td></tr>';
+
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/contact-queries', {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    if (!res.ok) throw new Error('bad status');
+    contactQueriesCache = await res.json();
+    updateContactQueriesBadge();
+    renderContactQueriesTable();
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-table-state" style="color:#c0392b;">Could not load queries. Is the backend server running?</td></tr>';
+  }
+}
+
+async function handleToggleQueryStatus(id, newStatus) {
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/contact-queries/' + id + '/status', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken()
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (!res.ok) {
+      showAlert('contact-queries-alert', 'Could not update this query.', 'error');
+      return;
+    }
+    await loadContactQueries();
+  } catch (err) {
+    console.error(err);
+    showAlert('contact-queries-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
+  }
+}
+
+async function handleDeleteQuery(id) {
+  if (!confirm('Delete this query?')) return;
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/contact-queries/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    if (!res.ok) {
+      showAlert('contact-queries-alert', 'Could not delete this query. It may have already been removed.', 'error');
+      return;
+    }
+    showAlert('contact-queries-alert', 'Query deleted.', 'success');
+    loadContactQueries();
+  } catch (err) {
+    console.error(err);
+    showAlert('contact-queries-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
+  }
+}
+
+function initContactQueries() {
+  document.querySelectorAll('[data-query-status]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      activeQueryStatus = button.getAttribute('data-query-status');
+
+      document.querySelectorAll('[data-query-status]').forEach(function (tab) {
+        tab.classList.remove('active');
+      });
+
+      button.classList.add('active');
+      renderContactQueriesTable();
+    });
+  });
+
+  const refreshButton = document.getElementById('refresh-contact-queries');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', loadContactQueries);
+  }
+
+  loadContactQueries();
 }

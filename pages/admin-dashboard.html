@@ -17,8 +17,8 @@
 
   <div class="admin-wrap">
     <div class="main-tab-buttons" role="tablist" aria-label="Admin dashboard sections">
-      <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">Add News</button>
-      <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Add Photos / Albums</button>
+      <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">News</button>
+      <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Photos / Albums</button>
       <button
               class="main-tab-btn"
               data-maintab="maintab-cpd-events"
@@ -46,6 +46,8 @@
       </button>
 
       <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
+
+      <button class="main-tab-btn" data-maintab="maintab-queries" role="tab" aria-selected="false">User Queries <span class="application-count-badge" id="queries-new-count">0</span></button>
     </div>
 
     <div class="main-tab-panel active" id="maintab-news" role="tabpanel">
@@ -1102,7 +1104,61 @@
       </div>
     </div>
 
-<!--    <div class="info-box"><p><strong>Note:</strong> This dashboard saves news and albums to the local backend server. The Membership Applications screen is currently a stakeholder-review UI; it will connect to the membership application API after backend implementation.</p></div>-->
+    <div class="main-tab-panel" id="maintab-queries" role="tabpanel">
+      <div class="admin-card">
+        <div class="membership-admin-heading">
+          <div>
+            <h2>User Queries</h2>
+            <p class="admin-muted">
+              Messages submitted through the Contact SLNA form &mdash; general inquiries,
+              feedback, membership queries, and event questions.
+            </p>
+          </div>
+
+          <button
+                  class="btn btn-outline btn-sm"
+                  id="refresh-contact-queries"
+                  type="button"
+          >
+            Refresh List
+          </button>
+        </div>
+
+        <div id="contact-queries-alert" aria-live="polite" tabindex="-1"></div>
+
+        <div
+                class="tab-buttons"
+                role="tablist"
+                aria-label="Filter queries by status"
+        >
+          <button class="tab-btn active" data-query-status="all" type="button">All</button>
+          <button class="tab-btn" data-query-status="new" type="button">New</button>
+          <button class="tab-btn" data-query-status="read" type="button">Read</button>
+        </div>
+
+        <div class="table-scroll">
+          <table class="news-table">
+            <thead>
+            <tr>
+              <th>Name</th>
+              <th>Contact</th>
+              <th>Subject</th>
+              <th>Message</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+
+            <tbody id="contact-queries-table-body">
+            <tr>
+              <td colspan="7" class="empty-table-state">Loading queries...</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div
