@@ -271,15 +271,17 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
     ` : '';
 
-        // Portrait poster: "About This Event" moves into the same column as
-        // the info panel so the page isn't left with a huge gap of empty
-        // space next to a very tall image. Landscape/wide photos (and the
-        // no-photo placeholder) keep the original layout untouched.
+        // Portrait poster: "About This Event" and the bank details move into
+        // the same column as the info panel so the page isn't left with a
+        // huge gap of empty space next to a very tall image. Landscape/wide
+        // photos (and the no-photo placeholder) keep the original layout,
+        // with the bank box as its own full-width block below.
         const layoutMarkup = orientation === 'portrait' ? `
       <div class="event-detail-layout event-detail-layout-portrait">
         <div class="event-detail-left-col">
           ${infoCardMarkup}
           ${summaryMarkup}
+          ${bankDetailsMarkup}
         </div>
 
         <div class="event-detail-media">${mediaMarkup}</div>
@@ -291,6 +293,8 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
 
       ${summaryMarkup}
+
+      ${bankDetailsMarkup}
     `;
 
         container.innerHTML = `
@@ -299,8 +303,6 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="event-detail-badges">${badgesMarkup}</div>
 
       ${layoutMarkup}
-
-      ${bankDetailsMarkup}
     `;
     }
 

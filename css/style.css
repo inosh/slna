@@ -3560,7 +3560,23 @@ tr.registration-row-non-member {
   gap: 24px;
 }
 
-.event-detail-layout-portrait .event-detail-summary {
+/* The wider portrait column leaves the compact Date/Time/Location list
+   stranded on the left with empty panel to the right of it -- lay the
+   facts out as a responsive grid instead of a single narrow stack so they
+   actually use the extra width, same idea as .event-registration-summary. */
+.event-detail-layout-portrait .event-detail-info-card dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px 28px;
+}
+
+.event-detail-layout-portrait .event-detail-info-card dl > div {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.event-detail-layout-portrait .event-detail-summary,
+.event-detail-layout-portrait .event-detail-bank-box {
   margin-bottom: 0;
 }
 
