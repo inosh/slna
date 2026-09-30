@@ -78,6 +78,35 @@ async function renderPublicNewsList() {
     console.error(err);
   }
 }
+// Fills the scrolling headline strip at the top of news.html. No-ops on
+// any other page since #news-ticker only exists there. Items are rendered
+// twice back-to-back so the CSS animation (translateX 0 -> -50%) loops
+// seamlessly instead of visibly jumping when it restarts.
+async function renderNewsTicker() {
+  const ticker = document.getElementById('news-ticker');
+  const content = document.getElementById('news-ticker-content');
+
+  if (!ticker || !content) return;
+
+  try {
+    const items = await apiGet('/news');
+
+    if (items.length === 0) return;
+
+    const itemsHtml = items.map(function (item) {
+      const detailUrl = 'news-detail.html?id=' + encodeURIComponent(item.id);
+      const title = escapeHtml(item.title || 'News Update');
+
+      return '<a href="' + detailUrl + '">' + title + '</a>' +
+          '<span class="news-ticker-sep" aria-hidden="true">&bull;</span>';
+    }).join('');
+
+    content.innerHTML = itemsHtml + itemsHtml;
+    ticker.hidden = false;
+  } catch (err) {
+    console.error(err);
+  }
+}
 async function renderHomeNewsPreview() {
   const container = document.getElementById('news-list-container');
   if (!container || !container.classList.contains('home-preview')) return;
@@ -218,5 +247,5 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeLightbox(); if (e.key === 'ArrowRight') lightboxNext(); if (e.key === 'ArrowLeft') lightboxPrev();
 });
 document.addEventListener('DOMContentLoaded', function () {
-  renderPublicNewsList(); renderHomeNewsPreview(); renderAlbumGrid(); renderNewsDetail(); renderAlbumDetail();
+  renderPublicNewsList(); renderHomeNewsPreview(); renderAlbumGrid(); renderNewsDetail(); renderAlbumDetail(); renderNewsTicker();
 });

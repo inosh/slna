@@ -255,6 +255,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setupEventAdminForm({
       formId: 'cpd-event-form',
       alertId: 'cpd-event-alert',
+      tableAlertId: 'cpd-events-table-alert',
       tableBodyId: 'cpd-events-table-body',
       photoInputId: 'cpd-event-photo-input',
       photoPreviewId: 'cpd-event-photo-preview',
@@ -297,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setupEventAdminForm({
       formId: 'other-event-form',
       alertId: 'other-event-alert',
+      tableAlertId: 'other-events-table-alert',
       tableBodyId: 'other-events-table-body',
       photoInputId: 'other-event-photo-input',
       photoPreviewId: 'other-event-photo-preview',
@@ -770,7 +772,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         closeEventEditModal();
-        showAlert(config.alertId, 'Event updated.', 'success');
+        showAlert(config.tableAlertId || config.alertId, 'Event updated.', 'success');
 
         if (typeof config.reload === 'function') {
           await config.reload();
@@ -1278,6 +1280,133 @@ document.addEventListener('DOMContentLoaded', function () {
 
   initEventRegistrationsAdmin();
 
+  function getRegistrationCount(item) {
+    const raw = item.registrationCount !== undefined ? item.registrationCount : item.registration_count;
+    const parsed = Number(raw);
+
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  // ------------------------------------------------------------------
+  // Shared "Delete Event" confirmation modal (used by both CPD and Other
+  // events -- wired once here, since the modal is a single shared DOM
+  // element, rather than once per setupEventAdminForm() call).
+  // ------------------------------------------------------------------
+  const eventDeleteModal = document.getElementById('event-delete-confirm-modal');
+  const eventDeleteModalName = document.getElementById('event-delete-confirm-name');
+  const eventDeleteModalMessage = document.getElementById('event-delete-confirm-message');
+  const eventDeleteModalWarning = document.getElementById('event-delete-confirm-warning');
+  const cancelEventDeleteButton = document.getElementById('cancel-event-delete-confirmation');
+  const confirmEventDeleteButton = document.getElementById('confirm-event-delete-modal');
+
+  let pendingEventDelete = null;
+
+  function closeEventDeleteConfirmModal() {
+    if (!eventDeleteModal) {
+      return;
+    }
+
+    eventDeleteModal.hidden = true;
+    pendingEventDelete = null;
+  }
+
+  function openEventDeleteConfirmModal(config, item, eventId) {
+    if (!eventDeleteModal) {
+      return;
+    }
+
+    const registrationCount = getRegistrationCount(item);
+
+    pendingEventDelete = { config, eventId };
+
+    eventDeleteModalName.textContent = item.title || ('Event #' + eventId);
+
+    if (registrationCount > 0) {
+      eventDeleteModalMessage.innerHTML =
+          '<strong>This event has ' + registrationCount + ' registration' + (registrationCount === 1 ? '' : 's') + '.</strong>';
+
+      eventDeleteModalWarning.innerHTML =
+          '<strong>Deleting this event will also permanently delete ' +
+          (registrationCount === 1 ? 'that registration record' : 'all ' + registrationCount + ' registration records') +
+          '. This action cannot be undone.</strong>';
+
+      eventDeleteModalWarning.hidden = false;
+    } else {
+      eventDeleteModalMessage.textContent = 'Are you sure you want to delete this event? This action cannot be undone.';
+      eventDeleteModalWarning.hidden = true;
+      eventDeleteModalWarning.textContent = '';
+    }
+
+    eventDeleteModal.hidden = false;
+    confirmEventDeleteButton.focus();
+  }
+
+  async function submitEventDeleteConfirmation() {
+    if (!pendingEventDelete) {
+      closeEventDeleteConfirmModal();
+      return;
+    }
+
+    const { config, eventId } = pendingEventDelete;
+    const tableAlertId = config.tableAlertId || config.alertId;
+
+    confirmEventDeleteButton.disabled = true;
+    confirmEventDeleteButton.textContent = 'Deleting...';
+
+    try {
+      const response = await fetch(
+          SLNA_CONFIG.API_BASE_URL + config.endpoint + '/' + encodeURIComponent(eventId),
+          {
+            method: 'DELETE',
+            headers: { Authorization: 'Bearer ' + getToken() }
+          }
+      );
+
+      if (!response.ok) {
+        throw new Error(await parseApiError(response));
+      }
+
+      closeEventDeleteConfirmModal();
+      showAlert(tableAlertId, 'Event deleted.', 'success');
+
+      if (typeof config.reload === 'function') {
+        await config.reload();
+      }
+    } catch (error) {
+      const message = error instanceof TypeError
+          ? networkErrorMessage(error)
+          : (error.message || 'Could not delete this event.');
+
+      closeEventDeleteConfirmModal();
+      showAlert(tableAlertId, message, 'error');
+    } finally {
+      confirmEventDeleteButton.disabled = false;
+      confirmEventDeleteButton.textContent = 'Delete Event';
+    }
+  }
+
+  if (cancelEventDeleteButton) {
+    cancelEventDeleteButton.addEventListener('click', closeEventDeleteConfirmModal);
+  }
+
+  if (confirmEventDeleteButton) {
+    confirmEventDeleteButton.addEventListener('click', submitEventDeleteConfirmation);
+  }
+
+  if (eventDeleteModal) {
+    const eventDeleteBackdrop = eventDeleteModal.querySelector('.admin-confirm-backdrop');
+
+    if (eventDeleteBackdrop) {
+      eventDeleteBackdrop.addEventListener('click', closeEventDeleteConfirmModal);
+    }
+  }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && eventDeleteModal && !eventDeleteModal.hidden) {
+      closeEventDeleteConfirmModal();
+    }
+  });
+
   function setupEventAdminForm(config) {
     const form = document.getElementById(config.formId);
 
@@ -1455,6 +1584,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const audience = getItemValue(item, 'audience', 'audience');
       const memberFee = getItemValue(item, 'memberFee', 'member_fee');
       const nonMemberFee = getItemValue(item, 'nonMemberFee', 'non_member_fee');
+      const registrationCount = getRegistrationCount(item);
       const id = item.id;
 
       return `
@@ -1470,7 +1600,11 @@ document.addEventListener('DOMContentLoaded', function () {
                <td>Member: ${formatFee(memberFee)}<br>Non-Member: ${formatFee(nonMemberFee)}</td>`
             : ''
       }
-        <td>${escapeHtml(status)}</td>
+        <td>${escapeHtml(status)}${
+          hasAudienceFeeColumns
+              ? `<br><span style="font-size:12px;color:var(--muted);">${registrationCount} registration${registrationCount === 1 ? '' : 's'}</span>`
+              : ''
+      }</td>
         <td>
           ${
           id
@@ -1836,38 +1970,15 @@ document.addEventListener('DOMContentLoaded', function () {
             'data-event-delete-id'
         );
 
-        if (!eventId || !window.confirm('Delete this event?')) {
+        if (!eventId) {
           return;
         }
 
-        try {
-          const response = await fetch(
-              SLNA_CONFIG.API_BASE_URL +
-              config.endpoint +
-              '/' +
-              encodeURIComponent(eventId),
-              {
-                method: 'DELETE',
-                headers: {
-                  Authorization: 'Bearer ' + getToken()
-                }
-              }
-          );
+        const eventItem = currentItems.find(function (candidate) {
+          return String(candidate.id) === String(eventId);
+        });
 
-          if (!response.ok) {
-            throw new Error(await parseApiError(response));
-          }
-
-          showAlert(config.alertId, 'Event deleted.', 'success');
-
-          await loadItems();
-        } catch (error) {
-          const message = error instanceof TypeError
-              ? networkErrorMessage(error)
-              : (error.message || 'Could not delete this event.');
-
-          showAlert(config.alertId, message, 'error');
-        }
+        openEventDeleteConfirmModal(config, eventItem || {}, eventId);
       });
     }
 
@@ -4259,14 +4370,14 @@ async function handleDeleteAlbum(id) {
       headers: { 'Authorization': 'Bearer ' + getToken() },
     });
     if (!res.ok) {
-      showAlert('album-alert', 'Could not delete this album. It may have already been removed.', 'error');
+      showAlert('album-table-alert', 'Could not delete this album. It may have already been removed.', 'error');
       return;
     }
-    showAlert('album-alert', 'Album deleted.', 'success');
+    showAlert('album-table-alert', 'Album deleted.', 'success');
     loadAdminAlbumTable();
   } catch (err) {
     console.error(err);
-    showAlert('album-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
+    showAlert('album-table-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
   }
 }
 

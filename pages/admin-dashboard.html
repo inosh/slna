@@ -213,6 +213,7 @@
 
       <div class="admin-card">
         <h2>Published Albums</h2>
+        <div id="album-table-alert" aria-live="polite" tabindex="-1"></div>
         <div class="table-scroll">
           <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Items</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
         </div>
@@ -420,6 +421,7 @@
 
       <div class="admin-card">
         <h2>Published CPD Events</h2>
+        <div id="cpd-events-table-alert" aria-live="polite" tabindex="-1"></div>
 
         <div class="table-scroll">
           <table class="news-table">
@@ -432,7 +434,7 @@
               <th>Location</th>
               <th>Audience</th>
               <th>Fees (LKR)</th>
-              <th>Status</th>
+              <th>Status / Registrations</th>
               <th>Actions</th>
             </tr>
             </thead>
@@ -587,6 +589,7 @@
 
       <div class="admin-card">
         <h2>Published Other Events</h2>
+        <div id="other-events-table-alert" aria-live="polite" tabindex="-1"></div>
 
         <div class="table-scroll">
           <table class="news-table">
@@ -1409,7 +1412,7 @@
 
       <div id="event-edit-alert" aria-live="polite" tabindex="-1"></div>
 
-      <form id="event-edit-form">
+      <form id="event-edit-form" novalidate>
         <div class="form-group">
           <label for="event-edit-title">Title</label>
           <input type="text" id="event-edit-title" required>
@@ -1514,6 +1517,62 @@
           <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="event-delete-confirm-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-delete-confirm-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-icon" aria-hidden="true">
+        !
+      </div>
+
+      <div class="admin-confirm-content">
+        <h2 id="event-delete-confirm-title">
+          Delete Event
+        </h2>
+
+        <p id="event-delete-confirm-message">
+          Are you sure you want to delete this event? This action cannot be undone.
+        </p>
+
+        <div class="admin-confirm-reference">
+          <span>Event</span>
+          <strong id="event-delete-confirm-name">&mdash;</strong>
+        </div>
+
+        <p
+                class="admin-confirm-warning"
+                id="event-delete-confirm-warning"
+                hidden
+        ></p>
+
+        <div class="admin-confirm-actions">
+          <button
+                  type="button"
+                  class="btn btn-outline"
+                  id="cancel-event-delete-confirmation"
+          >
+            Cancel
+          </button>
+
+          <button
+                  type="button"
+                  class="btn btn-danger"
+                  id="confirm-event-delete-modal"
+          >
+            Delete Event
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -11,7 +11,21 @@
 <!-- Shared header will be inserted here -->
 </div>
 
-<div class="page-hero"><div class="container"><h1>News</h1><div class="breadcrumb"><a href="../index.html">Home</a> / <span>News</span></div></div></div><div class="container" style="padding:44px 20px;"><div id="news-list-container" class="news-grid"><div class="news-empty">Loading news...</div></div></div>
+<div class="page-hero"><div class="container"><h1>News</h1><div class="breadcrumb"><a href="../index.html">Home</a> / <span>News</span></div></div></div>
+
+<div class="container" style="margin-top:24px;">
+  <div class="news-ticker" id="news-ticker" aria-label="Latest news ticker" hidden>
+    <span class="news-ticker-label">
+      <span class="live-dot" aria-hidden="true"></span>
+      <span class="news-ticker-label-text">Latest News</span>
+    </span>
+    <div class="news-ticker-track">
+      <div class="news-ticker-content" id="news-ticker-content"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding:44px 20px;"><div id="news-list-container" class="news-grid"><div class="news-empty">Loading news...</div></div></div>
 
 <div id="site-footer">
   <!-- Shared footer will be inserted here -->
