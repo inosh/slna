@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>
 
-      <form id="event-registration-form">
+      <form id="event-registration-form" novalidate>
         <h2 class="event-registration-section-title">Applicant Details</h2>
 
         <div class="application-grid">
@@ -337,6 +337,107 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let selectedReceipt = null;
 
+        // ---- Reusable inline field-error display (mirrors the Join SLNA form) ----
+        function getOrCreateErrorElement(input) {
+            const existing = document.getElementById(input.id + '-error');
+
+            if (existing) {
+                return existing;
+            }
+
+            const errorEl = document.createElement('p');
+            errorEl.id = input.id + '-error';
+            errorEl.className = 'field-error-message';
+            errorEl.setAttribute('role', 'alert');
+
+            input.insertAdjacentElement('afterend', errorEl);
+
+            return errorEl;
+        }
+
+        function showFieldError(input, message) {
+            const errorEl = getOrCreateErrorElement(input);
+
+            errorEl.textContent = message;
+            errorEl.hidden = false;
+
+            input.classList.add('input-error');
+            input.setAttribute('aria-invalid', 'true');
+            input.setAttribute('aria-describedby', errorEl.id);
+
+            // Keep the native validity in sync so form.checkValidity() still blocks submit.
+            input.setCustomValidity(message);
+        }
+
+        function clearFieldError(input) {
+            const errorEl = document.getElementById(input.id + '-error');
+
+            if (errorEl) {
+                errorEl.hidden = true;
+                errorEl.textContent = '';
+            }
+
+            input.classList.remove('input-error');
+            input.removeAttribute('aria-invalid');
+            input.setCustomValidity('');
+        }
+
+        function focusFirstInvalidField() {
+            const invalidField = form.querySelector(':invalid');
+
+            if (!invalidField) {
+                return;
+            }
+
+            const container = invalidField.closest('.form-group') || invalidField;
+
+            container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            invalidField.focus({ preventScroll: true });
+        }
+
+        // ---- Inline validation as the user fills in the form ----
+        // Browsers only show their built-in error bubble on submit, and it
+        // looks/behaves differently per browser. Instead we suppress it and
+        // render our own inline message + red outline next to each field:
+        // on blur (so we don't flag a field mid-type), live-clearing as
+        // soon as the value becomes valid again, and on every invalid field
+        // when the form is submitted. The receipt file input is validated
+        // separately below, since it needs a custom size/type check rather
+        // than just native constraints.
+        function revalidateField(field) {
+            field.setCustomValidity('');
+
+            if (field.validity.valid) {
+                clearFieldError(field);
+            } else {
+                showFieldError(field, field.validationMessage);
+            }
+        }
+
+        function wireLiveValidation(field) {
+            field.addEventListener('invalid', function (invalidEvent) {
+                invalidEvent.preventDefault(); // suppress the native bubble -- we render our own message below
+                showFieldError(field, field.validationMessage);
+            });
+
+            field.addEventListener('blur', function () {
+                revalidateField(field);
+            });
+
+            function clearOnceFixed() {
+                if (!field.classList.contains('input-error')) {
+                    return;
+                }
+
+                revalidateField(field);
+            }
+
+            field.addEventListener('input', clearOnceFixed);
+            field.addEventListener('change', clearOnceFixed);
+        }
+
+        form.querySelectorAll('input:not([type="file"]), select, textarea').forEach(wireLiveValidation);
+
         // For a "Free for Members Only" event, a Member registrant pays
         // nothing while a Non-Member still does -- so the whole payment
         // section is shown/required/reset dynamically based on the fee for
@@ -476,62 +577,79 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
+        // ---- File field validation (shared by the change listener below and by native "required") ----
+        function receiptFieldError(file) {
+            if (!file) {
+                return receiptInput.required ? 'Please attach your bank receipt.' : null;
+            }
+
+            const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+
+            if (!allowed.includes(file.type)) {
+                return 'Upload a PDF, JPEG, or PNG file.';
+            }
+
+            if (file.size > 15 * 1024 * 1024) {
+                return 'This file must be smaller than 15 MB.';
+            }
+
+            return null;
+        }
+
         if (receiptInput) {
             receiptInput.addEventListener('change', function (eventObj) {
-                const file = eventObj.target.files[0];
+                const file = eventObj.target.files[0] || null;
 
-                if (!file) {
+                receiptPreview.textContent = file ? 'Selected: ' + file.name : '';
+
+                const error = receiptFieldError(file);
+
+                if (error) {
                     selectedReceipt = null;
-                    receiptPreview.innerHTML = '';
-                    return;
-                }
-
-                const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
-
-                if (!allowed.includes(file.type)) {
-                    showRegistrationAlert('Please select a PDF, JPEG, or PNG file for the receipt.', 'error');
-                    eventObj.target.value = '';
-                    return;
-                }
-
-                if (file.size > 15 * 1024 * 1024) {
-                    showRegistrationAlert('The receipt file must be smaller than 15 MB.', 'error');
-                    eventObj.target.value = '';
+                    showFieldError(receiptInput, error);
                     return;
                 }
 
                 selectedReceipt = file;
-                receiptPreview.textContent = 'Selected: ' + file.name;
+                clearFieldError(receiptInput);
+            });
+
+            // Native "required" fires this on submit before our own file
+            // check above ever runs -- show the same friendly message.
+            receiptInput.addEventListener('invalid', function (invalidEvent) {
+                invalidEvent.preventDefault();
+                showFieldError(receiptInput, receiptFieldError(receiptInput.files[0] || null) || receiptInput.validationMessage);
             });
         }
 
         form.addEventListener('submit', async function (submitEvent) {
             submitEvent.preventDefault();
 
+            if (!form.checkValidity()) {
+                focusFirstInvalidField();
+                return;
+            }
+
             const expectedFee = expectedFeeFor(event, registrantTypeSelect.value);
             const needsPaymentNow = !neverNeedsPayment && (expectedFee === null || expectedFee > 0);
 
             if (needsPaymentNow) {
-                if (!selectedReceipt) {
-                    showRegistrationAlert('Please attach your bank receipt before submitting.', 'error');
-                    return;
-                }
-
+                // Presence/type/size of the receipt, and that paid amount is a
+                // non-negative number, are already enforced natively above
+                // (required + min="0") -- this is the one business rule HTML
+                // constraints can't express: it must match the expected fee.
                 const paidAmount = parseFloat(paidAmountInput.value);
 
-                if (Number.isNaN(paidAmount) || paidAmount < 0) {
-                    showRegistrationAlert('Please enter a valid paid amount.', 'error');
+                if (expectedFee !== null && Math.abs(paidAmount - expectedFee) > 0.01) {
+                    showFieldError(
+                        paidAmountInput,
+                        'Must match the ' + registrantTypeSelect.value + ' fee of ' + formatCurrency(expectedFee) + '.'
+                    );
+                    focusFirstInvalidField();
                     return;
                 }
 
-                if (expectedFee !== null && Math.abs(paidAmount - expectedFee) > 0.01) {
-                    showRegistrationAlert(
-                        'Paid amount must match the ' + registrantTypeSelect.value +
-                        ' fee of ' + formatCurrency(expectedFee) + '.',
-                        'error'
-                    );
-                    return;
-                }
+                clearFieldError(paidAmountInput);
             }
 
             const formData = new FormData();

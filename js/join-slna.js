@@ -21,19 +21,69 @@
         var maxFileSize = 5 * 1024 * 1024;
 
         // ---- Reusable inline field-error display ----
+        // Radio/checkbox fields show their error and highlight against the
+        // group wrapper (the row of options, or the checkbox's own label)
+        // rather than the individual input, since bordering a single radio
+        // button isn't a meaningful error indicator.
+        function errorAnchor(input) {
+            if (input.type === 'radio' || input.type === 'checkbox') {
+                return input.closest('.radio-options') ||
+                    input.closest('.checkbox-label') ||
+                    input.closest('fieldset') ||
+                    input;
+            }
+
+            return input;
+        }
+
+        function errorHighlightTarget(input) {
+            if (input.type === 'radio' || input.type === 'checkbox') {
+                return input.closest('.radio-options') ||
+                    input.closest('.checkbox-label') ||
+                    input;
+            }
+
+            return input;
+        }
+
+        // All radios sharing a name are one logical field: per the HTML spec,
+        // every radio in a required group reports valueMissing (not just the
+        // one carrying the `required` attribute), so each fires its own
+        // "invalid" event. Route them to a single shared error id/element
+        // and keep validity in sync across the whole group, not just the
+        // one radio that happened to trigger the check.
+        function errorId(input) {
+            if (input.type === 'radio' && input.name) {
+                return input.name + '-error';
+            }
+
+            return input.id + '-error';
+        }
+
+        function groupMembers(input) {
+            if (input.type === 'radio' && input.name) {
+                return Array.prototype.slice.call(
+                    form.querySelectorAll('input[type="radio"][name="' + input.name + '"]')
+                );
+            }
+
+            return [input];
+        }
+
         function getOrCreateErrorElement(input) {
-            var existing = document.getElementById(input.id + '-error');
+            var id = errorId(input);
+            var existing = document.getElementById(id);
 
             if (existing) {
                 return existing;
             }
 
             var errorEl = document.createElement('p');
-            errorEl.id = input.id + '-error';
+            errorEl.id = id;
             errorEl.className = 'field-error-message';
             errorEl.setAttribute('role', 'alert');
 
-            input.insertAdjacentElement('afterend', errorEl);
+            errorAnchor(input).insertAdjacentElement('afterend', errorEl);
 
             return errorEl;
         }
@@ -44,25 +94,31 @@
             errorEl.textContent = message;
             errorEl.hidden = false;
 
-            input.classList.add('input-error');
-            input.setAttribute('aria-invalid', 'true');
-            input.setAttribute('aria-describedby', errorEl.id);
+            errorHighlightTarget(input).classList.add('input-error');
 
-            // Keep the native validity in sync so form.checkValidity() still blocks submit.
-            input.setCustomValidity(message);
+            groupMembers(input).forEach(function (member) {
+                member.setAttribute('aria-invalid', 'true');
+                member.setAttribute('aria-describedby', errorEl.id);
+
+                // Keep the native validity in sync so form.checkValidity() still blocks submit.
+                member.setCustomValidity(message);
+            });
         }
 
         function clearFieldError(input) {
-            var errorEl = document.getElementById(input.id + '-error');
+            var errorEl = document.getElementById(errorId(input));
 
             if (errorEl) {
                 errorEl.hidden = true;
                 errorEl.textContent = '';
             }
 
-            input.classList.remove('input-error');
-            input.removeAttribute('aria-invalid');
-            input.setCustomValidity('');
+            errorHighlightTarget(input).classList.remove('input-error');
+
+            groupMembers(input).forEach(function (member) {
+                member.removeAttribute('aria-invalid');
+                member.setCustomValidity('');
+            });
         }
 
         // ---- Sri Lankan phone number handling ----
@@ -242,9 +298,51 @@
                 .replace(/'/g, '&#039;');
         }
 
+        // ---- File field validation (shared by the change listeners below and by submit) ----
+        function receiptFieldError(file) {
+            if (!file) {
+                return 'Please upload your bank receipt.';
+            }
+            if (file.size > maxFileSize) {
+                return 'This file must be 5 MB or smaller.';
+            }
+            if (!isAllowedReceipt(file)) {
+                return 'Upload a PDF, JPG, JPEG, or PNG file.';
+            }
+            return null;
+        }
+
+        function photoFieldError(file) {
+            if (!file) {
+                return 'Please upload your passport-size photograph.';
+            }
+            if (file.size > maxFileSize) {
+                return 'This file must be 5 MB or smaller.';
+            }
+            if (!isAllowedImage(file)) {
+                return 'Upload a JPG, JPEG, or PNG image.';
+            }
+            return null;
+        }
+
         if (receiptInput) {
             receiptInput.addEventListener('change', function () {
                 showSelectedFile(receiptInput, receiptName);
+
+                var error = receiptFieldError(receiptInput.files[0]);
+
+                if (error) {
+                    showFieldError(receiptInput, error);
+                } else {
+                    clearFieldError(receiptInput);
+                }
+            });
+
+            // Native "required" fires this on submit before our own file
+            // checks below ever run -- show the same friendly message.
+            receiptInput.addEventListener('invalid', function (event) {
+                event.preventDefault(); // suppress the native bubble -- we render our own message below
+                showFieldError(receiptInput, receiptFieldError(receiptInput.files[0]) || receiptInput.validationMessage);
             });
         }
 
@@ -253,6 +351,14 @@
                 var file = photoInput.files[0];
 
                 showSelectedFile(photoInput, photoName);
+
+                var error = photoFieldError(file);
+
+                if (error) {
+                    showFieldError(photoInput, error);
+                } else {
+                    clearFieldError(photoInput);
+                }
 
                 if (!file || !isAllowedImage(file)) {
                     photoPreview.removeAttribute('src');
@@ -271,12 +377,17 @@
 
                 reader.readAsDataURL(file);
             });
+
+            // Native "required" fires this on submit before our own file
+            // checks below ever run -- show the same friendly message.
+            photoInput.addEventListener('invalid', function (event) {
+                event.preventDefault(); // suppress the native bubble -- we render our own message below
+                showFieldError(photoInput, photoFieldError(photoInput.files[0]) || photoInput.validationMessage);
+            });
         }
 
-        function centerFirstInvalidField() {
-            var invalidField = document.activeElement && document.activeElement.matches(':invalid')
-                ? document.activeElement
-                : form.querySelector(':invalid');
+        function focusFirstInvalidField() {
+            var invalidField = form.querySelector(':invalid');
 
             if (!invalidField) {
                 return;
@@ -288,7 +399,59 @@
                 behavior: 'smooth',
                 block: 'center'
             });
+
+            invalidField.focus({ preventScroll: true });
         }
+
+        // ---- Inline validation as the user fills in the form ----
+        // Browsers only show their built-in error bubble on submit, and it
+        // looks/behaves differently per browser. Instead we suppress it and
+        // render our own inline message + red outline next to each field:
+        // on blur (so we don't flag a field mid-type), live-clearing as
+        // soon as the value becomes valid again, and on every invalid
+        // field when the form is submitted.
+        // File inputs (receipt/photo) are validated separately above, since
+        // they need the custom size/type checks rather than just native
+        // constraints -- excluded here so this generic wiring doesn't clear
+        // their error the moment *any* file is chosen.
+        var liveValidatedFields = form.querySelectorAll('input:not([type="file"]), select, textarea');
+
+        // Clears custom validity across the whole group (not just this one
+        // field) before re-checking, so fixing a radio group via a *different*
+        // member than the one that first showed the error still clears it.
+        function revalidateField(field) {
+            groupMembers(field).forEach(function (member) {
+                member.setCustomValidity('');
+            });
+
+            if (field.validity.valid) {
+                clearFieldError(field);
+            } else {
+                showFieldError(field, field.validationMessage);
+            }
+        }
+
+        liveValidatedFields.forEach(function (field) {
+            field.addEventListener('invalid', function (event) {
+                event.preventDefault(); // suppress the native bubble -- we render our own message below
+                showFieldError(field, field.validationMessage);
+            });
+
+            field.addEventListener('blur', function () {
+                revalidateField(field);
+            });
+
+            function clearOnceFixed() {
+                if (!errorHighlightTarget(field).classList.contains('input-error')) {
+                    return;
+                }
+
+                revalidateField(field);
+            }
+
+            field.addEventListener('input', clearOnceFixed);
+            field.addEventListener('change', clearOnceFixed);
+        });
 
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
@@ -297,46 +460,32 @@
             alertBox.textContent = '';
 
             if (!form.checkValidity()) {
-                form.reportValidity();
-                centerFirstInvalidField();
+                focusFirstInvalidField();
                 return;
             }
 
             var receipt = receiptInput ? receiptInput.files[0] : null;
             var photo = photoInput ? photoInput.files[0] : null;
+            var fileFieldInvalid = false;
 
-            if (!receipt || !photo) {
-                showMessage(
-                    'error',
-                    'Please upload the bank receipt and passport-size photograph.'
-                );
-                return;
+            var receiptError = receiptInput ? receiptFieldError(receipt) : null;
+            if (receiptError) {
+                showFieldError(receiptInput, receiptError);
+                fileFieldInvalid = true;
+            } else if (receiptInput) {
+                clearFieldError(receiptInput);
             }
 
-            if (
-                receipt.size > maxFileSize ||
-                photo.size > maxFileSize
-            ) {
-                showMessage(
-                    'error',
-                    'Each uploaded file must be 5 MB or smaller.'
-                );
-                return;
+            var photoError = photoInput ? photoFieldError(photo) : null;
+            if (photoError) {
+                showFieldError(photoInput, photoError);
+                fileFieldInvalid = true;
+            } else if (photoInput) {
+                clearFieldError(photoInput);
             }
 
-            if (!isAllowedReceipt(receipt)) {
-                showMessage(
-                    'error',
-                    'The bank receipt must be a PDF, JPG, JPEG, or PNG file.'
-                );
-                return;
-            }
-
-            if (!isAllowedImage(photo)) {
-                showMessage(
-                    'error',
-                    'The passport photograph must be a JPG, JPEG, or PNG image.'
-                );
+            if (fileFieldInvalid) {
+                focusFirstInvalidField();
                 return;
             }
 
