@@ -60,6 +60,38 @@ document.addEventListener('DOMContentLoaded', function () {
         return apiOrigin + photoUrl;
     }
 
+    // Most event flyers are either a wide/landscape photo or a tall poster
+    // with all the details baked into the image. Landscape stays in the
+    // original side-by-side layout; a noticeably-taller-than-wide image
+    // switches to a layout where "About This Event" moves up next to the
+    // info panel instead of trailing a very tall image. Resolves to
+    // 'landscape' (also used when there's no photo, or it fails to load) or
+    // 'portrait'.
+    function detectImageOrientation(photoUrl) {
+        return new Promise(function (resolve) {
+            if (!photoUrl) {
+                resolve('landscape');
+                return;
+            }
+
+            const probe = new Image();
+
+            probe.onload = function () {
+                resolve(
+                    probe.naturalHeight > probe.naturalWidth * 1.15
+                        ? 'portrait'
+                        : 'landscape'
+                );
+            };
+
+            probe.onerror = function () {
+                resolve('landscape');
+            };
+
+            probe.src = photoUrl;
+        });
+    }
+
     function statusClass(status) {
         const value = String(status || '').toLowerCase();
 
@@ -112,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
     }
 
-    function renderEvent(event) {
+    function renderEvent(event, orientation) {
         const title = event.title || 'Event Details';
 
         document.title = title + ' | SLNA';
@@ -224,29 +256,53 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
     ` : '';
 
+        const infoCardMarkup = `
+      <div class="event-detail-info-card">
+        <dl>${factsRows.join('')}</dl>
+        <div class="event-detail-register">${registerMarkup}</div>
+      </div>
+    `;
+
+        const summaryMarkup = (summary || attachmentDownloadUrl) ? `
+      <div class="event-detail-summary">
+        <h2>About This Event</h2>
+        ${summary ? `<p>${escapeHtml(summary)}</p>` : ''}
+        ${attachmentDownloadUrl ? `<p class="event-detail-attachment">Read more about the event &mdash; <a href="${attachmentDownloadUrl}">Refer the Attachment</a></p>` : ''}
+      </div>
+    ` : '';
+
+        // Portrait poster: "About This Event" and the bank details move into
+        // the same column as the info panel so the page isn't left with a
+        // huge gap of empty space next to a very tall image. Landscape/wide
+        // photos (and the no-photo placeholder) keep the original layout,
+        // with the bank box as its own full-width block below.
+        const layoutMarkup = orientation === 'portrait' ? `
+      <div class="event-detail-layout event-detail-layout-portrait">
+        <div class="event-detail-left-col">
+          ${infoCardMarkup}
+          ${summaryMarkup}
+          ${bankDetailsMarkup}
+        </div>
+
+        <div class="event-detail-media">${mediaMarkup}</div>
+      </div>
+    ` : `
+      <div class="event-detail-layout">
+        ${infoCardMarkup}
+        <div class="event-detail-media">${mediaMarkup}</div>
+      </div>
+
+      ${summaryMarkup}
+
+      ${bankDetailsMarkup}
+    `;
+
         container.innerHTML = `
       <h1 class="event-detail-title">${escapeHtml(title)}</h1>
 
       <div class="event-detail-badges">${badgesMarkup}</div>
 
-      <div class="event-detail-layout">
-        <div class="event-detail-info-card">
-          <dl>${factsRows.join('')}</dl>
-          <div class="event-detail-register">${registerMarkup}</div>
-        </div>
-
-        <div class="event-detail-media">${mediaMarkup}</div>
-      </div>
-
-      ${(summary || attachmentDownloadUrl) ? `
-        <div class="event-detail-summary">
-          <h2>About This Event</h2>
-          ${summary ? `<p>${escapeHtml(summary)}</p>` : ''}
-          ${attachmentDownloadUrl ? `<p class="event-detail-attachment">Read more about the event &mdash; <a href="${attachmentDownloadUrl}">Refer the Attachment</a></p>` : ''}
-        </div>
-      ` : ''}
-
-      ${bankDetailsMarkup}
+      ${layoutMarkup}
     `;
     }
 
@@ -266,8 +322,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const event = await response.json();
+            const photoUrl = resolvePhotoUrl(event.photo_url || event.photoUrl);
+            const orientation = await detectImageOrientation(photoUrl);
 
-            renderEvent(event);
+            renderEvent(event, orientation);
         } catch (error) {
             console.error('Could not load event:', error);
             renderNotFound();

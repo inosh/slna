@@ -3546,6 +3546,55 @@ tr.registration-row-non-member {
   line-height: 1.5;
 }
 
+/* Portrait poster flyers: "About This Event" sits under the info panel
+   instead of below a very tall image, so both columns end up closer in
+   height. Scoped to this extra class only -- landscape/wide photos keep
+   using .event-detail-layout / .event-detail-media img above, untouched. */
+.event-detail-layout-portrait {
+  grid-template-columns: minmax(320px, 560px) minmax(320px, 600px);
+}
+
+.event-detail-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* The wider portrait column leaves the compact Date/Time/Location list
+   stranded on the left with empty panel to the right of it -- lay the
+   facts out as a responsive grid instead of a single narrow stack so they
+   actually use the extra width, same idea as .event-registration-summary. */
+.event-detail-layout-portrait .event-detail-info-card dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px 28px;
+}
+
+.event-detail-layout-portrait .event-detail-info-card dl > div {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.event-detail-layout-portrait .event-detail-summary,
+.event-detail-layout-portrait .event-detail-bank-box {
+  margin-bottom: 0;
+}
+
+.event-detail-layout-portrait .event-detail-media {
+  display: flex;
+  justify-content: center;
+}
+
+.event-detail-layout-portrait .event-detail-media img {
+  width: auto;
+  max-width: min(600px, 100%);
+  height: auto;
+  max-height: 900px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
 @media (max-width: 760px) {
   .event-detail-layout {
     grid-template-columns: 1fr;
