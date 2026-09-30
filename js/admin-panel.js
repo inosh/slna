@@ -1857,10 +1857,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const typeGalleryInput = document.getElementById('type-gallery-input');
   typeGalleryInput.addEventListener('change', function (e) {
     const files = Array.from(e.target.files);
-    const oversized = files.filter(f => f.size > 15 * 1024 * 1024);
-    const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+    const maxSize = (f) => f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+    const oversized = files.filter(f => f.size > maxSize(f));
+    const validFiles = files.filter(f => f.size <= maxSize(f));
     if (oversized.length) {
-      showAlert('type-alert', oversized.length + ' photo(s) are over the 15MB limit and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
+      showAlert('type-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
     typeGalleryFiles = typeGalleryFiles.concat(validFiles);
     renderTypeGalleryPicker();
@@ -1869,13 +1870,18 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderTypeGalleryPicker() {
     const picker = document.getElementById('type-gallery-picker');
     Promise.all(typeGalleryFiles.map(file => new Promise((resolve) => {
-      const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsDataURL(file);
-    }))).then(previews => {
-      picker.innerHTML = previews.map((p, idx) =>
-        '<div class="photo-picker-item"><img src="' + p + '"><button type="button" onclick="window._removeTypeGalleryPhoto(' + idx + ')">X</button></div>'
+      if (file.type.startsWith('video/')) { resolve({ url: URL.createObjectURL(file), isVideo: true }); return; }
+      const reader = new FileReader(); reader.onload = (evt) => resolve({ url: evt.target.result, isVideo: false }); reader.readAsDataURL(file);
+    }))).then(items => {
+      picker.innerHTML = items.map((item, idx) =>
+        '<div class="photo-picker-item">' +
+        (item.isVideo
+          ? '<video src="' + item.url + '" muted></video><span class="media-play-icon">&#9658;</span>'
+          : '<img src="' + item.url + '">') +
+        '<button type="button" onclick="window._removeTypeGalleryPhoto(' + idx + ')">X</button></div>'
       ).join('');
       const countEl = document.getElementById('type-gallery-count');
-      if (countEl) countEl.textContent = typeGalleryFiles.length + ' photo(s) selected';
+      if (countEl) countEl.textContent = typeGalleryFiles.length + ' item(s) selected';
     });
   }
   window._removeTypeGalleryPhoto = function (idx) { typeGalleryFiles.splice(idx, 1); renderTypeGalleryPicker(); };
@@ -1971,10 +1977,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const fileGalleryInput = document.getElementById('file-gallery-input');
   fileGalleryInput.addEventListener('change', function (e) {
     const files = Array.from(e.target.files);
-    const oversized = files.filter(f => f.size > 15 * 1024 * 1024);
-    const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+    const maxSize = (f) => f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+    const oversized = files.filter(f => f.size > maxSize(f));
+    const validFiles = files.filter(f => f.size <= maxSize(f));
     if (oversized.length) {
-      showAlert('file-alert', oversized.length + ' photo(s) are over the 15MB limit and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
+      showAlert('file-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
     fileGalleryFiles = fileGalleryFiles.concat(validFiles);
     renderFileGalleryPicker();
@@ -1983,13 +1990,18 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderFileGalleryPicker() {
     const picker = document.getElementById('file-gallery-picker');
     Promise.all(fileGalleryFiles.map(file => new Promise((resolve) => {
-      const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsDataURL(file);
-    }))).then(previews => {
-      picker.innerHTML = previews.map((p, idx) =>
-        '<div class="photo-picker-item"><img src="' + p + '"><button type="button" onclick="window._removeFileGalleryPhoto(' + idx + ')">X</button></div>'
+      if (file.type.startsWith('video/')) { resolve({ url: URL.createObjectURL(file), isVideo: true }); return; }
+      const reader = new FileReader(); reader.onload = (evt) => resolve({ url: evt.target.result, isVideo: false }); reader.readAsDataURL(file);
+    }))).then(items => {
+      picker.innerHTML = items.map((item, idx) =>
+        '<div class="photo-picker-item">' +
+        (item.isVideo
+          ? '<video src="' + item.url + '" muted></video><span class="media-play-icon">&#9658;</span>'
+          : '<img src="' + item.url + '">') +
+        '<button type="button" onclick="window._removeFileGalleryPhoto(' + idx + ')">X</button></div>'
       ).join('');
       const countEl = document.getElementById('file-gallery-count');
-      if (countEl) countEl.textContent = fileGalleryFiles.length + ' photo(s) selected';
+      if (countEl) countEl.textContent = fileGalleryFiles.length + ' item(s) selected';
     });
   }
   window._removeFileGalleryPhoto = function (idx) { fileGalleryFiles.splice(idx, 1); renderFileGalleryPicker(); };
@@ -2038,11 +2050,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    const oversized = files.filter(f => f.size > 15 * 1024 * 1024);
+    const maxSize = (f) => f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+    const oversized = files.filter(f => f.size > maxSize(f));
     if (oversized.length > 0) {
-      showAlert('album-alert', oversized.length + ' photo(s) are over the 25MB limit and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
+      showAlert('album-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
-    const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+    const validFiles = files.filter(f => f.size <= maxSize(f));
 
     albumPhotoFiles = albumPhotoFiles.concat(validFiles);
     renderAlbumPhotoPicker();
@@ -2052,15 +2065,23 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderAlbumPhotoPicker() {
     const picker = document.getElementById('album-photo-picker');
     Promise.all(albumPhotoFiles.map(file => new Promise((resolve) => {
+      if (file.type.startsWith('video/')) {
+        resolve({ url: URL.createObjectURL(file), isVideo: true });
+        return;
+      }
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
+      reader.onload = (e) => resolve({ url: e.target.result, isVideo: false });
       reader.readAsDataURL(file);
-    }))).then((dataUrls) => {
-      picker.innerHTML = dataUrls.map((p, idx) =>
-        '<div class="photo-picker-item"><img src="' + p + '"><button type="button" onclick="window._removeAlbumPhoto(' + idx + ')">X</button></div>'
+    }))).then((items) => {
+      picker.innerHTML = items.map((item, idx) =>
+        '<div class="photo-picker-item">' +
+        (item.isVideo
+          ? '<video src="' + item.url + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
+          : '<img src="' + item.url + '">') +
+        '<button type="button" onclick="window._removeAlbumPhoto(' + idx + ')">X</button></div>'
       ).join('');
       const countEl = document.getElementById('album-photo-count');
-      if (countEl) countEl.textContent = albumPhotoFiles.length + ' photo(s) selected';
+      if (countEl) countEl.textContent = albumPhotoFiles.length + ' item(s) selected';
     });
   }
   window._removeAlbumPhoto = function (idx) { albumPhotoFiles.splice(idx, 1); renderAlbumPhotoPicker(); };
@@ -2071,7 +2092,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const title = document.getElementById('album-title').value.trim();
     const event_date = document.getElementById('album-date').value;
     if (!title || !event_date) { showAlert('album-alert', 'Please provide an album title and date.', 'error'); return; }
-    if (albumPhotoFiles.length === 0) { showAlert('album-alert', 'Please add at least one photo.', 'error'); return; }
+    if (albumPhotoFiles.length === 0) { showAlert('album-alert', 'Please add at least one photo or video.', 'error'); return; }
 
     const formData = new FormData();
     formData.append('title', title);
@@ -2085,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', function () {
         body: formData,
       });
       if (!res.ok) { showAlert('album-alert', await parseApiError(res), 'error'); return; }
-      showAlert('album-alert', 'Photo album "' + title + '" published with ' + albumPhotoFiles.length + ' photo(s).', 'success');
+      showAlert('album-alert', 'Photo album "' + title + '" published with ' + albumPhotoFiles.length + ' item(s).', 'success');
       albumForm.reset(); albumPhotoFiles = []; renderAlbumPhotoPicker();
       loadAdminAlbumTable();
     } catch (err) {
@@ -4005,8 +4026,8 @@ async function handleEditNews(id) {
 
     document.getElementById('edit-news-current-album').innerHTML = item.album_id
         ? 'Current album: <a href="album.html?id=' + item.album_id + '" target="_blank" rel="noopener">' +
-        (item.photos ? item.photos.length : '?') + ' photo(s) &mdash; view</a>'
-        : 'No photo album linked to this news item yet.';
+        (item.photos ? item.photos.length : '?') + ' item(s) &mdash; view</a>'
+        : 'No album linked to this news item yet.';
 
     document.getElementById('edit-news-override-album').checked = false;
     document.getElementById('edit-news-gallery-section').style.display = 'none';
@@ -4030,13 +4051,18 @@ function closeEditNewsCard() {
 function renderEditNewsGalleryPicker() {
   const picker = document.getElementById('edit-news-gallery-picker');
   Promise.all(editNewsGalleryFiles.map(file => new Promise((resolve) => {
-    const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsDataURL(file);
-  }))).then(previews => {
-    picker.innerHTML = previews.map((p, idx) =>
-      '<div class="photo-picker-item"><img src="' + p + '"><button type="button" onclick="window._removeEditNewsGalleryPhoto(' + idx + ')">X</button></div>'
+    if (file.type.startsWith('video/')) { resolve({ url: URL.createObjectURL(file), isVideo: true }); return; }
+    const reader = new FileReader(); reader.onload = (evt) => resolve({ url: evt.target.result, isVideo: false }); reader.readAsDataURL(file);
+  }))).then(items => {
+    picker.innerHTML = items.map((item, idx) =>
+      '<div class="photo-picker-item">' +
+      (item.isVideo
+        ? '<video src="' + item.url + '" muted></video><span class="media-play-icon">&#9658;</span>'
+        : '<img src="' + item.url + '">') +
+      '<button type="button" onclick="window._removeEditNewsGalleryPhoto(' + idx + ')">X</button></div>'
     ).join('');
     const countEl = document.getElementById('edit-news-gallery-count');
-    if (countEl) countEl.textContent = editNewsGalleryFiles.length + ' photo(s) selected';
+    if (countEl) countEl.textContent = editNewsGalleryFiles.length + ' item(s) selected';
   });
 }
 window._removeEditNewsGalleryPhoto = function (idx) { editNewsGalleryFiles.splice(idx, 1); renderEditNewsGalleryPicker(); };
@@ -4077,10 +4103,11 @@ function initEditNewsForm() {
 
   galleryInput.addEventListener('change', function (e) {
     const files = Array.from(e.target.files);
-    const oversized = files.filter(f => f.size > 15 * 1024 * 1024);
-    const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+    const maxSize = (f) => f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+    const oversized = files.filter(f => f.size > maxSize(f));
+    const validFiles = files.filter(f => f.size <= maxSize(f));
     if (oversized.length) {
-      showAlert('edit-news-alert', oversized.length + ' photo(s) are over the 15MB limit and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
+      showAlert('edit-news-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
     editNewsGalleryFiles = editNewsGalleryFiles.concat(validFiles);
     renderEditNewsGalleryPicker();
@@ -4103,7 +4130,7 @@ function initEditNewsForm() {
       return;
     }
     if (overrideAlbum && editNewsGalleryFiles.length === 0) {
-      showAlert('edit-news-alert', 'Please select the photos to upload for the album, or uncheck "Replace the existing album\'s photos" to keep it unchanged.', 'error');
+      showAlert('edit-news-alert', 'Please select the photos/videos to upload for the album, or uncheck "Replace the existing album\'s items" to keep it unchanged.', 'error');
       return;
     }
 
@@ -4152,8 +4179,11 @@ async function loadAdminAlbumTable() {
     if (albums.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No albums yet.</td></tr>'; return; }
     const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
     tbody.innerHTML = albums.map(album => {
-      const thumb = album.cover_photo ? '<img src="' + apiOrigin + album.cover_photo + '" class="thumb-preview" style="width:40px;height:40px;">' : '-';
-      return '<tr><td>' + thumb + '</td><td>' + album.title + '</td><td>' + album.photo_count + ' photos</td><td><button class="btn btn-danger btn-sm" onclick="handleDeleteAlbum(' + album.id + ')">Delete</button></td></tr>';
+      const thumb = !album.cover_photo ? '-'
+        : album.cover_media_type === 'video'
+          ? '<video src="' + apiOrigin + album.cover_photo + '" class="thumb-preview" style="width:40px;height:40px;" muted preload="metadata"></video>'
+          : '<img src="' + apiOrigin + album.cover_photo + '" class="thumb-preview" style="width:40px;height:40px;">';
+      return '<tr><td>' + thumb + '</td><td>' + album.title + '</td><td>' + album.photo_count + ' item(s)</td><td><button class="btn btn-danger btn-sm" onclick="handleDeleteAlbum(' + album.id + ')">Delete</button></td></tr>';
     }).join('');
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#c0392b;">Could not load albums. Is the backend server running?</td></tr>';
