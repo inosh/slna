@@ -113,6 +113,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const hasFeeData = memberFee !== undefined && memberFee !== null &&
             nonMemberFee !== undefined && nonMemberFee !== null;
 
+        // Fully free: both fees are 0 (or there's no fee data at all --
+        // Other Events have no fee concept), so nobody ever pays and the
+        // payment fields are left out of the form entirely. "Free for
+        // Members Only" (member fee 0, non-member fee > 0) still needs the
+        // payment section -- just not when a Member is registering, which
+        // is handled dynamically in wireForm once a registrant type is
+        // chosen.
+        const fullyFree = hasFeeData &&
+            Number(memberFee) <= 0 && Number(nonMemberFee) <= 0;
+        const neverNeedsPayment = !hasFeeData || fullyFree;
+
+        const membersOnly = event.audience === 'Members Only';
+
         const mainFacts = [];
 
         mainFacts.push('<div><dt>Date</dt><dd>' + escapeHtml(readableDate(event.event_date)) + '</dd></div>');
@@ -128,8 +141,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const feeFacts = [];
 
         if (hasFeeData) {
-            feeFacts.push('<div><dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
-            feeFacts.push('<div><dt>Non-Member Fee</dt><dd>' + escapeHtml(formatCurrency(nonMemberFee)) + '</dd></div>');
+            if (membersOnly) {
+                feeFacts.push('<div><dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
+            } else if (fullyFree) {
+                feeFacts.push('<div><dt>Event Fee</dt><dd>Free</dd></div>');
+            } else {
+                feeFacts.push('<div><dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
+                feeFacts.push('<div><dt>Non-Member Fee</dt><dd>' + escapeHtml(formatCurrency(nonMemberFee)) + '</dd></div>');
+            }
         }
 
         container.innerHTML = `
@@ -147,11 +166,12 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="application-grid">
           <div class="form-group">
             <label for="reg-registrant-type">Registering As *</label>
-            <select id="reg-registrant-type" required>
+            <select id="reg-registrant-type" required${membersOnly ? ' disabled' : ''}>
               <option value="">Select</option>
               <option value="Member">Member</option>
-              <option value="Non-Member">Non-Member</option>
+              ${membersOnly ? '' : '<option value="Non-Member">Non-Member</option>'}
             </select>
+            ${membersOnly ? '<p class="form-help">This event is open to SLNA members only.</p>' : ''}
           </div>
 
           <div class="form-group" id="reg-membership-number-group" hidden>
@@ -220,58 +240,66 @@ document.addEventListener('DOMContentLoaded', function () {
             <textarea id="reg-workplace-address" rows="2" required></textarea>
           </div>
 
-          <div class="form-group">
-            <label for="reg-pay-by">Pay By (Organization / Individual) *</label>
-            <select id="reg-pay-by" required>
-              <option value="">Select</option>
-              <option value="Individual">Individual</option>
-              <option value="Organization">Organization</option>
-            </select>
+          ${neverNeedsPayment ? '' : `
+          <div id="reg-payment-fields" style="display:contents;">
+            <div class="form-group">
+              <label for="reg-pay-by">Pay By (Organization / Individual) *</label>
+              <select id="reg-pay-by">
+                <option value="">Select</option>
+                <option value="Individual">Individual</option>
+                <option value="Organization">Organization</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-paid-amount">Paid Amount (LKR) *</label>
+              <input type="number" id="reg-paid-amount" min="0" step="0.01">
+              <p class="form-help" id="reg-paid-amount-help"></p>
+            </div>
+          </div>
+          `}
+        </div>
+
+        ${neverNeedsPayment ? '' : `
+        <div id="reg-payment-details">
+          <div class="event-detail-bank-box" style="margin-top:26px;">
+            <h3>Bank Transfer Details</h3>
+
+            <dl class="event-detail-bank-grid">
+              <div>
+                <dt>Account Name</dt>
+                <dd>The Sri Lanka Nurses</dd>
+              </div>
+
+              <div>
+                <dt>Bank</dt>
+                <dd>Bank of Ceylon (BOC)</dd>
+              </div>
+
+              <div>
+                <dt>Branch</dt>
+                <dd>Regent Street, Colombo 10</dd>
+              </div>
+
+              <div>
+                <dt>Account Number</dt>
+                <dd>76034111</dd>
+              </div>
+            </dl>
+
+            <p class="event-detail-bank-note">
+              Transfer the applicable event fee (Member or Non-Member, as shown above)
+              to this account, then attach a clear copy of your bank receipt below.
+            </p>
           </div>
 
-          <div class="form-group">
-            <label for="reg-paid-amount">Paid Amount (LKR) *</label>
-            <input type="number" id="reg-paid-amount" min="0" step="0.01" required>
-            <p class="form-help" id="reg-paid-amount-help"></p>
+          <div class="form-group" style="margin-top:20px;">
+            <label for="reg-receipt-input">Bank Receipt (PDF, JPEG, or PNG) *</label>
+            <input type="file" id="reg-receipt-input" accept="application/pdf,image/jpeg,image/png">
+            <div id="reg-receipt-preview" style="margin-top:8px;"></div>
           </div>
         </div>
-
-        <div class="event-detail-bank-box" style="margin-top:26px;">
-          <h3>Bank Transfer Details</h3>
-
-          <dl class="event-detail-bank-grid">
-            <div>
-              <dt>Account Name</dt>
-              <dd>The Sri Lanka Nurses</dd>
-            </div>
-
-            <div>
-              <dt>Bank</dt>
-              <dd>Bank of Ceylon (BOC)</dd>
-            </div>
-
-            <div>
-              <dt>Branch</dt>
-              <dd>Regent Street, Colombo 10</dd>
-            </div>
-
-            <div>
-              <dt>Account Number</dt>
-              <dd>76034111</dd>
-            </div>
-          </dl>
-
-          <p class="event-detail-bank-note">
-            Transfer the applicable event fee (Member or Non-Member, as shown above)
-            to this account, then attach a clear copy of your bank receipt below.
-          </p>
-        </div>
-
-        <div class="form-group" style="margin-top:20px;">
-          <label for="reg-receipt-input">Bank Receipt (PDF, JPEG, or PNG) *</label>
-          <input type="file" id="reg-receipt-input" accept="application/pdf,image/jpeg,image/png" required>
-          <div id="reg-receipt-preview" style="margin-top:8px;"></div>
-        </div>
+        `}
 
         <div id="registration-alert" aria-live="polite" tabindex="-1"></div>
 
@@ -284,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
       </form>
     `;
 
-        wireForm(event);
+        wireForm(event, neverNeedsPayment, membersOnly);
     }
 
     function expectedFeeFor(event, registrantType) {
@@ -294,10 +322,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return Number.isFinite(parsed) ? parsed : null;
     }
 
-    function wireForm(event) {
+    function wireForm(event, neverNeedsPayment, membersOnly) {
         const registrantTypeSelect = document.getElementById('reg-registrant-type');
         const membershipGroup = document.getElementById('reg-membership-number-group');
         const membershipInput = document.getElementById('reg-membership-number');
+        const paymentFields = document.getElementById('reg-payment-fields');
+        const paymentDetails = document.getElementById('reg-payment-details');
+        const payByInput = document.getElementById('reg-pay-by');
         const paidAmountInput = document.getElementById('reg-paid-amount');
         const paidAmountHelp = document.getElementById('reg-paid-amount-help');
         const receiptInput = document.getElementById('reg-receipt-input');
@@ -305,6 +336,72 @@ document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('event-registration-form');
 
         let selectedReceipt = null;
+
+        // For a "Free for Members Only" event, a Member registrant pays
+        // nothing while a Non-Member still does -- so the whole payment
+        // section is shown/required/reset dynamically based on the fee for
+        // whichever registrant type is currently selected, instead of being
+        // fixed for the whole form. For a fully free event (or one with no
+        // fee concept at all) the payment section was never rendered, so
+        // this is a no-op.
+        function syncPaymentSection() {
+            if (neverNeedsPayment) {
+                return;
+            }
+
+            const fee = expectedFeeFor(event, registrantTypeSelect.value);
+            const needsPayment = fee === null || fee > 0;
+
+            if (paymentFields) {
+                paymentFields.style.display = needsPayment ? 'contents' : 'none';
+            }
+
+            if (paymentDetails) {
+                paymentDetails.style.display = needsPayment ? '' : 'none';
+            }
+
+            if (payByInput) {
+                payByInput.required = needsPayment;
+            }
+
+            if (paidAmountInput) {
+                paidAmountInput.required = needsPayment;
+            }
+
+            if (receiptInput) {
+                receiptInput.required = needsPayment;
+            }
+
+            if (!needsPayment) {
+                if (payByInput) {
+                    payByInput.value = '';
+                }
+
+                if (paidAmountInput) {
+                    paidAmountInput.value = '0.00';
+                }
+
+                if (paidAmountHelp) {
+                    paidAmountHelp.textContent = '';
+                }
+
+                selectedReceipt = null;
+
+                if (receiptInput) {
+                    receiptInput.value = '';
+                }
+
+                if (receiptPreview) {
+                    receiptPreview.innerHTML = '';
+                }
+            } else if (fee !== null && paidAmountInput) {
+                paidAmountInput.value = fee.toFixed(2);
+                paidAmountHelp.textContent = 'Should match the ' + registrantTypeSelect.value +
+                    ' fee shown above: ' + formatCurrency(fee) + '.';
+            } else if (paidAmountHelp) {
+                paidAmountHelp.textContent = '';
+            }
+        }
 
         // ---- Sri Lankan NIC formatting ----
         const nicInput = document.getElementById('reg-nic');
@@ -342,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        registrantTypeSelect.addEventListener('change', function () {
+        function syncRegistrantTypeState() {
             const isMember = registrantTypeSelect.value === 'Member';
 
             membershipGroup.hidden = !isMember;
@@ -352,81 +449,89 @@ document.addEventListener('DOMContentLoaded', function () {
                 membershipInput.value = '';
             }
 
-            const fee = expectedFeeFor(event, registrantTypeSelect.value);
+            syncPaymentSection();
+        }
 
-            if (fee !== null) {
-                paidAmountInput.value = fee.toFixed(2);
-                paidAmountHelp.textContent = 'Should match the ' + registrantTypeSelect.value +
-                    ' fee shown above: ' + formatCurrency(fee) + '.';
-            } else {
-                paidAmountHelp.textContent = '';
-            }
-        });
+        registrantTypeSelect.addEventListener('change', syncRegistrantTypeState);
 
-        paidAmountInput.addEventListener('blur', function () {
-            if (paidAmountInput.value === '') {
-                return;
-            }
+        if (membersOnly) {
+            registrantTypeSelect.value = 'Member';
+        }
 
-            const parsed = parseFloat(paidAmountInput.value);
+        syncRegistrantTypeState();
 
-            if (Number.isNaN(parsed)) {
-                return;
-            }
+        if (paidAmountInput) {
+            paidAmountInput.addEventListener('blur', function () {
+                if (paidAmountInput.value === '') {
+                    return;
+                }
 
-            paidAmountInput.value = parsed.toFixed(2);
-        });
+                const parsed = parseFloat(paidAmountInput.value);
 
-        receiptInput.addEventListener('change', function (eventObj) {
-            const file = eventObj.target.files[0];
+                if (Number.isNaN(parsed)) {
+                    return;
+                }
 
-            if (!file) {
-                selectedReceipt = null;
-                receiptPreview.innerHTML = '';
-                return;
-            }
+                paidAmountInput.value = parsed.toFixed(2);
+            });
+        }
 
-            const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (receiptInput) {
+            receiptInput.addEventListener('change', function (eventObj) {
+                const file = eventObj.target.files[0];
 
-            if (!allowed.includes(file.type)) {
-                showRegistrationAlert('Please select a PDF, JPEG, or PNG file for the receipt.', 'error');
-                eventObj.target.value = '';
-                return;
-            }
+                if (!file) {
+                    selectedReceipt = null;
+                    receiptPreview.innerHTML = '';
+                    return;
+                }
 
-            if (file.size > 15 * 1024 * 1024) {
-                showRegistrationAlert('The receipt file must be smaller than 15 MB.', 'error');
-                eventObj.target.value = '';
-                return;
-            }
+                const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
 
-            selectedReceipt = file;
-            receiptPreview.textContent = 'Selected: ' + file.name;
-        });
+                if (!allowed.includes(file.type)) {
+                    showRegistrationAlert('Please select a PDF, JPEG, or PNG file for the receipt.', 'error');
+                    eventObj.target.value = '';
+                    return;
+                }
+
+                if (file.size > 15 * 1024 * 1024) {
+                    showRegistrationAlert('The receipt file must be smaller than 15 MB.', 'error');
+                    eventObj.target.value = '';
+                    return;
+                }
+
+                selectedReceipt = file;
+                receiptPreview.textContent = 'Selected: ' + file.name;
+            });
+        }
 
         form.addEventListener('submit', async function (submitEvent) {
             submitEvent.preventDefault();
 
-            if (!selectedReceipt) {
-                showRegistrationAlert('Please attach your bank receipt before submitting.', 'error');
-                return;
-            }
-
             const expectedFee = expectedFeeFor(event, registrantTypeSelect.value);
-            const paidAmount = parseFloat(paidAmountInput.value);
+            const needsPaymentNow = !neverNeedsPayment && (expectedFee === null || expectedFee > 0);
 
-            if (Number.isNaN(paidAmount) || paidAmount < 0) {
-                showRegistrationAlert('Please enter a valid paid amount.', 'error');
-                return;
-            }
+            if (needsPaymentNow) {
+                if (!selectedReceipt) {
+                    showRegistrationAlert('Please attach your bank receipt before submitting.', 'error');
+                    return;
+                }
 
-            if (expectedFee !== null && Math.abs(paidAmount - expectedFee) > 0.01) {
-                showRegistrationAlert(
-                    'Paid amount must match the ' + registrantTypeSelect.value +
-                    ' fee of ' + formatCurrency(expectedFee) + '.',
-                    'error'
-                );
-                return;
+                const paidAmount = parseFloat(paidAmountInput.value);
+
+                if (Number.isNaN(paidAmount) || paidAmount < 0) {
+                    showRegistrationAlert('Please enter a valid paid amount.', 'error');
+                    return;
+                }
+
+                if (expectedFee !== null && Math.abs(paidAmount - expectedFee) > 0.01) {
+                    showRegistrationAlert(
+                        'Paid amount must match the ' + registrantTypeSelect.value +
+                        ' fee of ' + formatCurrency(expectedFee) + '.',
+                        'error'
+                    );
+                    return;
+                }
             }
 
             const formData = new FormData();
@@ -435,7 +540,6 @@ document.addEventListener('DOMContentLoaded', function () {
             formData.append('event_id', String(event.id));
             formData.append('event_date', String(event.event_date || '').slice(0, 10));
             formData.append('registrant_type', registrantTypeSelect.value);
-            formData.append('paid_amount', paidAmount.toFixed(2));
             formData.append('membership_number', membershipInput.value.trim());
             formData.append('nic', document.getElementById('reg-nic').value.trim());
             formData.append('full_name', document.getElementById('reg-full-name').value.trim());
@@ -446,8 +550,12 @@ document.addEventListener('DOMContentLoaded', function () {
             formData.append('postal_address', document.getElementById('reg-postal-address').value.trim());
             formData.append('workplace', document.getElementById('reg-workplace').value.trim());
             formData.append('workplace_address', document.getElementById('reg-workplace-address').value.trim());
-            formData.append('pay_by', document.getElementById('reg-pay-by').value);
-            formData.append('receipt', selectedReceipt);
+
+            if (needsPaymentNow) {
+                formData.append('paid_amount', parseFloat(paidAmountInput.value).toFixed(2));
+                formData.append('pay_by', document.getElementById('reg-pay-by').value);
+                formData.append('receipt', selectedReceipt);
+            }
 
             const submitButton = form.querySelector('button[type="submit"]');
 

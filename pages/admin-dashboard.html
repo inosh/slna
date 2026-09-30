@@ -18,7 +18,7 @@
   <div class="admin-wrap">
     <div class="main-tab-buttons" role="tablist" aria-label="Admin dashboard sections">
       <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">News</button>
-      <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Photos / Albums</button>
+      <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Gallery</button>
       <button
               class="main-tab-btn"
               data-maintab="maintab-cpd-events"
@@ -76,10 +76,11 @@
             <div class="form-group"><label>Full Content</label><textarea id="type-body" rows="6" required></textarea></div>
             <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="type-photo-input" accept="image/*"><div id="type-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
-              <label>Photo Gallery (optional &mdash; select multiple, or add more separately)</label>
-              <label class="btn btn-outline btn-sm file-input-trigger" for="type-gallery-input">Choose Photos</label>
-              <input type="file" id="type-gallery-input" accept="image/*" multiple class="file-input-hidden">
-              <div class="photo-picker-count" id="type-gallery-count">0 photo(s) selected</div>
+              <label>Photo &amp; Video Gallery (optional &mdash; select multiple, or add more separately)</label>
+              <label class="btn btn-outline btn-sm file-input-trigger" for="type-gallery-input">Choose Photos/Videos</label>
+              <input type="file" id="type-gallery-input" accept="image/*,video/*" multiple class="file-input-hidden">
+              <div style="font-size:12px; color:var(--muted); margin-top:4px;">Photos up to 15MB each; videos up to 100MB each (MP4, WEBM, MOV, AVI, OGG).</div>
+              <div class="photo-picker-count" id="type-gallery-count">0 item(s) selected</div>
               <div class="photo-picker-grid" id="type-gallery-picker"></div>
             </div>
             <button type="submit" class="btn btn-primary">Publish News Item</button>
@@ -110,10 +111,11 @@
             <div class="form-group"><label>Content Preview</label><textarea id="file-body-preview" rows="5"></textarea></div>
             <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="file-photo-input" accept="image/*"><div id="file-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
-              <label>Photo Gallery (optional &mdash; select multiple, or add more separately)</label>
-              <label class="btn btn-outline btn-sm file-input-trigger" for="file-gallery-input">Choose Photos</label>
-              <input type="file" id="file-gallery-input" accept="image/*" multiple class="file-input-hidden">
-              <div class="photo-picker-count" id="file-gallery-count">0 photo(s) selected</div>
+              <label>Photo &amp; Video Gallery (optional &mdash; select multiple, or add more separately)</label>
+              <label class="btn btn-outline btn-sm file-input-trigger" for="file-gallery-input">Choose Photos/Videos</label>
+              <input type="file" id="file-gallery-input" accept="image/*,video/*" multiple class="file-input-hidden">
+              <div style="font-size:12px; color:var(--muted); margin-top:4px;">Photos up to 15MB each; videos up to 100MB each (MP4, WEBM, MOV, AVI, OGG).</div>
+              <div class="photo-picker-count" id="file-gallery-count">0 item(s) selected</div>
               <div class="photo-picker-grid" id="file-gallery-picker"></div>
             </div>
             <button type="submit" class="btn btn-primary">Publish News Item with Attachment</button>
@@ -165,21 +167,22 @@
           </div>
 
           <div class="form-group">
-            <label>Photo Album</label>
+            <label>Photo &amp; Video Album</label>
             <div id="edit-news-current-album" style="margin-bottom:8px; font-size:13px; color:var(--muted);"></div>
 
             <label class="checkbox-label">
               <input type="checkbox" id="edit-news-override-album">
-              Replace the existing album's photos
+              Replace the existing album's items
             </label>
             <div style="font-size:12px; color:var(--muted); margin-top:4px;">
-              Default: keep using the existing album as-is. If you check this, <strong>all photos for the album must be uploaded again</strong> &mdash; the ones shown above will be replaced entirely, not merged with the new ones.
+              Default: keep using the existing album as-is. If you check this, <strong>all items for the album must be uploaded again</strong> &mdash; the ones shown above will be replaced entirely, not merged with the new ones.
             </div>
 
             <div id="edit-news-gallery-section" style="display:none; margin-top:10px;">
-              <label class="btn btn-outline btn-sm file-input-trigger" for="edit-news-gallery-input">Choose Photos</label>
-              <input type="file" id="edit-news-gallery-input" accept="image/*" multiple class="file-input-hidden">
-              <div class="photo-picker-count" id="edit-news-gallery-count">0 photo(s) selected</div>
+              <label class="btn btn-outline btn-sm file-input-trigger" for="edit-news-gallery-input">Choose Photos/Videos</label>
+              <input type="file" id="edit-news-gallery-input" accept="image/*,video/*" multiple class="file-input-hidden">
+              <div style="font-size:12px; color:var(--muted); margin-top:4px;">Photos up to 15MB each; videos up to 100MB each (MP4, WEBM, MOV, AVI, OGG).</div>
+              <div class="photo-picker-count" id="edit-news-gallery-count">0 item(s) selected</div>
               <div class="photo-picker-grid" id="edit-news-gallery-picker"></div>
             </div>
           </div>
@@ -191,16 +194,17 @@
 
     <div class="main-tab-panel" id="maintab-photos" role="tabpanel">
       <div class="admin-card">
-        <h2>Add Photo Album</h2>
+        <h2>Add to Gallery</h2>
         <div id="album-alert" aria-live="polite" tabindex="-1"></div>
         <form id="album-form">
           <div class="form-group"><label>Album Title</label><input type="text" id="album-title" required></div>
           <div class="form-group"><label>Date</label><input type="date" id="album-date" required></div>
           <div class="form-group">
-            <label>Photos (select multiple, or add more separately)</label>
-            <label class="btn btn-outline btn-sm file-input-trigger" for="album-photo-input">Choose Photos</label>
-            <input type="file" id="album-photo-input" accept="image/*" multiple class="file-input-hidden">
-            <div class="photo-picker-count" id="album-photo-count">0 photo(s) selected</div>
+            <label>Photos &amp; Videos (select multiple, or add more separately)</label>
+            <label class="btn btn-outline btn-sm file-input-trigger" for="album-photo-input">Choose Photos/Videos</label>
+            <input type="file" id="album-photo-input" accept="image/*,video/*" multiple class="file-input-hidden">
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">Photos up to 15MB each; videos up to 100MB each (MP4, WEBM, MOV, AVI, OGG).</div>
+            <div class="photo-picker-count" id="album-photo-count">0 item(s) selected</div>
             <div class="photo-picker-grid" id="album-photo-picker"></div>
           </div>
           <button type="submit" class="btn btn-primary">Publish Album</button>
@@ -210,7 +214,7 @@
       <div class="admin-card">
         <h2>Published Albums</h2>
         <div class="table-scroll">
-          <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Photos</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
+          <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Items</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
         </div>
       </div>
     </div>
@@ -312,8 +316,16 @@
 
           <fieldset class="form-group">
             <legend>Event Fees</legend>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="cpd-event-fee-type">Fee Type</label>
+              <select id="cpd-event-fee-type">
+                <option value="paid">Paid Event</option>
+                <option value="free">Free Event</option>
+                <option value="free_for_members">Free for Members Only</option>
+              </select>
+            </div>
             <div class="fee-row">
-              <div class="fee-field">
+              <div class="fee-field" id="cpd-event-member-fee-field">
                 <label for="cpd-event-member-fee">Member Fee (LKR)</label>
                 <input
                         type="number"
@@ -324,7 +336,7 @@
                         required
                 >
               </div>
-              <div class="fee-field">
+              <div class="fee-field" id="cpd-event-non-member-fee-field">
                 <label for="cpd-event-non-member-fee">Non-Member Fee (LKR)</label>
                 <input
                         type="number"
@@ -1454,12 +1466,20 @@
 
         <fieldset class="form-group" id="event-edit-fees-group">
           <legend>Event Fees</legend>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label for="event-edit-fee-type">Fee Type</label>
+            <select id="event-edit-fee-type">
+              <option value="paid">Paid Event</option>
+              <option value="free">Free Event</option>
+              <option value="free_for_members">Free for Members Only</option>
+            </select>
+          </div>
           <div class="fee-row">
-            <div class="fee-field">
+            <div class="fee-field" id="event-edit-member-fee-field">
               <label for="event-edit-member-fee">Member Fee (LKR)</label>
               <input type="number" id="event-edit-member-fee" min="0" step="0.01" required>
             </div>
-            <div class="fee-field">
+            <div class="fee-field" id="event-edit-non-member-fee-field">
               <label for="event-edit-non-member-fee">Non-Member Fee (LKR)</label>
               <input type="number" id="event-edit-non-member-fee" min="0" step="0.01" required>
             </div>

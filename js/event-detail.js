@@ -192,13 +192,22 @@ document.addEventListener('DOMContentLoaded', function () {
         const hasPayableFee = hasFeeData &&
             (Number(memberFee) > 0 || Number(nonMemberFee) > 0);
 
+        // A "Members Only" event never has non-members registering, so
+        // there's no point showing a Non-Member Fee line for it -- and
+        // splitting Member/Non-Member into their own fact rows (instead of
+        // cramming both onto one line with a <br>) keeps each value on a
+        // single line within the fact grid.
+        const membersOnly = audience === 'Members Only';
+
         if (hasFeeData) {
-            factsRows.push(
-                '<div><dt>Event Fee</dt><dd>' +
-                'Member: ' + escapeHtml(formatCurrency(memberFee)) +
-                '<br>Non-Member: ' + escapeHtml(formatCurrency(nonMemberFee)) +
-                '</dd></div>'
-            );
+            if (membersOnly) {
+                factsRows.push('<div><dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
+            } else if (hasPayableFee) {
+                factsRows.push('<div><dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
+                factsRows.push('<div><dt>Non-Member Fee</dt><dd>' + escapeHtml(formatCurrency(nonMemberFee)) + '</dd></div>');
+            } else {
+                factsRows.push('<div><dt>Event Fee</dt><dd>Free</dd></div>');
+            }
         }
 
         const statusLabel = status === 'Closed'

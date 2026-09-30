@@ -99,14 +99,20 @@ function renderNewsGallery(photos) {
   if (!photos || photos.length === 0) return '';
 
   _currentAlbumPhotos = photos.map(p => fullUrl(p.photo_url));
+  _currentAlbumMediaTypes = photos.map(p => p.media_type || 'image');
   const count = photos.length;
 
+  function media(idx) {
+    return _currentAlbumMediaTypes[idx] === 'video'
+        ? '<video src="' + _currentAlbumPhotos[idx] + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
+        : '<img src="' + _currentAlbumPhotos[idx] + '" alt="">';
+  }
   function tile(idx, overlayCount) {
     const overlay = overlayCount
         ? '<div class="gallery-more-overlay">+' + overlayCount + '</div>'
         : '';
     return '<div class="gallery-tile" onclick="openLightbox(' + idx + ')">' +
-        '<img src="' + _currentAlbumPhotos[idx] + '" alt="">' + overlay + '</div>';
+        media(idx) + overlay + '</div>';
   }
   function row(indexes, extraStyle) {
     return '<div class="gallery-row" style="grid-template-columns:repeat(' + indexes.length + ',1fr);' + (extraStyle || '') + '">' +
@@ -122,14 +128,14 @@ function renderNewsGallery(photos) {
         row([0, 1]) +
         '<div class="gallery-row" style="grid-template-columns:repeat(3,1fr);">' +
         tile(2) + tile(3) +
-        '<div class="gallery-tile" onclick="openLightbox(4)"><img src="' + _currentAlbumPhotos[4] + '" alt="">' +
+        '<div class="gallery-tile" onclick="openLightbox(4)">' + media(4) +
         (remaining > 0 ? '<div class="gallery-more-overlay">+' + remaining + '</div>' : '') +
         '</div></div>';
   }
 
   const countClass = count === 1 ? 'count-1' : (count >= 5 ? 'count-5plus' : 'count-' + count);
   return '<div class="news-photo-gallery ' + countClass + '">' + rowsHtml + '</div>' +
-      '<div class="news-gallery-caption">' + count + ' photo' + (count === 1 ? '' : 's') + ' from this event</div>';
+      '<div class="news-gallery-caption">' + count + ' item' + (count === 1 ? '' : 's') + ' from this event</div>';
 }
 async function renderNewsDetail() {
   const container = document.getElementById('news-detail-container');
@@ -153,12 +159,16 @@ async function renderAlbumGrid() {
     const albums = await apiGet('/albums');
     if (albums.length === 0) { container.innerHTML = '<div class="news-empty">No photo albums published yet.</div>'; return; }
     container.innerHTML = albums.map(album => {
-      const cover = album.cover_photo ? '<img src="' + fullUrl(album.cover_photo) + '" alt="">' : '<div class="no-cover">No Photos</div>';
-      return '<a href="album.html?id=' + album.id + '" class="album-tile"><div class="album-cover">' + cover + '<span class="album-count-badge">' + album.photo_count + ' photos</span></div><div class="album-info"><h3>' + album.title + '</h3><div class="album-date">' + formatDateLong(album.event_date) + '</div></div></a>';
+      const cover = !album.cover_photo
+        ? '<div class="no-cover">No Photos</div>'
+        : album.cover_media_type === 'video'
+          ? '<video src="' + fullUrl(album.cover_photo) + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
+          : '<img src="' + fullUrl(album.cover_photo) + '" alt="">';
+      return '<a href="album.html?id=' + album.id + '" class="album-tile"><div class="album-cover">' + cover + '<span class="album-count-badge">' + album.photo_count + ' item(s)</span></div><div class="album-info"><h3>' + album.title + '</h3><div class="album-date">' + formatDateLong(album.event_date) + '</div></div></a>';
     }).join('');
   } catch (err) { container.innerHTML = '<div class="news-empty">Could not load albums. Is the backend server running?</div>'; console.error(err); }
 }
-let _currentAlbumPhotos = []; let _currentLightboxIndex = 0;
+let _currentAlbumPhotos = []; let _currentAlbumMediaTypes = []; let _currentLightboxIndex = 0;
 async function renderAlbumDetail() {
   const container = document.getElementById('album-detail-container');
   if (!container) return;
@@ -169,14 +179,39 @@ async function renderAlbumDetail() {
     if (headEl) headEl.textContent = album.title;
     if (bcEl) bcEl.textContent = album.title;
     _currentAlbumPhotos = album.photos.map(p => fullUrl(p.photo_url));
-    container.innerHTML = '<div class="photo-grid">' + _currentAlbumPhotos.map((p, idx) => '<div class="photo-tile" onclick="openLightbox(' + idx + ')"><img src="' + p + '" alt=""></div>').join('') + '</div>';
+    _currentAlbumMediaTypes = album.photos.map(p => p.media_type || 'image');
+    container.innerHTML = '<div class="photo-grid">' + _currentAlbumPhotos.map((p, idx) => {
+      const isVideo = _currentAlbumMediaTypes[idx] === 'video';
+      const media = isVideo ? '<video src="' + p + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>' : '<img src="' + p + '" alt="">';
+      return '<div class="photo-tile" onclick="openLightbox(' + idx + ')">' + media + '</div>';
+    }).join('') + '</div>';
   } catch (err) { container.innerHTML = '<div class="news-empty">Album not found.</div>'; console.error(err); }
 }
 function openLightbox(index) { _currentLightboxIndex = index; updateLightboxImage(); document.getElementById('lightbox-overlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
-function closeLightbox() { document.getElementById('lightbox-overlay').classList.remove('open'); document.body.style.overflow = ''; }
+function closeLightbox() {
+  document.getElementById('lightbox-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  const video = document.getElementById('lightbox-video');
+  if (video) { video.pause(); video.src = ''; }
+}
 function lightboxNext() { _currentLightboxIndex = (_currentLightboxIndex + 1) % _currentAlbumPhotos.length; updateLightboxImage(); }
 function lightboxPrev() { _currentLightboxIndex = (_currentLightboxIndex - 1 + _currentAlbumPhotos.length) % _currentAlbumPhotos.length; updateLightboxImage(); }
-function updateLightboxImage() { document.getElementById('lightbox-img').src = _currentAlbumPhotos[_currentLightboxIndex]; document.getElementById('lightbox-counter').textContent = (_currentLightboxIndex + 1) + ' / ' + _currentAlbumPhotos.length; }
+function updateLightboxImage() {
+  const img = document.getElementById('lightbox-img');
+  const video = document.getElementById('lightbox-video');
+  const url = _currentAlbumPhotos[_currentLightboxIndex];
+  const isVideo = _currentAlbumMediaTypes[_currentLightboxIndex] === 'video';
+  if (isVideo && video) {
+    if (img) img.style.display = 'none';
+    video.style.display = '';
+    video.src = url;
+    video.play().catch(() => {});
+  } else {
+    if (video) { video.pause(); video.style.display = 'none'; video.src = ''; }
+    if (img) { img.style.display = ''; img.src = url; }
+  }
+  document.getElementById('lightbox-counter').textContent = (_currentLightboxIndex + 1) + ' / ' + _currentAlbumPhotos.length;
+}
 document.addEventListener('keydown', function (e) {
   const overlay = document.getElementById('lightbox-overlay');
   if (!overlay || !overlay.classList.contains('open')) return;
