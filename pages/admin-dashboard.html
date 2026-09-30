@@ -312,8 +312,16 @@
 
           <fieldset class="form-group">
             <legend>Event Fees</legend>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="cpd-event-fee-type">Fee Type</label>
+              <select id="cpd-event-fee-type">
+                <option value="paid">Paid Event</option>
+                <option value="free">Free Event</option>
+                <option value="free_for_members">Free for Members Only</option>
+              </select>
+            </div>
             <div class="fee-row">
-              <div class="fee-field">
+              <div class="fee-field" id="cpd-event-member-fee-field">
                 <label for="cpd-event-member-fee">Member Fee (LKR)</label>
                 <input
                         type="number"
@@ -324,7 +332,7 @@
                         required
                 >
               </div>
-              <div class="fee-field">
+              <div class="fee-field" id="cpd-event-non-member-fee-field">
                 <label for="cpd-event-non-member-fee">Non-Member Fee (LKR)</label>
                 <input
                         type="number"
@@ -1454,12 +1462,20 @@
 
         <fieldset class="form-group" id="event-edit-fees-group">
           <legend>Event Fees</legend>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label for="event-edit-fee-type">Fee Type</label>
+            <select id="event-edit-fee-type">
+              <option value="paid">Paid Event</option>
+              <option value="free">Free Event</option>
+              <option value="free_for_members">Free for Members Only</option>
+            </select>
+          </div>
           <div class="fee-row">
-            <div class="fee-field">
+            <div class="fee-field" id="event-edit-member-fee-field">
               <label for="event-edit-member-fee">Member Fee (LKR)</label>
               <input type="number" id="event-edit-member-fee" min="0" step="0.01" required>
             </div>
-            <div class="fee-field">
+            <div class="fee-field" id="event-edit-non-member-fee-field">
               <label for="event-edit-non-member-fee">Non-Member Fee (LKR)</label>
               <input type="number" id="event-edit-non-member-fee" min="0" step="0.01" required>
             </div>

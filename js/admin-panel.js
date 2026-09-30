@@ -126,6 +126,74 @@ document.addEventListener('DOMContentLoaded', function () {
     if (periodSelect) periodSelect.value = parsed.period;
   }
 
+  // Shared by the "Add CPD Event" form and the "Update Event" modal: shows,
+  // requires, and enables only the fee inputs that matter for the chosen
+  // Fee Type and Audience, so the admin physically can't type into (or
+  // leave a stray value in) a field that doesn't apply -- 'free' forces
+  // both fees to 0, 'free_for_members' forces just the member fee to 0,
+  // and a "Members Only" audience forces the non-member fee to 0 and
+  // hides it regardless of fee type, since there's no such thing as a
+  // non-member registering. Fields are hidden with an inline style (not
+  // the `hidden` attribute) because `.fee-row`'s own `display:grid` rule
+  // would otherwise win the cascade and leave a "hidden" field fully
+  // visible and editable. clearOnSwitch blanks a field that just became
+  // visible again (a fresh choice to make) -- used for the "Add" form,
+  // but not the edit modal, where the field may already hold a real
+  // saved value worth keeping as-is.
+  function applyCpdFeeType(feeType, membersOnly, elements, clearOnSwitch) {
+    const showMember = feeType === 'paid';
+    const showNonMember = feeType !== 'free' && !membersOnly;
+
+    [
+      { field: elements.memberFeeField, input: elements.memberFeeInput, show: showMember },
+      { field: elements.nonMemberFeeField, input: elements.nonMemberFeeInput, show: showNonMember }
+    ].forEach(function (entry) {
+      const wasHidden = entry.field.style.display === 'none';
+
+      entry.field.style.display = entry.show ? '' : 'none';
+      entry.input.required = entry.show;
+      entry.input.disabled = !entry.show;
+
+      if (!entry.show) {
+        entry.input.value = '0.00';
+      } else if (clearOnSwitch && wasHidden) {
+        entry.input.value = '';
+      }
+    });
+  }
+
+  function initCpdFeeTypeSelector() {
+    const select = document.getElementById('cpd-event-fee-type');
+    const audienceSelect = document.getElementById('cpd-event-audience');
+    const memberFeeField = document.getElementById('cpd-event-member-fee-field');
+    const nonMemberFeeField = document.getElementById('cpd-event-non-member-fee-field');
+    const memberFeeInput = document.getElementById('cpd-event-member-fee');
+    const nonMemberFeeInput = document.getElementById('cpd-event-non-member-fee');
+    const form = document.getElementById('cpd-event-form');
+
+    if (!select || !audienceSelect || !memberFeeField || !nonMemberFeeField || !memberFeeInput || !nonMemberFeeInput) {
+      return;
+    }
+
+    const elements = { memberFeeField, memberFeeInput, nonMemberFeeField, nonMemberFeeInput };
+
+    function sync() {
+      applyCpdFeeType(select.value, audienceSelect.value === 'Members Only', elements, true);
+    }
+
+    select.addEventListener('change', sync);
+    audienceSelect.addEventListener('change', sync);
+
+    if (form) {
+      form.addEventListener('reset', function () {
+        window.setTimeout(function () {
+          select.value = 'paid';
+          sync();
+        }, 0);
+      });
+    }
+  }
+
   function initCpdEventsAdmin() {
     setupEventAdminForm({
       formId: 'cpd-event-form',
@@ -158,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         },
         location: 'cpd-event-location',
+        fee_type: 'cpd-event-fee-type',
         member_fee: 'cpd-event-member-fee',
         non_member_fee: 'cpd-event-non-member-fee',
         summary: 'cpd-event-summary',
@@ -320,6 +389,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
       document.getElementById('event-edit-member-fee').value = memberFee.toFixed(2);
       document.getElementById('event-edit-non-member-fee').value = nonMemberFee.toFixed(2);
+
+      const feeTypeSelect = document.getElementById('event-edit-fee-type');
+      const feeType = ['paid', 'free', 'free_for_members'].includes(item.fee_type)
+          ? item.fee_type
+          : 'paid';
+
+      if (feeTypeSelect) {
+        feeTypeSelect.value = feeType;
+        applyCpdFeeType(feeType, item.audience === 'Members Only', {
+          memberFeeField: document.getElementById('event-edit-member-fee-field'),
+          memberFeeInput: document.getElementById('event-edit-member-fee'),
+          nonMemberFeeField: document.getElementById('event-edit-non-member-fee-field'),
+          nonMemberFeeInput: document.getElementById('event-edit-non-member-fee')
+        }, false);
+      }
     } else {
       feesGroup.hidden = true;
     }
@@ -414,6 +498,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
     });
+
+    const editFeeTypeSelect = document.getElementById('event-edit-fee-type');
+    const editAudienceSelect = document.getElementById('event-edit-audience');
+
+    if (editFeeTypeSelect && editAudienceSelect) {
+      const syncEditFeeType = function () {
+        applyCpdFeeType(editFeeTypeSelect.value, editAudienceSelect.value === 'Members Only', {
+          memberFeeField: document.getElementById('event-edit-member-fee-field'),
+          memberFeeInput: document.getElementById('event-edit-member-fee'),
+          nonMemberFeeField: document.getElementById('event-edit-non-member-fee-field'),
+          nonMemberFeeInput: document.getElementById('event-edit-non-member-fee')
+        }, false);
+      };
+
+      editFeeTypeSelect.addEventListener('change', syncEditFeeType);
+      editAudienceSelect.addEventListener('change', syncEditFeeType);
+    }
 
     ['event-edit-member-fee', 'event-edit-non-member-fee'].forEach(function (id) {
       const input = document.getElementById(id);
@@ -550,6 +651,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (isCpd) {
         editFields.audience = 'event-edit-audience';
+        editFields.fee_type = 'event-edit-fee-type';
         editFields.member_fee = 'event-edit-member-fee';
         editFields.non_member_fee = 'event-edit-non-member-fee';
       }
@@ -632,6 +734,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   initCpdEventsAdmin();
+  initCpdFeeTypeSelector();
   initOtherEventsAdmin();
   initEventEditModal();
 
