@@ -3,6 +3,63 @@
 // UPDATED: friendlier error messages, including when the backend server
 // itself is unreachable (not running, wrong port, etc.)
 
+// Client-side photo compression -- album and news photo uploads only.
+// Downscales to a max dimension and re-encodes as JPEG at high quality
+// (similar target to Facebook's upload pipeline) so large camera photos
+// upload faster without a visible quality loss. Profile pictures and bank
+// slip uploads (join form, event registration) intentionally skip this.
+const PHOTO_COMPRESSION = { maxDimension: 2048, quality: 0.85, skipUnderBytes: 300 * 1024 };
+
+function compressImageFile(file, opts) {
+  opts = opts || PHOTO_COMPRESSION;
+  if (!file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
+    return Promise.resolve(file);
+  }
+  if (file.size <= opts.skipUnderBytes) {
+    return Promise.resolve(file);
+  }
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(objectUrl);
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
+      const longestSide = Math.max(width, height);
+      if (longestSide > opts.maxDimension) {
+        const scale = opts.maxDimension / longestSide;
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      canvas.toBlob(function (blob) {
+        if (!blob || blob.size >= file.size) {
+          resolve(file);
+          return;
+        }
+        const newName = outputType === 'image/jpeg'
+            ? file.name.replace(/\.[^.]+$/, '') + '.jpg'
+            : file.name;
+        resolve(new File([blob], newName, { type: outputType, lastModified: Date.now() }));
+      }, outputType, opts.quality);
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
+}
+
+function compressImageFiles(files) {
+  return Promise.all(files.map((file) => compressImageFile(file)));
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const session = requireAuth();
   if (!session) return;
@@ -1837,7 +1894,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ---- News: Type in UI ----
   const typeForm = document.getElementById('type-news-form');
   let typePhotoFile = null;
-  document.getElementById('type-photo-input').addEventListener('change', function (e) {
+  document.getElementById('type-photo-input').addEventListener('change', async function (e) {
     if (e.target.files.length) {
       const file = e.target.files[0];
       if (file.size > 15 * 1024 * 1024) {
@@ -1845,7 +1902,7 @@ document.addEventListener('DOMContentLoaded', function () {
         e.target.value = '';
         return;
       }
-      typePhotoFile = file;
+      typePhotoFile = await compressImageFile(file);
       const reader = new FileReader();
       reader.onload = (evt) => { document.getElementById('type-photo-preview').innerHTML = '<img src="' + evt.target.result + '" class="thumb-preview">'; };
       reader.readAsDataURL(typePhotoFile);
@@ -1855,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Gallery photos become a linked photo album when the news item is published.
   let typeGalleryFiles = [];
   const typeGalleryInput = document.getElementById('type-gallery-input');
-  typeGalleryInput.addEventListener('change', function (e) {
+  typeGalleryInput.addEventListener('change', async function (e) {
     const files = Array.from(e.target.files);
     const maxSize = (f) => f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
     const oversized = files.filter(f => f.size > maxSize(f));
@@ -1863,7 +1920,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (oversized.length) {
       showAlert('type-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
-    typeGalleryFiles = typeGalleryFiles.concat(validFiles);
+    const compressedFiles = await compressImageFiles(validFiles);
+    typeGalleryFiles = typeGalleryFiles.concat(compressedFiles);
     renderTypeGalleryPicker();
     typeGalleryInput.value = '';
   });
@@ -1929,7 +1987,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let selectedDocument = null;
   let filePhotoFile = null;
 
-  document.getElementById('file-photo-input').addEventListener('change', function (e) {
+  document.getElementById('file-photo-input').addEventListener('change', async function (e) {
     if (e.target.files.length) {
       const file = e.target.files[0];
       if (file.size > 15 * 1024 * 1024) {
@@ -1937,7 +1995,7 @@ document.addEventListener('DOMContentLoaded', function () {
         e.target.value = '';
         return;
       }
-      filePhotoFile = file;
+      filePhotoFile = await compressImageFile(file);
       const reader = new FileReader();
       reader.onload = (evt) => { document.getElementById('file-photo-preview').innerHTML = '<img src="' + evt.target.result + '" class="thumb-preview">'; };
       reader.readAsDataURL(filePhotoFile);
@@ -1975,7 +2033,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Gallery photos become a linked photo album when the news item is published.
   let fileGalleryFiles = [];
   const fileGalleryInput = document.getElementById('file-gallery-input');
-  fileGalleryInput.addEventListener('change', function (e) {
+  fileGalleryInput.addEventListener('change', async function (e) {
     const files = Array.from(e.target.files);
     const maxSize = (f) => f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
     const oversized = files.filter(f => f.size > maxSize(f));
@@ -1983,7 +2041,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (oversized.length) {
       showAlert('file-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
-    fileGalleryFiles = fileGalleryFiles.concat(validFiles);
+    const compressedFiles = await compressImageFiles(validFiles);
+    fileGalleryFiles = fileGalleryFiles.concat(compressedFiles);
     renderFileGalleryPicker();
     fileGalleryInput.value = '';
   });
@@ -2046,7 +2105,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ---- Albums ----
   let albumPhotoFiles = [];
   const albumPhotoInput = document.getElementById('album-photo-input');
-  albumPhotoInput.addEventListener('change', function (e) {
+  albumPhotoInput.addEventListener('change', async function (e) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -2056,8 +2115,9 @@ document.addEventListener('DOMContentLoaded', function () {
       showAlert('album-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
     const validFiles = files.filter(f => f.size <= maxSize(f));
+    const compressedFiles = await compressImageFiles(validFiles);
 
-    albumPhotoFiles = albumPhotoFiles.concat(validFiles);
+    albumPhotoFiles = albumPhotoFiles.concat(compressedFiles);
     renderAlbumPhotoPicker();
     albumPhotoInput.value = '';
   });
@@ -4077,7 +4137,7 @@ function initEditNewsForm() {
 
   closeButton.addEventListener('click', closeEditNewsCard);
 
-  photoInput.addEventListener('change', function (e) {
+  photoInput.addEventListener('change', async function (e) {
     if (e.target.files.length) {
       const file = e.target.files[0];
       if (file.size > 15 * 1024 * 1024) {
@@ -4085,7 +4145,7 @@ function initEditNewsForm() {
         e.target.value = '';
         return;
       }
-      editNewsPhotoFile = file;
+      editNewsPhotoFile = await compressImageFile(file);
       const reader = new FileReader();
       reader.onload = (evt) => { document.getElementById('edit-news-photo-preview').innerHTML = '<img src="' + evt.target.result + '" class="thumb-preview">'; };
       reader.readAsDataURL(editNewsPhotoFile);
@@ -4101,7 +4161,7 @@ function initEditNewsForm() {
     }
   });
 
-  galleryInput.addEventListener('change', function (e) {
+  galleryInput.addEventListener('change', async function (e) {
     const files = Array.from(e.target.files);
     const maxSize = (f) => f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
     const oversized = files.filter(f => f.size > maxSize(f));
@@ -4109,7 +4169,8 @@ function initEditNewsForm() {
     if (oversized.length) {
       showAlert('edit-news-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' + oversized.map(f => f.name).join(', '), 'error');
     }
-    editNewsGalleryFiles = editNewsGalleryFiles.concat(validFiles);
+    const compressedFiles = await compressImageFiles(validFiles);
+    editNewsGalleryFiles = editNewsGalleryFiles.concat(compressedFiles);
     renderEditNewsGalleryPicker();
     galleryInput.value = '';
   });
