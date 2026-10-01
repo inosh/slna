@@ -60,11 +60,77 @@ function compressImageFiles(files) {
   return Promise.all(files.map((file) => compressImageFile(file)));
 }
 
+// Generic "are you sure?" modal used in place of the browser's built-in
+// confirm() throughout the admin panel (News/Gallery/Queries deletes,
+// closing event registration, etc). Resolves true/false instead of
+// blocking the main thread the way window.confirm() does.
+function showSimpleConfirm(options) {
+  options = options || {};
+
+  return new Promise(function (resolve) {
+    const modal = document.getElementById('admin-simple-confirm-modal');
+
+    if (!modal) {
+      resolve(window.confirm(options.message || 'Are you sure?'));
+      return;
+    }
+
+    const titleEl = document.getElementById('admin-simple-confirm-title');
+    const messageEl = document.getElementById('admin-simple-confirm-message');
+    const cancelBtn = document.getElementById('cancel-admin-simple-confirm');
+    const confirmBtn = document.getElementById('confirm-admin-simple-confirm');
+    const backdrop = modal.querySelector('.admin-confirm-backdrop');
+
+    titleEl.textContent = options.title || 'Confirm';
+    messageEl.textContent = options.message || 'Are you sure?';
+    confirmBtn.textContent = options.confirmText || 'Confirm';
+    confirmBtn.className = 'btn ' + (options.danger === false ? 'btn-primary' : 'btn-danger');
+
+    function cleanup(result) {
+      modal.hidden = true;
+      cancelBtn.removeEventListener('click', onCancel);
+      confirmBtn.removeEventListener('click', onConfirm);
+      backdrop.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKeydown);
+      resolve(result);
+    }
+
+    function onCancel() { cleanup(false); }
+    function onConfirm() { cleanup(true); }
+    function onKeydown(event) {
+      if (event.key === 'Escape') cleanup(false);
+    }
+
+    cancelBtn.addEventListener('click', onCancel);
+    confirmBtn.addEventListener('click', onConfirm);
+    backdrop.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKeydown);
+
+    modal.hidden = false;
+    confirmBtn.focus();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const session = requireAuth();
   if (!session) return;
   document.getElementById('welcome-user').textContent = session.username + ' (' + session.role + ')';
   document.getElementById('logout-btn').addEventListener('click', logout);
+
+  let cpdEventAdminConfig = null;
+  let otherEventAdminConfig = null;
+
+  // Clears the "Add new item" forms for News, Gallery, CPD Events, and
+  // Other Events whenever the admin switches main tabs, so half-entered
+  // data from a previous visit doesn't linger (and accidentally get
+  // submitted) when they come back to a tab later.
+  function resetAddItemForms() {
+    if (typeof resetTypeNewsForm === 'function') resetTypeNewsForm();
+    if (typeof resetFileNewsForm === 'function') resetFileNewsForm();
+    if (typeof resetAlbumForm === 'function') resetAlbumForm();
+    if (cpdEventAdminConfig && typeof cpdEventAdminConfig.resetForm === 'function') cpdEventAdminConfig.resetForm();
+    if (otherEventAdminConfig && typeof otherEventAdminConfig.resetForm === 'function') otherEventAdminConfig.resetForm();
+  }
 
   document.querySelectorAll('.main-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -72,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('.main-tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.maintab).classList.add('active');
+      resetAddItemForms();
     });
   });
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -88,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initMembershipApplications();
   initContactQueries();
   initEditNewsForm();
+  initAlbumTitleEditModal();
 
   function populateTimeSelectGroup(group) {
     if (!group) {
@@ -252,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function initCpdEventsAdmin() {
-    setupEventAdminForm({
+    cpdEventAdminConfig = {
       formId: 'cpd-event-form',
       alertId: 'cpd-event-alert',
       tableAlertId: 'cpd-events-table-alert',
@@ -264,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
       endpoint: '/events/cpd',
       successMessage: 'CPD event published.',
       submitLabel: 'Publish CPD Event',
-      typeOptions: ['Workshop', 'Training', 'Webinar', 'Seminar', 'Study Day', 'Conference', 'Other'],
+      typeOptions: ['Workshop', 'Training', 'Webinar', 'Seminar', 'Study Day', 'Conference', 'Educational Program', 'Other'],
       statusOptions: ['Registration Open', 'Registration Opening Soon', 'Programme Announced Soon', 'Closed'],
       fields: {
         title: 'cpd-event-title',
@@ -291,11 +359,13 @@ document.addEventListener('DOMContentLoaded', function () {
         status: 'cpd-event-status'
       },
       timePreviewId: 'cpd-event-time-preview'
-    });
+    };
+
+    setupEventAdminForm(cpdEventAdminConfig);
   }
 
   function initOtherEventsAdmin() {
-    setupEventAdminForm({
+    otherEventAdminConfig = {
       formId: 'other-event-form',
       alertId: 'other-event-alert',
       tableAlertId: 'other-events-table-alert',
@@ -328,7 +398,9 @@ document.addEventListener('DOMContentLoaded', function () {
         status: 'other-event-status'
       },
       timePreviewId: 'other-event-time-preview'
-    });
+    };
+
+    setupEventAdminForm(otherEventAdminConfig);
   }
 
   // ------------------------------------------------------------------
@@ -1696,6 +1768,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     config.reload = loadItems;
 
+    config.resetForm = function () {
+      form.reset();
+      selectedPhoto = null;
+      selectedAttachment = null;
+
+      if (photoPreview) {
+        photoPreview.innerHTML = '';
+      }
+
+      if (attachmentPreview) {
+        attachmentPreview.innerHTML = '';
+      }
+
+      updateTimePreview();
+    };
+
     if (photoInput) {
       photoInput.addEventListener('change', function (event) {
         const file = event.target.files[0];
@@ -1919,7 +2007,18 @@ document.addEventListener('DOMContentLoaded', function () {
               'data-event-close-registration-id'
           );
 
-          if (!eventId || !window.confirm('Close registration for this event?')) {
+          if (!eventId) {
+            return;
+          }
+
+          const confirmedClose = await showSimpleConfirm({
+            title: 'Close Registration',
+            message: 'Close registration for this event? Attendees will no longer be able to register.',
+            confirmText: 'Close Registration',
+            danger: false
+          });
+
+          if (!confirmedClose) {
             return;
           }
 
@@ -2055,6 +2154,15 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   window._removeTypeGalleryPhoto = function (idx) { typeGalleryFiles.splice(idx, 1); renderTypeGalleryPicker(); };
 
+  function resetTypeNewsForm() {
+    typeForm.reset();
+    typePhotoFile = null;
+    typeGalleryFiles = [];
+    document.getElementById('type-photo-preview').innerHTML = '';
+    document.getElementById('type-alert').innerHTML = '';
+    renderTypeGalleryPicker();
+  }
+
   typeForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     const title = document.getElementById('type-title').value.trim();
@@ -2176,6 +2284,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   window._removeFileGalleryPhoto = function (idx) { fileGalleryFiles.splice(idx, 1); renderFileGalleryPicker(); };
 
+  function resetFileNewsForm() {
+    fileForm.reset();
+    fileNameDisplay.textContent = '';
+    selectedDocument = null;
+    filePhotoFile = null;
+    fileGalleryFiles = [];
+    document.getElementById('file-photo-preview').innerHTML = '';
+    document.getElementById('file-alert').innerHTML = '';
+    renderFileGalleryPicker();
+  }
+
   fileForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!selectedDocument) { showAlert('file-alert', 'Please select a document to upload.', 'error'); return; }
@@ -2284,6 +2403,13 @@ document.addEventListener('DOMContentLoaded', function () {
       showAlert('album-alert', networkErrorMessage(err), 'error');
     }
   });
+
+  function resetAlbumForm() {
+    albumForm.reset();
+    albumPhotoFiles = [];
+    document.getElementById('album-alert').innerHTML = '';
+    renderAlbumPhotoPicker();
+  }
 
   function initMembershipApplications() {
     const membershipPanel = document.getElementById(
@@ -4147,7 +4273,12 @@ async function loadAdminNewsTable() {
 }
 
 async function handleDeleteNews(id) {
-  if (!confirm('Delete this news item?')) return;
+  const confirmed = await showSimpleConfirm({
+    title: 'Delete News Item',
+    message: 'Are you sure you want to delete this news item? This action cannot be undone.',
+    confirmText: 'Delete News Item'
+  });
+  if (!confirmed) return;
   try {
     const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/' + id, {
       method: 'DELETE',
@@ -4342,28 +4473,126 @@ function initEditNewsForm() {
   });
 }
 
+let albumTableCache = [];
+
+function formatAlbumDate(value) {
+  if (!value) return '-';
+  const date = new Date(String(value).slice(0, 10) + 'T00:00:00');
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-GB');
+}
+
 async function loadAdminAlbumTable() {
   const tbody = document.getElementById('album-table-body');
   try {
     const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/albums');
     if (!res.ok) throw new Error('bad status');
     const albums = await res.json();
-    if (albums.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No albums yet.</td></tr>'; return; }
+    albumTableCache = albums;
+    if (albums.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No albums yet.</td></tr>'; return; }
     const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
     tbody.innerHTML = albums.map(album => {
       const thumb = !album.cover_photo ? '-'
         : album.cover_media_type === 'video'
           ? '<video src="' + apiOrigin + album.cover_photo + '" class="thumb-preview" style="width:40px;height:40px;" muted preload="metadata"></video>'
           : '<img src="' + apiOrigin + album.cover_photo + '" class="thumb-preview" style="width:40px;height:40px;">';
-      return '<tr><td>' + thumb + '</td><td>' + album.title + '</td><td>' + album.photo_count + ' item(s)</td><td><button class="btn btn-danger btn-sm" onclick="handleDeleteAlbum(' + album.id + ')">Delete</button></td></tr>';
+      return '<tr><td>' + thumb + '</td><td>' + escapeHtml(album.title) + '</td><td>' + formatAlbumDate(album.event_date) + '</td><td>' + album.photo_count + ' item(s)</td><td><button class="btn btn-outline btn-sm" onclick="handleEditAlbumTitle(' + album.id + ')">Edit Title</button> <button class="btn btn-danger btn-sm" onclick="handleDeleteAlbum(' + album.id + ')">Delete</button></td></tr>';
     }).join('');
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#c0392b;">Could not load albums. Is the backend server running?</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#c0392b;">Could not load albums. Is the backend server running?</td></tr>';
   }
 }
 
+let albumTitleEditId = null;
+
+function handleEditAlbumTitle(id) {
+  const album = albumTableCache.find(function (candidate) { return Number(candidate.id) === Number(id); });
+  if (!album) return;
+
+  albumTitleEditId = id;
+  document.getElementById('album-title-edit-alert').innerHTML = '';
+  document.getElementById('album-title-edit-input').value = album.title || '';
+
+  const modal = document.getElementById('album-title-edit-modal');
+  modal.hidden = false;
+  document.getElementById('album-title-edit-input').focus();
+}
+
+function closeAlbumTitleEditModal() {
+  document.getElementById('album-title-edit-modal').hidden = true;
+  albumTitleEditId = null;
+}
+
+function initAlbumTitleEditModal() {
+  const modal = document.getElementById('album-title-edit-modal');
+  if (!modal) return;
+
+  const form = document.getElementById('album-title-edit-form');
+  const cancelButton = document.getElementById('cancel-album-title-edit');
+  const backdrop = modal.querySelector('.admin-confirm-backdrop');
+
+  cancelButton.addEventListener('click', closeAlbumTitleEditModal);
+  backdrop.addEventListener('click', closeAlbumTitleEditModal);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !modal.hidden) closeAlbumTitleEditModal();
+  });
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!albumTitleEditId) return;
+
+    const title = document.getElementById('album-title-edit-input').value.trim();
+    if (!title) {
+      showAlert('album-title-edit-alert', 'Please enter a title.', 'error');
+      return;
+    }
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Saving...';
+
+    try {
+      const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/albums/' + albumTitleEditId, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: JSON.stringify({ title: title })
+      });
+
+      if (!res.ok) {
+        let message = 'Could not update the album title.';
+        try {
+          const data = await res.json();
+          if (data && data.error) message = data.error;
+        } catch (parseErr) {
+          // Response wasn't JSON -- fall back to the generic message above.
+        }
+        showAlert('album-title-edit-alert', message, 'error');
+        return;
+      }
+
+      closeAlbumTitleEditModal();
+      showAlert('album-table-alert', 'Album title updated.', 'success');
+      loadAdminAlbumTable();
+    } catch (err) {
+      console.error(err);
+      showAlert('album-title-edit-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = 'Save Title';
+    }
+  });
+}
+
 async function handleDeleteAlbum(id) {
-  if (!confirm('Delete this album?')) return;
+  const confirmed = await showSimpleConfirm({
+    title: 'Delete Album',
+    message: 'Are you sure you want to delete this album? This action cannot be undone.',
+    confirmText: 'Delete Album'
+  });
+  if (!confirmed) return;
   try {
     const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/albums/' + id, {
       method: 'DELETE',
@@ -4495,7 +4724,12 @@ async function handleToggleQueryStatus(id, newStatus) {
 }
 
 async function handleDeleteQuery(id) {
-  if (!confirm('Delete this query?')) return;
+  const confirmed = await showSimpleConfirm({
+    title: 'Delete Query',
+    message: 'Are you sure you want to delete this query? This action cannot be undone.',
+    confirmText: 'Delete Query'
+  });
+  if (!confirmed) return;
   try {
     const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/contact-queries/' + id, {
       method: 'DELETE',
