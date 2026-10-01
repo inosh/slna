@@ -75,6 +75,26 @@
 </form>
 </div>
 
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var subject = params.get('subject');
+  var category = params.get('category');
+
+  if (subject) {
+    var subjectField = document.getElementById('contact-subject');
+    if (subjectField) { subjectField.value = subject; }
+  }
+
+  if (category === 'associate') {
+    var messageField = document.getElementById('contact-message');
+    if (messageField && !messageField.value) {
+      messageField.value = "I would like to apply for Associate (Student) Membership. Please let me know the next steps.";
+    }
+  }
+})();
+</script>
+
 </div></div>
 
 <div id="site-footer">
