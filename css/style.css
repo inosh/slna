@@ -46,11 +46,11 @@ ul { list-style:none; }
 .main-nav .container { display:flex; align-items:center; justify-content:space-between; }
 .main-nav ul.nav-list { display:flex; flex-wrap:nowrap; width:100%; justify-content:space-between; }
 .main-nav .nav-list > li { position:relative; flex:1 1 auto; text-align:center; }
-.main-nav .nav-list > li > a { display:block; color:#fff; padding:14px 8px; font-size:13px; font-weight:600; letter-spacing:0.2px; white-space:nowrap; }
+.main-nav .nav-list > li > a { display:block; color:#fff; padding:14px 10px; font-size:14.5px; font-weight:600; letter-spacing:0.2px; white-space:nowrap; }
 .main-nav .nav-list > li:hover > a, .main-nav .nav-list > li.active > a { background: var(--primary-dark); color:var(--secondary); }
 .dropdown { display:none; position:absolute; top:100%; left:0; min-width:250px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.15); border-top:3px solid var(--secondary); z-index:1501; text-align:left; }
 .main-nav .nav-list > li:hover .dropdown { display:block; }
-.dropdown li a { display:block; padding:10px 16px; font-size:13px; color:var(--text); border-bottom:1px solid var(--border); white-space:nowrap; }
+.dropdown li a { display:block; padding:11px 16px; font-size:14px; color:var(--text); border-bottom:1px solid var(--border); white-space:nowrap; }
 .dropdown li a:hover { background:var(--bg-light); color:var(--primary); padding-left:20px; }
 .nav-toggle { display:none; background:none; border:none; color:#fff; font-size:22px; cursor:pointer; }
 .carousel { position:relative; height:460px; overflow:hidden; background: var(--carousel-bg); z-index:1; }
@@ -391,7 +391,7 @@ ul { list-style:none; }
 .photo-picker-count { font-size:12px; color:var(--muted); margin-top:7px; }
 .form-group label.file-input-trigger { display:inline-block; margin-bottom:0; }
 .form-group .file-input-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
-@media (max-width: 1100px) { .main-nav .nav-list > li > a { font-size:12px; padding:13px 4px; } }
+@media (max-width: 1100px) { .main-nav .nav-list > li > a { font-size:13px; padding:13px 6px; } }
 @media (max-width: 992px) {
   .content-layout { grid-template-columns:1fr; } .side-menu { position:static; }
   .grid-3, .grid-4, .grid-2, .pillar-grid, .album-grid, .photo-grid { grid-template-columns:repeat(2,1fr); }
