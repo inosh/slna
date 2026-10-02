@@ -213,8 +213,9 @@
 
       <div class="admin-card">
         <h2>Published Albums</h2>
+        <div id="album-table-alert" aria-live="polite" tabindex="-1"></div>
         <div class="table-scroll">
-          <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Items</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
+          <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Date</th><th>Items</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
         </div>
       </div>
     </div>
@@ -254,6 +255,7 @@
               <option value="Seminar">Seminar</option>
               <option value="Study Day">Study Day</option>
               <option value="Conference">Conference</option>
+              <option value="Educational Program">Educational Program</option>
               <option value="Other">Other</option>
             </select>
           </div>
@@ -420,6 +422,7 @@
 
       <div class="admin-card">
         <h2>Published CPD Events</h2>
+        <div id="cpd-events-table-alert" aria-live="polite" tabindex="-1"></div>
 
         <div class="table-scroll">
           <table class="news-table">
@@ -432,7 +435,7 @@
               <th>Location</th>
               <th>Audience</th>
               <th>Fees (LKR)</th>
-              <th>Status</th>
+              <th>Status / Registrations</th>
               <th>Actions</th>
             </tr>
             </thead>
@@ -587,6 +590,7 @@
 
       <div class="admin-card">
         <h2>Published Other Events</h2>
+        <div id="other-events-table-alert" aria-live="polite" tabindex="-1"></div>
 
         <div class="table-scroll">
           <table class="news-table">
@@ -1409,7 +1413,7 @@
 
       <div id="event-edit-alert" aria-live="polite" tabindex="-1"></div>
 
-      <form id="event-edit-form">
+      <form id="event-edit-form" novalidate>
         <div class="form-group">
           <label for="event-edit-title">Title</label>
           <input type="text" id="event-edit-title" required>
@@ -1519,6 +1523,62 @@
 
   <div
           class="admin-confirm-modal"
+          id="event-delete-confirm-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-delete-confirm-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-icon" aria-hidden="true">
+        !
+      </div>
+
+      <div class="admin-confirm-content">
+        <h2 id="event-delete-confirm-title">
+          Delete Event
+        </h2>
+
+        <p id="event-delete-confirm-message">
+          Are you sure you want to delete this event? This action cannot be undone.
+        </p>
+
+        <div class="admin-confirm-reference">
+          <span>Event</span>
+          <strong id="event-delete-confirm-name">&mdash;</strong>
+        </div>
+
+        <p
+                class="admin-confirm-warning"
+                id="event-delete-confirm-warning"
+                hidden
+        ></p>
+
+        <div class="admin-confirm-actions">
+          <button
+                  type="button"
+                  class="btn btn-outline"
+                  id="cancel-event-delete-confirmation"
+          >
+            Cancel
+          </button>
+
+          <button
+                  type="button"
+                  class="btn btn-danger"
+                  id="confirm-event-delete-modal"
+          >
+            Delete Event
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
           id="registration-review-modal"
           hidden
           role="dialog"
@@ -1585,6 +1645,101 @@
 
           <tbody id="registration-review-body"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="album-title-edit-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="album-title-edit-modal-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-content">
+        <h2 id="album-title-edit-modal-title">
+          Update Album Title
+        </h2>
+
+        <p>
+          Only the album title can be changed here. Photos and videos in
+          this album are not affected.
+        </p>
+
+        <div id="album-title-edit-alert" aria-live="polite" tabindex="-1"></div>
+
+        <form id="album-title-edit-form">
+          <div class="form-group">
+            <label for="album-title-edit-input">Album Title</label>
+            <input type="text" id="album-title-edit-input" required>
+          </div>
+
+          <div class="admin-confirm-actions">
+            <button
+                    type="button"
+                    class="btn btn-outline"
+                    id="cancel-album-title-edit"
+            >
+              Cancel
+            </button>
+
+            <button
+                    type="submit"
+                    class="btn btn-primary"
+            >
+              Save Title
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="admin-simple-confirm-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-simple-confirm-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-icon" aria-hidden="true">
+        !
+      </div>
+
+      <div class="admin-confirm-content">
+        <h2 id="admin-simple-confirm-title">
+          Confirm
+        </h2>
+
+        <p id="admin-simple-confirm-message">
+          Are you sure?
+        </p>
+
+        <div class="admin-confirm-actions">
+          <button
+                  type="button"
+                  class="btn btn-outline"
+                  id="cancel-admin-simple-confirm"
+          >
+            Cancel
+          </button>
+
+          <button
+                  type="button"
+                  class="btn btn-danger"
+                  id="confirm-admin-simple-confirm"
+          >
+            Confirm
+          </button>
+        </div>
       </div>
     </div>
   </div>
