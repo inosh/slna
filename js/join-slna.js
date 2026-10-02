@@ -492,6 +492,7 @@
             var apiBase = SLNA_CONFIG.API_BASE_URL;
             var formData = new FormData(form);
 
+            document.body.classList.add('is-busy');
             if (submitButton) {
                 submitButton.disabled = true;
                 submitButton.textContent = 'Submitting Application...';
@@ -565,6 +566,7 @@
                     'Unable to submit your application. Please check your connection and try again.'
                 );
             } finally {
+                document.body.classList.remove('is-busy');
                 if (submitButton) {
                     submitButton.disabled = false;
                     submitButton.textContent =

@@ -345,6 +345,10 @@ ul { list-style:none; }
 .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
+/* Shown on <body> while a slow background request (e.g. an album upload
+   streaming to R2) is in flight, so the pointer gives feedback instead of
+   staying a plain arrow the whole time. */
+body.is-busy, body.is-busy * { cursor: wait !important; }
 .news-table { width:100%; border-collapse:collapse; margin-top:9px; }
 .news-table th, .news-table td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13px; }
 .news-table th { background:var(--bg-light); color:var(--primary-dark); font-weight:700; }
