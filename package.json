@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "build": "node build-pages.js"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.8"
+  }
+}
