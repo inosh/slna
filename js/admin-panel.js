@@ -154,10 +154,19 @@ document.addEventListener('DOMContentLoaded', function () {
       resetAddItemForms();
     });
   });
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  // The .tab-btn/.tab-panel classes are reused by several unrelated button
+  // groups (membership status filters, registration filters, query
+  // filters) that don't use data-tab at all -- scope this to buttons that
+  // actually declare data-tab, and to panels within the same admin-card,
+  // so clicking one of those filters elsewhere doesn't strip "active" off
+  // every .tab-panel in the document (which previously made the News
+  // "Add Item" form disappear with no way to bring it back short of a
+  // page refresh, since its own toggle buttons are hidden by design).
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      const scope = btn.closest('.admin-card') || document;
+      scope.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+      scope.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.tab).classList.add('active');
     });
@@ -922,16 +931,61 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'status-pending';
   }
 
-  function resolveReceiptUrl(receiptUrl) {
-    if (!receiptUrl) {
-      return '';
+  // Receipts live in the private R2 bucket now, so they're no longer a
+  // plain URL -- open a blank tab immediately (so the popup isn't blocked),
+  // then fill it in with an authenticated fetch, mirroring how protected
+  // membership documents are opened.
+  async function openRegistrationReceipt(registrationId) {
+    let previewWindow = window.open('', '_blank');
+
+    if (!previewWindow) {
+      showAlert(
+          'registration-review-alert',
+          'The receipt could not be opened because the browser blocked the new tab. Please allow pop-ups for this site and try again.',
+          'error'
+      );
+      return;
     }
 
-    if (/^https?:\/\//i.test(receiptUrl)) {
-      return receiptUrl;
-    }
+    previewWindow.document.write(
+        '<!DOCTYPE html>' +
+        '<html>' +
+        '<head><title>Loading receipt...</title></head>' +
+        '<body style="font-family:Arial,sans-serif;padding:24px;">' +
+        '<p>Loading receipt...</p>' +
+        '</body>' +
+        '</html>'
+    );
 
-    return SLNA_CONFIG.API_BASE_URL.replace('/api', '') + receiptUrl;
+    try {
+      const response = await fetch(
+          SLNA_CONFIG.API_BASE_URL + '/event-registrations/' + encodeURIComponent(registrationId) + '/receipt',
+          { headers: { Authorization: 'Bearer ' + getToken() } }
+      );
+
+      if (!response.ok) {
+        throw new Error(await parseApiError(response));
+      }
+
+      const receiptBlob = await response.blob();
+      const receiptUrl = URL.createObjectURL(receiptBlob);
+
+      previewWindow.location.replace(receiptUrl);
+
+      window.setTimeout(function () {
+        URL.revokeObjectURL(receiptUrl);
+      }, 60000);
+    } catch (error) {
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.close();
+      }
+
+      showAlert(
+          'registration-review-alert',
+          error.message || 'Could not open the receipt.',
+          'error'
+      );
+    }
   }
 
   function renderRegistrationEventsTable() {
@@ -955,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     events.sort(function (a, b) {
-      return new Date(a.event_date) - new Date(b.event_date);
+      return new Date(b.event_date) - new Date(a.event_date);
     });
 
     tbody.innerHTML = events.map(function (event) {
@@ -1034,7 +1088,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     tbody.innerHTML = registrations.map(function (registration) {
-      const receiptUrl = resolveReceiptUrl(registration.receipt_url);
       const status = registration.status || 'Pending';
       const isNonMember = registration.registrant_type === 'Non-Member';
 
@@ -1047,8 +1100,8 @@ document.addEventListener('DOMContentLoaded', function () {
           <td>${formatRegistrationFee(registration.paid_amount)}</td>
           <td>${escapeHtmlForModal(registration.pay_by)}</td>
           <td>
-            ${receiptUrl
-              ? `<a href="${receiptUrl}" target="_blank" rel="noopener">View Receipt</a>`
+            ${registration.receipt_url
+              ? `<button type="button" class="btn btn-outline btn-sm" data-view-receipt data-registration-id="${registration.id}">View Receipt</button>`
               : '—'}
           </td>
           <td>
@@ -1271,6 +1324,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (reviewBody) {
       reviewBody.addEventListener('click', async function (event) {
+        const receiptButton = event.target.closest('[data-view-receipt]');
+
+        if (receiptButton) {
+          openRegistrationReceipt(receiptButton.getAttribute('data-registration-id'));
+          return;
+        }
+
         const actionButton = event.target.closest('[data-registration-action]');
 
         if (!actionButton) {
@@ -1937,6 +1997,7 @@ document.addEventListener('DOMContentLoaded', function () {
           'button[type="submit"]'
       );
 
+      document.body.classList.add('is-busy');
       if (submitButton) {
         submitButton.disabled = true;
         submitButton.textContent = 'Publishing...';
@@ -1986,6 +2047,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         showAlert(config.alertId, message, 'error');
       } finally {
+        document.body.classList.remove('is-busy');
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = config.submitLabel;
@@ -2194,6 +2256,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typePhotoFile) formData.append('photo', typePhotoFile);
     typeGalleryFiles.forEach(file => formData.append('photos', file));
 
+    const typeSubmitButton = typeForm.querySelector('button[type="submit"]');
+    const typeSubmitLabel = typeSubmitButton ? typeSubmitButton.textContent : '';
+    document.body.classList.add('is-busy');
+    if (typeSubmitButton) {
+      typeSubmitButton.disabled = true;
+      typeSubmitButton.textContent = 'Publishing...';
+    }
+
     try {
       const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/typed', {
         method: 'POST',
@@ -2208,6 +2278,12 @@ document.addEventListener('DOMContentLoaded', function () {
       loadAdminNewsTable();
     } catch (err) {
       showAlert('type-alert', networkErrorMessage(err), 'error');
+    } finally {
+      document.body.classList.remove('is-busy');
+      if (typeSubmitButton) {
+        typeSubmitButton.disabled = false;
+        typeSubmitButton.textContent = typeSubmitLabel;
+      }
     }
   });
 
@@ -2328,6 +2404,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (filePhotoFile) formData.append('photo', filePhotoFile);
     fileGalleryFiles.forEach(file => formData.append('photos', file));
 
+    const fileSubmitButton = fileForm.querySelector('button[type="submit"]');
+    const fileSubmitLabel = fileSubmitButton ? fileSubmitButton.textContent : '';
+    document.body.classList.add('is-busy');
+    if (fileSubmitButton) {
+      fileSubmitButton.disabled = true;
+      fileSubmitButton.textContent = 'Publishing...';
+    }
+
     try {
       const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/upload', {
         method: 'POST',
@@ -2342,6 +2426,12 @@ document.addEventListener('DOMContentLoaded', function () {
       loadAdminNewsTable();
     } catch (err) {
       showAlert('file-alert', networkErrorMessage(err), 'error');
+    } finally {
+      document.body.classList.remove('is-busy');
+      if (fileSubmitButton) {
+        fileSubmitButton.disabled = false;
+        fileSubmitButton.textContent = fileSubmitLabel;
+      }
     }
   });
 
@@ -2402,6 +2492,17 @@ document.addEventListener('DOMContentLoaded', function () {
     formData.append('event_date', event_date);
     albumPhotoFiles.forEach(file => formData.append('photos', file));
 
+    // Uploads now stream to R2 instead of local disk, so a gallery's worth
+    // of photos/videos can take a while -- show a busy cursor and disable
+    // the button so the admin isn't left wondering if the click registered.
+    const submitButton = albumForm.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton ? submitButton.textContent : '';
+    document.body.classList.add('is-busy');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Publishing...';
+    }
+
     try {
       const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/albums', {
         method: 'POST',
@@ -2414,6 +2515,12 @@ document.addEventListener('DOMContentLoaded', function () {
       loadAdminAlbumTable();
     } catch (err) {
       showAlert('album-alert', networkErrorMessage(err), 'error');
+    } finally {
+      document.body.classList.remove('is-busy');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
     }
   });
 

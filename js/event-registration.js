@@ -677,6 +677,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const submitButton = form.querySelector('button[type="submit"]');
 
+            document.body.classList.add('is-busy');
             if (submitButton) {
                 submitButton.disabled = true;
                 submitButton.textContent = 'Submitting...';
@@ -710,6 +711,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 showRegistrationAlert(message, 'error');
             } finally {
+                document.body.classList.remove('is-busy');
                 if (submitButton) {
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Registration';
