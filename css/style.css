@@ -1149,10 +1149,6 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
   }
 }
 
-body.layout-loading {
-  visibility: hidden;
-}
-
 /* Committees page */
 
 .committee-list {
