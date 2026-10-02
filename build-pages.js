@@ -2,27 +2,31 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = __dirname;
+const DIST = path.join(ROOT, 'dist');
+
 const HEADER = fs.readFileSync(path.join(ROOT, 'partials', 'header.html'), 'utf8').trim();
 const FOOTER = fs.readFileSync(path.join(ROOT, 'partials', 'footer.html'), 'utf8').trim();
 
-// Matches the unbuilt placeholder (including stray duplicate copies left over
-// from an earlier conversion pass) OR an already-inlined header, so running
-// this script again after editing partials/header.html re-syncs every page.
-const HEADER_RE = new RegExp(
-    '(?:<div id="site-header">[\\s\\S]*?<\\/div>(?:\\s*<!--[\\s\\S]*?-->\\s*<\\/div>)*' +
-    '|<div class="top-bar">[\\s\\S]*?<\\/header>)',
-    'i'
-);
+const HEADER_RE = /<div id="site-header">[\s\S]*?<\/div>/i;
+const FOOTER_RE = /<div id="site-footer">[\s\S]*?<\/div>/i;
 
-// Same idea for the footer. Also absorbs a standalone back-to-top button
-// sitting right after it, since partials/footer.html already includes one -
-// pages converted by the old script ended up with a duplicate back-to-top div.
-const FOOTER_RE = new RegExp(
-    '(?:<div id="site-footer">[\\s\\S]*?<\\/div>(?:\\s*<!--[\\s\\S]*?-->\\s*<\\/div>)*' +
-    '|<footer class="site-footer">[\\s\\S]*?<\\/footer>)' +
-    '(?:\\s*<div class="back-to-top">[\\s\\S]*?<\\/div>)?',
-    'i'
-);
+// Plain asset/content folders copied into dist/ as-is.
+const COPY_DIRS = ['css', 'js', 'images'];
+
+function copyDir(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      copyDir(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
 
 function findHtmlFiles(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -38,40 +42,45 @@ function findHtmlFiles(dir, files = []) {
   return files;
 }
 
-function buildPage(filePath) {
-  const original = fs.readFileSync(filePath, 'utf8');
+function buildPage(srcPath, destPath) {
+  const content = fs.readFileSync(srcPath, 'utf8');
 
-  if (!HEADER_RE.test(original) || !FOOTER_RE.test(original)) {
-    console.log('[SKIP] no header/footer markers found:', filePath);
-    return false;
+  if (!HEADER_RE.test(content) || !FOOTER_RE.test(content)) {
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.copyFileSync(srcPath, destPath);
+    console.log('[COPY] no header/footer markers, copied as-is:', srcPath);
+    return;
   }
 
-  let content = original
+  const built = content
       .replace(HEADER_RE, () => HEADER)
       .replace(FOOTER_RE, () => FOOTER);
 
-  if (content === original) {
-    return false;
-  }
-
-  fs.writeFileSync(filePath, content, 'utf8');
-  console.log('[OK] built:', filePath);
-  return true;
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  fs.writeFileSync(destPath, built, 'utf8');
+  console.log('[OK] built:', destPath);
 }
 
 function main() {
-  const files = [
-    path.join(ROOT, 'index.html'),
-    ...findHtmlFiles(path.join(ROOT, 'pages')),
-  ];
+  fs.rmSync(DIST, { recursive: true, force: true });
+  fs.mkdirSync(DIST, { recursive: true });
 
-  let count = 0;
-
-  for (const file of files) {
-    if (buildPage(file)) count++;
+  for (const dir of COPY_DIRS) {
+    const src = path.join(ROOT, dir);
+    if (fs.existsSync(src)) {
+      copyDir(src, path.join(DIST, dir));
+    }
   }
 
-  console.log(`Inlined header/footer into ${count} page(s).`);
+  buildPage(path.join(ROOT, 'index.html'), path.join(DIST, 'index.html'));
+
+  const pageFiles = findHtmlFiles(path.join(ROOT, 'pages'));
+  for (const file of pageFiles) {
+    const relative = path.relative(ROOT, file);
+    buildPage(file, path.join(DIST, relative));
+  }
+
+  console.log(`Built ${pageFiles.length + 1} page(s) into dist/.`);
 }
 
 main();
