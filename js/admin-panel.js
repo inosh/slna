@@ -3,6 +3,19 @@
 // UPDATED: friendlier error messages, including when the backend server
 // itself is unreachable (not running, wrong port, etc.)
 
+// Browsers silently increment/decrement a focused number input's value on
+// mouse wheel scroll (e.g. the CPD event fee fields) -- surprising and easy
+// to trigger by accident while just scrolling the page. Blurring the input
+// the instant a wheel event arrives stops the browser applying that change,
+// while still letting the scroll itself continue normally.
+document.addEventListener('wheel', function () {
+  const active = document.activeElement;
+
+  if (active && active.tagName === 'INPUT' && active.type === 'number') {
+    active.blur();
+  }
+}, { passive: true });
+
 // Client-side photo compression -- album and news photo uploads only.
 // Downscales to a max dimension and re-encodes as JPEG at high quality
 // (similar target to Facebook's upload pipeline) so large camera photos
