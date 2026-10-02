@@ -9,54 +9,6 @@
     return '/';
   }
 
-  function partialsBase() {
-    return getSiteBase() + 'partials/';
-  }
-
-  function normalisePartialPaths(html) {
-    var base = getSiteBase();
-
-    if (base === '/') {
-      return html;
-    }
-
-    return html.replace(/(href|src)="\//g, '$1="' + base);
-  }
-
-  function loadPartial(url, targetId, onDone) {
-    var target = document.getElementById(targetId);
-
-    if (!target) {
-      if (onDone) onDone();
-      return;
-    }
-
-    fetch(url)
-        .then(function (res) {
-          if (!res.ok) {
-            throw new Error(
-                'Failed to fetch ' + url + ' (' + res.status + ')'
-            );
-          }
-
-          return res.text();
-        })
-        .then(function (html) {
-          target.outerHTML = normalisePartialPaths(html);
-
-          if (onDone) {
-            onDone();
-          }
-        })
-        .catch(function (err) {
-          console.error('[include-header] ' + err.message);
-
-          if (onDone) {
-            onDone();
-          }
-        });
-  }
-
   function markActiveNav() {
     var base = getSiteBase();
     var path = window.location.pathname.toLowerCase();
@@ -141,34 +93,12 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    document.body.classList.add('layout-loading');
+    markActiveNav();
+    initNavToggle();
+    initBackToTop();
 
-    var headerPromise = new Promise(function (resolve) {
-      loadPartial(
-          partialsBase() + 'header.html',
-          'site-header',
-          resolve
-      );
-    });
-
-    var footerPromise = new Promise(function (resolve) {
-      loadPartial(
-          partialsBase() + 'footer.html',
-          'site-footer',
-          resolve
-      );
-    });
-
-    Promise.all([headerPromise, footerPromise]).then(function () {
-      markActiveNav();
-      initNavToggle();
-      initBackToTop();
-
-      document.body.classList.remove('layout-loading');
-
-      document.dispatchEvent(
-          new CustomEvent('slna:layout-ready')
-      );
-    });
+    document.dispatchEvent(
+        new CustomEvent('slna:layout-ready')
+    );
   });
 })();
