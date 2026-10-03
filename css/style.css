@@ -20,7 +20,7 @@ ul { list-style:none; }
 .news-ticker { display:flex; align-items:center; gap:14px; background:var(--primary-dark); border-radius:12px; box-shadow:0 10px 26px rgba(8,50,94,0.22); overflow:hidden; padding-left:18px; min-width:0; }
 .news-ticker-label { flex:0 0 auto; display:flex; align-items:center; gap:9px; color:var(--secondary-light); font-weight:800; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; }
 .news-ticker-track { flex:1 1 auto; min-width:0; overflow:hidden; padding:15px 0; -webkit-mask-image:linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image:linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
-.news-ticker-content { display:inline-flex; align-items:center; width:max-content; white-space:nowrap; animation:news-ticker-scroll 32s linear infinite; }
+.news-ticker-content { display:inline-flex; align-items:center; width:max-content; white-space:nowrap; animation:news-ticker-scroll 50s linear infinite; }
 .news-ticker:hover .news-ticker-content, .news-ticker-content:focus-within { animation-play-state:paused; }
 .news-ticker-content a { color:#eaf1fb; text-decoration:none; font-size:0.92rem; font-weight:500; }
 .news-ticker-content a:hover, .news-ticker-content a:focus-visible { color:#fff; text-decoration:underline; }
@@ -30,11 +30,20 @@ ul { list-style:none; }
 @media (max-width:600px) { .news-ticker { padding-left:14px; } .news-ticker-label .news-ticker-label-text { display:none; } .news-ticker-content a { font-size:0.84rem; } .news-ticker-sep { margin:0 14px; } }
 .header-inner { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; }
 .logo-block { display:flex; align-items:center; gap:12px; }
-.logo-badge { width:64px; height:64px; border-radius:50%; background:var(--bg-light); display:flex; align-items:center; justify-content:center; overflow:hidden; border:1.5px solid var(--secondary); box-shadow:0 2px 6px rgba(8,50,94,0.14); padding:4px; box-sizing:border-box; }
+.logo-badge { width:68px; height:68px; flex-shrink:0; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
 .logo-badge img { width:100%; height:100%; object-fit:contain; }
 .logo-text h1 { font-size:19px; color:var(--primary-dark); font-weight:700; }
 .logo-text p { font-size:11.5px; color:var(--muted); margin-top:1px; }
 .header-actions { display:flex; align-items:center; gap:10px; }
+@media (max-width: 640px) {
+  .header-inner { flex-wrap:wrap; row-gap:5px; padding:8px 16px; }
+  .logo-block { flex:0 1 auto; gap:12px; }
+  .logo-badge { width:60px; height:60px; }
+  .logo-text h1 { font-size:16px; line-height:1.2; }
+  .logo-text p { font-size:11px; margin-top:1px; }
+  .header-actions { flex:1 1 100%; justify-content:center; gap:8px; }
+  .header-actions .btn { padding:5px 14px; font-size:13px; }
+}
 .btn { display:inline-block; padding:8px 16px; border-radius:4px; font-size:13.5px; font-weight:600; border:1px solid var(--primary); transition:0.2s; cursor:pointer; }
 .btn-primary { background:var(--primary); color:#fff; }
 .btn-primary:hover { background:var(--primary-dark); }
@@ -52,7 +61,8 @@ ul { list-style:none; }
 .main-nav .nav-list > li:hover .dropdown { display:block; }
 .dropdown li a { display:block; padding:11px 16px; font-size:14px; color:var(--text); border-bottom:1px solid var(--border); white-space:nowrap; }
 .dropdown li a:hover { background:var(--bg-light); color:var(--primary); padding-left:20px; }
-.nav-toggle { display:none; background:none; border:none; color:#fff; font-size:22px; cursor:pointer; }
+.nav-toggle { display:none; flex-direction:column; align-items:center; justify-content:center; gap:5px; background:none; border:none; cursor:pointer; }
+.nav-toggle-bar { display:block; width:24px; height:3px; border-radius:2px; background:var(--primary-dark); }
 .carousel { position:relative; height:460px; overflow:hidden; background: var(--carousel-bg); z-index:1; }
 .carousel-slide { position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; visibility:hidden; z-index:1; transition:opacity 0.9s ease, visibility 0.9s ease; display:grid; grid-template-columns: 1fr 1fr; background: var(--carousel-bg); }
 .carousel-slide.active { opacity:1; visibility:visible; z-index:2; }
@@ -120,7 +130,7 @@ ul { list-style:none; }
 .president-photo { flex:0 0 110px; width:110px; height:110px; border-radius:50%; background:var(--bg-light); border:3px solid var(--secondary); overflow:hidden; display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:30px; font-weight:700; }
 .president-text p { font-size:14.5px; color:#3d4450; margin-bottom:10px; }
 .president-text .sign-off { font-weight:700; color:var(--primary-dark); font-size:14px; }
-.content-layout { display:grid; grid-template-columns: 255px 1fr; gap:38px; padding:44px 0; align-items:start; }
+.content-layout { display:grid; grid-template-columns: 255px 1fr; gap:38px; padding-top:44px; padding-bottom:44px; align-items:start; }
 /* Grid items default to min-width:auto (shrink-to-fit their content's
    intrinsic width), not 0 -- so any unbreakable-width child dropped into
    .content-main (a wide table, a nowrap ticker track, etc.) silently grows
@@ -274,7 +284,7 @@ ul { list-style:none; }
 .footer-grid p, .footer-grid li { font-size:13.5px; color:#bcd2ec; margin-bottom:9px; }
 .footer-grid li a:hover { color: var(--secondary); }
 .footer-bottom { border-top:1px solid rgba(255,255,255,0.12); padding:15px 20px; text-align:center; font-size:12.5px; color:#9bb8dc; }
-.footer-logo { width:65px; height:65px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:13px; }
+.footer-logo { width:65px; height:65px; display:flex; align-items:center; justify-content:center; margin-bottom:13px; }
 .footer-logo img { width:100%; height:100%; object-fit:contain; }
 .back-to-top { position:fixed; bottom:22px; right:22px; width:42px; height:42px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.2); display:none; z-index:999; }
 .news-feed { max-width:890px; margin:0 auto; }
@@ -349,9 +359,17 @@ ul { list-style:none; }
    streaming to R2) is in flight, so the pointer gives feedback instead of
    staying a plain arrow the whole time. */
 body.is-busy, body.is-busy * { cursor: wait !important; }
-.news-table { width:100%; border-collapse:collapse; margin-top:9px; }
+.table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin-top:9px; border-radius:6px; }
+.table-scroll::-webkit-scrollbar { height:8px; }
+.table-scroll::-webkit-scrollbar-track { background:var(--bg-light); border-radius:4px; }
+.table-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+.table-scroll::-webkit-scrollbar-thumb:hover { background:var(--muted); }
+.news-table { width:100%; min-width:640px; border-collapse:collapse; margin-top:0; }
 .news-table th, .news-table td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13px; }
-.news-table th { background:var(--bg-light); color:var(--primary-dark); font-weight:700; }
+.news-table th { background:var(--bg-light); color:var(--primary-dark); font-weight:700; white-space:nowrap; }
+@media (max-width: 640px) {
+  .table-scroll { box-shadow:inset -14px 0 10px -12px rgba(8,50,94,0.14); }
+}
 .login-wrap { max-width:390px; margin:74px auto; }
 .file-drop { border:2px dashed var(--border); border-radius:6px; padding:23px; text-align:center; color:var(--muted); font-size:13px; cursor:pointer; }
 .badge-source { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; text-transform:uppercase; }
@@ -448,27 +466,26 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 /* Mobile navigation: keep all links collapsed until the hamburger is tapped */
 @media (max-width: 900px) {
   .main-nav {
-    min-height: 52px;
+    min-height: 0;
   }
 
   .main-nav .container {
-    min-height: 52px;
+    min-height: 0;
     position: relative;
-    justify-content: flex-end;
   }
 
   .nav-toggle {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 52px;
-    min-height: 52px;
+    gap: 5px;
+    width: 42px;
+    min-height: 42px;
+    flex-shrink: 0;
     padding: 0;
     background: transparent;
     border: 0;
-    color: #fff;
-    font-size: 26px;
-    line-height: 1;
     cursor: pointer;
   }
 
