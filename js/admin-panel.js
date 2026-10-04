@@ -898,6 +898,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   let registrationEventsById = {};
   let registrationsByEventId = {};
+  let registrationCountsByEventId = {};
   let activeRegistrationEventId = null;
   let registrationStatusFilter = 'All';
   let registrationSearchTerm = '';
@@ -1013,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     tbody.innerHTML = events.map(function (event) {
-      const count = (registrationsByEventId[event.id] || []).length;
+      const count = registrationCountsByEventId[event.id] || 0;
 
       return `
         <tr>
@@ -1148,7 +1149,33 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('');
   }
 
-  function openRegistrationReviewModal(eventId) {
+  // Fetches just this one event's registrations on demand (scoped with
+  // ?event_id=), rather than relying on the bulk fetch that used to pull
+  // every CPD event's registrations together -- see loadEventRegistrationsAdmin.
+  async function loadRegistrationsForEvent(eventId) {
+    try {
+      const response = await fetch(
+          SLNA_CONFIG.API_BASE_URL + '/event-registrations?category=cpd&event_id=' + encodeURIComponent(eventId),
+          { headers: { Authorization: 'Bearer ' + getToken() } }
+      );
+
+      if (!response.ok) {
+        throw new Error(await parseApiError(response));
+      }
+
+      registrationsByEventId[eventId] = await response.json();
+    } catch (error) {
+      registrationsByEventId[eventId] = registrationsByEventId[eventId] || [];
+
+      const message = error instanceof TypeError
+          ? networkErrorMessage(error)
+          : (error.message || 'Could not load registrations for this event.');
+
+      showAlert('registration-review-alert', message, 'error');
+    }
+  }
+
+  async function openRegistrationReviewModal(eventId) {
     const modal = document.getElementById('registration-review-modal');
     const event = registrationEventsById[eventId];
 
@@ -1179,9 +1206,27 @@ document.addEventListener('DOMContentLoaded', function () {
       button.classList.toggle('active', button.getAttribute('data-registration-filter') === 'All');
     });
 
-    renderRegistrationReviewBody();
-
     modal.hidden = false;
+
+    const reviewBody = document.getElementById('registration-review-body');
+
+    if (reviewBody) {
+      reviewBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="empty-table-state">Loading registrations…</td>
+        </tr>
+      `;
+    }
+
+    await loadRegistrationsForEvent(eventId);
+
+    // The admin may have closed the modal (or opened a different event)
+    // while the fetch was in flight -- don't clobber whatever's showing now.
+    if (activeRegistrationEventId !== eventId) {
+      return;
+    }
+
+    renderRegistrationReviewBody();
   }
 
   function closeRegistrationReviewModal() {
@@ -1238,35 +1283,38 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // Loads the CPD events list plus a lightweight per-event registration
+  // *count* -- not the registrations themselves. Individual registrations
+  // are fetched on demand, per event, only when the admin opens that
+  // event's "View Registrations" modal (see loadRegistrationsForEvent).
+  // This keeps the summary table's network/DOM cost tied to the number of
+  // events rather than the number of registrations across all of them.
   async function loadEventRegistrationsAdmin() {
     try {
-      const [eventsResponse, registrationsResponse] = await Promise.all([
+      const [eventsResponse, countsResponse] = await Promise.all([
         fetch(SLNA_CONFIG.API_BASE_URL + '/events/cpd', {
           headers: { Authorization: 'Bearer ' + getToken() }
         }),
-        fetch(SLNA_CONFIG.API_BASE_URL + '/event-registrations?category=cpd', {
+        fetch(SLNA_CONFIG.API_BASE_URL + '/event-registrations/counts?category=cpd', {
           headers: { Authorization: 'Bearer ' + getToken() }
         })
       ]);
 
-      if (!eventsResponse.ok || !registrationsResponse.ok) {
-        throw new Error('Could not load events or registrations.');
+      if (!eventsResponse.ok || !countsResponse.ok) {
+        throw new Error('Could not load events or registration counts.');
       }
 
       const events = await eventsResponse.json();
-      const registrations = await registrationsResponse.json();
+      const counts = await countsResponse.json();
 
       registrationEventsById = {};
       events.forEach(function (event) {
         registrationEventsById[event.id] = event;
       });
 
-      registrationsByEventId = {};
-      registrations.forEach(function (registration) {
-        if (!registrationsByEventId[registration.event_id]) {
-          registrationsByEventId[registration.event_id] = [];
-        }
-        registrationsByEventId[registration.event_id].push(registration);
+      registrationCountsByEventId = {};
+      counts.forEach(function (row) {
+        registrationCountsByEventId[row.event_id] = row.count;
       });
 
       renderRegistrationEventsTable();
@@ -1277,7 +1325,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = `
           <tr>
             <td colspan="6" class="empty-table-state">
-              Could not load CPD events or registrations.
+              Could not load CPD events or registration counts.
             </td>
           </tr>
         `;
@@ -1712,7 +1760,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const hasAudienceFeeColumns = !!config.fields.audience;
-    const columnCount = hasAudienceFeeColumns ? 9 : 7;
+    const columnCount = hasAudienceFeeColumns ? 8 : 6;
 
     function formatFee(value) {
       const parsed = Number(value);
@@ -1737,8 +1785,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <td>${renderPhoto(item)}</td>
         <td>${escapeHtml(title)}</td>
         <td>${escapeHtml(type)}</td>
-        <td>${formatDate(date)}</td>
-        <td>${escapeHtml(location)}</td>
+        <td>${formatDate(date)}<br><span class="admin-muted">${escapeHtml(location)}</span></td>
         ${
         hasAudienceFeeColumns
             ? `<td>${escapeHtml(audience)}</td>
@@ -2732,6 +2779,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let applications = [];
     let activeStatus = 'pending';
     let selectedApplication = null;
+    let currentPage = 1;
+    const APPLICATIONS_PAGE_SIZE = 50;
+    const paginationBar = document.getElementById('membership-applications-pagination');
 
     function membershipUrl(path) {
       return SLNA_CONFIG.API_BASE_URL + path;
@@ -3069,10 +3119,23 @@ document.addEventListener('DOMContentLoaded', function () {
             '</td>' +
             '</tr>';
 
+        renderApplicationsPagination(0, 1, 1);
         return;
       }
 
-      filtered.forEach(function (application) {
+      // Pagination is applied here, after the status-tab + search filter,
+      // so search always runs against every matching application (not just
+      // whatever page happens to be on screen) -- only the *rendering* is
+      // paged, to keep the DOM small as the dataset grows.
+      const totalPages = Math.max(1, Math.ceil(filtered.length / APPLICATIONS_PAGE_SIZE));
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const pageStart = (currentPage - 1) * APPLICATIONS_PAGE_SIZE;
+      const pageItems = filtered.slice(pageStart, pageStart + APPLICATIONS_PAGE_SIZE);
+
+      pageItems.forEach(function (application) {
         const row = document.createElement('tr');
 
         row.innerHTML =
@@ -3137,6 +3200,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tbody.appendChild(row);
       });
+
+      renderApplicationsPagination(filtered.length, currentPage, totalPages);
+    }
+
+    function renderApplicationsPagination(totalCount, page, totalPages) {
+      if (!paginationBar) {
+        return;
+      }
+
+      if (totalCount <= APPLICATIONS_PAGE_SIZE) {
+        paginationBar.innerHTML = '';
+        return;
+      }
+
+      const rangeStart = (page - 1) * APPLICATIONS_PAGE_SIZE + 1;
+      const rangeEnd = Math.min(page * APPLICATIONS_PAGE_SIZE, totalCount);
+
+      paginationBar.innerHTML =
+          '<button type="button" class="btn btn-outline btn-sm" id="membership-page-prev"' +
+          (page <= 1 ? ' disabled' : '') +
+          '>&larr; Prev</button>' +
+          '<span class="pagination-status">Showing ' + rangeStart + '&ndash;' + rangeEnd +
+          ' of ' + totalCount + '</span>' +
+          '<button type="button" class="btn btn-outline btn-sm" id="membership-page-next"' +
+          (page >= totalPages ? ' disabled' : '') +
+          '>Next &rarr;</button>';
+
+      const prevBtn = document.getElementById('membership-page-prev');
+      const nextBtn = document.getElementById('membership-page-next');
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+          currentPage -= 1;
+          renderApplications();
+        });
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+          currentPage += 1;
+          renderApplications();
+        });
+      }
     }
 
     function fillReviewFields(application) {
@@ -3346,6 +3452,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         applications = source.map(normalizeApplication);
 
+        currentPage = 1;
         updateCounts();
         renderApplications();
       } catch (error) {
@@ -3746,6 +3853,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             reviewCard.hidden = true;
             selectedApplication = null;
+            currentPage = 1;
 
             renderApplications();
           });
@@ -3774,6 +3882,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     searchInput.addEventListener('input', function () {
+      currentPage = 1;
       renderApplications();
     });
 
