@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
             : escapeHtml((event.title || 'E').charAt(0).toUpperCase());
 
         return `
-      <div class="card">
+      <a href="${detailUrl}" class="card">
         <div class="card-img">${imgHtml}</div>
         <div class="card-body">
           <div class="date">${escapeHtml(readableDate(event.event_date))}</div>
@@ -141,9 +141,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
           <h3>${title}</h3>
           <p>${summary}</p>
-          <a href="${detailUrl}" class="card-link">Details &rarr;</a>
+          <span class="card-link">Details &rarr;</span>
         </div>
-      </div>
+      </a>
     `;
     }
 
