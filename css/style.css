@@ -367,6 +367,10 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 .news-table { width:100%; min-width:640px; border-collapse:collapse; margin-top:0; }
 .news-table th, .news-table td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13px; }
 .news-table th { background:var(--bg-light); color:var(--primary-dark); font-weight:700; white-space:nowrap; }
+.news-table .admin-muted { font-size:12px; color:var(--muted); }
+.pagination-bar { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:14px; }
+.pagination-bar .pagination-status { font-size:12.5px; color:var(--muted); }
+.pagination-bar .btn[disabled] { opacity:0.45; cursor:default; pointer-events:none; }
 @media (max-width: 640px) {
   .table-scroll { box-shadow:inset -14px 0 10px -12px rgba(8,50,94,0.14); }
 }
