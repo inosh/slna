@@ -8,6 +8,13 @@ function formatDateLong(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
+function formatDateBadge(dateStr) {
+  const d = new Date(dateStr);
+  return {
+    day: d.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' }),
+    month: d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase()
+  };
+}
 function fullUrl(relativePath) {
   if (!relativePath) return null;
   const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
@@ -178,8 +185,35 @@ async function renderNewsDetail() {
     const galleryHtml = renderNewsGallery(item.photos);
     const bcEl = document.getElementById('news-detail-breadcrumb');
     if (bcEl) bcEl.textContent = item.title;
-    container.innerHTML = photoHtml + '<div class="detail-date">' + formatDateLong(item.event_date) + '</div><h1>' + item.title + '</h1><div class="detail-body">' + item.body + '</div>' + galleryHtml + attachmentHtml;
+    const badge = formatDateBadge(item.event_date);
+    const badgeHtml = '<div class="news-date-badge"><span class="day">' + badge.day + '</span><span class="month">' + badge.month + '</span></div>';
+    container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + item.title + '</h1></div>' + photoHtml + '<div class="detail-body">' + item.body + '</div>' + galleryHtml + attachmentHtml;
   } catch (err) { container.innerHTML = '<div class="news-empty">News item not found.</div>'; console.error(err); }
+}
+async function renderNewsSidebar() {
+  const container = document.getElementById('news-sidebar-list');
+  if (!container) return;
+  const currentId = new URLSearchParams(window.location.search).get('id');
+  try {
+    const items = await apiGet('/news');
+    const others = items.filter(item => String(item.id) !== String(currentId)).slice(0, 6);
+    if (others.length === 0) {
+      container.innerHTML = '<div class="news-empty">No other news items.</div>';
+      return;
+    }
+    container.innerHTML = others.map(item => {
+      const thumb = item.photo_url
+          ? '<img src="' + fullUrl(item.photo_url) + '" alt="">'
+          : '<div class="news-sidebar-thumb-fallback">' + escapeHtml((item.title || '?').charAt(0)) + '</div>';
+      return '<a class="news-sidebar-item" href="news-detail.html?id=' + item.id + '">' +
+          '<div class="news-sidebar-thumb">' + thumb + '</div>' +
+          '<div class="news-sidebar-item-body"><h4>' + escapeHtml(item.title) + '</h4><div class="date">' + formatDateLong(item.event_date) + '</div></div>' +
+          '</a>';
+    }).join('');
+  } catch (err) {
+    container.innerHTML = '<div class="news-empty">Could not load latest news.</div>';
+    console.error(err);
+  }
 }
 async function renderAlbumGrid() {
   const container = document.getElementById('album-grid-container');
@@ -247,5 +281,5 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeLightbox(); if (e.key === 'ArrowRight') lightboxNext(); if (e.key === 'ArrowLeft') lightboxPrev();
 });
 document.addEventListener('DOMContentLoaded', function () {
-  renderPublicNewsList(); renderHomeNewsPreview(); renderAlbumGrid(); renderNewsDetail(); renderAlbumDetail(); renderNewsTicker();
+  renderPublicNewsList(); renderHomeNewsPreview(); renderAlbumGrid(); renderNewsDetail(); renderNewsSidebar(); renderAlbumDetail(); renderNewsTicker();
 });
