@@ -79,6 +79,16 @@
       >
         Check Application Status
       </button>
+
+      <button
+              type="button"
+              class="join-tab-btn"
+              data-join-tab="tab-find-membership"
+              role="tab"
+              aria-selected="false"
+      >
+        Find My Membership Number
+      </button>
     </div>
 
     <div id="join-form-alert" aria-live="polite"></div>
@@ -369,7 +379,19 @@
           <h3 id="professional-details-heading">3. Professional Details</h3>
 
           <div class="application-grid">
-            <div class="form-group">
+            <div class="form-group application-grid-full">
+              <label class="checkbox-label" for="slnc-not-registered">
+                <input
+                        type="checkbox"
+                        id="slnc-not-registered"
+                        name="slncNotRegisteredYet"
+                        value="true"
+                >
+                I do not have my SLNC registration number yet
+              </label>
+            </div>
+
+            <div class="form-group" id="slnc-registration-group">
               <label for="slnc-registration">
                 SLNC Registration Number
                 <span aria-hidden="true">*</span>
@@ -383,7 +405,7 @@
               >
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="slnc-registration-date-group">
               <label for="slnc-registration-date">
                 SLNC Registration Date
                 <span aria-hidden="true">*</span>
@@ -720,6 +742,112 @@
             <h4 id="status-result-message-title">Message from SLNA</h4>
             <p id="status-result-message-text">—</p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+            class="join-tab-panel"
+            id="tab-find-membership"
+            role="tabpanel"
+            hidden
+    >
+      <div class="form-box status-check-box">
+        <h3>Find My Membership Number</h3>
+
+        <p>
+          Lost your application reference number? Confirm your identity below
+          to retrieve your SLNA membership number.
+        </p>
+
+        <form id="find-membership-form">
+          <div class="form-group">
+            <label for="find-membership-nic">
+              National ID Number
+              <span aria-hidden="true">*</span>
+            </label>
+
+            <input
+                    type="text"
+                    id="find-membership-nic"
+                    name="nic"
+                    placeholder="e.g. 855420159V or 199554200159"
+                    pattern="^([0-9]{9}[VXvx]|[0-9]{12})$"
+                    title="Enter a valid Sri Lankan NIC: 9 digits followed by V or X (old format), or 12 digits (new format)"
+                    maxlength="12"
+                    autocomplete="off"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="find-membership-dob">
+              Date of Birth
+              <span aria-hidden="true">*</span>
+            </label>
+
+            <input
+                    type="date"
+                    id="find-membership-dob"
+                    name="dateOfBirth"
+                    required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="find-membership-mobile">
+              Registered Mobile Number
+              <span aria-hidden="true">*</span>
+            </label>
+
+            <input
+                    type="tel"
+                    id="find-membership-mobile"
+                    name="mobileNumber"
+                    autocomplete="tel"
+                    placeholder="07XXXXXXXX or +947XXXXXXXX"
+                    pattern="^(?:\+94|0)7[0-8][0-9]{7}$"
+                    title="Enter a valid Sri Lankan mobile number, e.g. 0771234567 or +94771234567"
+                    maxlength="13"
+                    required
+            >
+          </div>
+
+          <button
+                  type="submit"
+                  class="btn btn-primary"
+                  id="find-membership-submit"
+          >
+            Find Membership Number
+          </button>
+        </form>
+
+        <div
+                id="find-membership-alert"
+                aria-live="polite"
+        ></div>
+
+        <div
+                class="status-result-card"
+                id="find-membership-result-card"
+                hidden
+        >
+          <div class="status-result-heading">
+            <div>
+              <span class="status-result-label">Membership Number</span>
+              <strong
+                      id="find-membership-result-number"
+                      class="status-result-reference"
+              >—</strong>
+            </div>
+          </div>
+
+          <dl class="status-result-details">
+            <div>
+              <dt>Name</dt>
+              <dd id="find-membership-result-name">—</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </div>

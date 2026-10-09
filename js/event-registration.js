@@ -198,8 +198,9 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
 
           <div class="form-group">
-            <label for="reg-slnc-number">SLNC Registration Number *</label>
-            <input type="text" id="reg-slnc-number" required>
+            <label for="reg-slnc-number">SLNC Registration Number</label>
+            <input type="text" id="reg-slnc-number">
+            <p class="form-help">Leave blank if you don't have your SLNC registration number yet.</p>
           </div>
 
           <div class="form-group">

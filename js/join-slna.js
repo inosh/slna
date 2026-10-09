@@ -20,6 +20,44 @@
         var submitButton = form.querySelector('button[type="submit"]');
         var maxFileSize = 5 * 1024 * 1024;
 
+        // ---- SLNC registration toggle ----
+        // SLNC registration is not mandatory yet. Ticking this hides and
+        // un-requires the two SLNC fields instead of leaving them required
+        // but impossible to satisfy; the backend stores null for both.
+        function initSlncToggle() {
+            var checkbox = document.getElementById('slnc-not-registered');
+            var numberGroup = document.getElementById('slnc-registration-group');
+            var dateGroup = document.getElementById('slnc-registration-date-group');
+            var numberInput = document.getElementById('slnc-registration');
+            var dateInput = document.getElementById('slnc-registration-date');
+
+            if (!checkbox || !numberGroup || !dateGroup || !numberInput || !dateInput) {
+                return;
+            }
+
+            function applySlncState() {
+                var notRegistered = checkbox.checked;
+
+                numberGroup.hidden = notRegistered;
+                dateGroup.hidden = notRegistered;
+
+                numberInput.required = !notRegistered;
+                dateInput.required = !notRegistered;
+
+                if (notRegistered) {
+                    numberInput.value = '';
+                    dateInput.value = '';
+                    clearFieldError(numberInput);
+                    clearFieldError(dateInput);
+                }
+            }
+
+            checkbox.addEventListener('change', applySlncState);
+            form.addEventListener('reset', applySlncState);
+
+            applySlncState();
+        }
+
         // ---- Reusable inline field-error display ----
         // Radio/checkbox fields show their error and highlight against the
         // group wrapper (the row of options, or the checkbox's own label)
@@ -574,6 +612,9 @@
                 }
             }
         });
+
+        initSlncToggle();
+
         window.SLNA_CLEAR_JOIN_FORM_MESSAGE = clearJoinFormMessage;
     }
 
@@ -595,30 +636,19 @@
                 var targetId =
                     button.getAttribute('data-join-tab');
 
-                var isStatusTab =
-                    targetId === 'tab-status';
-
-                var isApplyTab =
-                    targetId === 'tab-apply';
-
-                if (isStatusTab) {
-                    if (window.SLNA_CLEAR_JOIN_FORM_MESSAGE) {
-                        window.SLNA_CLEAR_JOIN_FORM_MESSAGE();
-                    }
-
-                    if (window.SLNA_RESET_STATUS_CHECK) {
-                        window.SLNA_RESET_STATUS_CHECK();
-                    }
+                // Switching to any tab clears state left over from the
+                // others, so nothing stale lingers if the visitor comes
+                // back to a tab later.
+                if (window.SLNA_CLEAR_JOIN_FORM_MESSAGE) {
+                    window.SLNA_CLEAR_JOIN_FORM_MESSAGE();
                 }
 
-                if (isApplyTab) {
-                    if (window.SLNA_RESET_STATUS_CHECK) {
-                        window.SLNA_RESET_STATUS_CHECK();
-                    }
+                if (window.SLNA_RESET_STATUS_CHECK) {
+                    window.SLNA_RESET_STATUS_CHECK();
+                }
 
-                    if (window.SLNA_CLEAR_JOIN_FORM_MESSAGE) {
-                        window.SLNA_CLEAR_JOIN_FORM_MESSAGE();
-                    }
+                if (window.SLNA_RESET_FIND_MEMBERSHIP) {
+                    window.SLNA_RESET_FIND_MEMBERSHIP();
                 }
 
                 tabButtons.forEach(function (btn) {
@@ -873,10 +903,126 @@
         window.SLNA_RESET_STATUS_CHECK = resetStatusCheckView;
     }
 
+    function initFindMembershipNumber() {
+        var form = document.getElementById('find-membership-form');
+        var alertBox = document.getElementById('find-membership-alert');
+        var resultCard = document.getElementById('find-membership-result-card');
+
+        if (!form || !alertBox || !resultCard) {
+            return;
+        }
+
+        var nicInput = document.getElementById('find-membership-nic');
+        var dobInput = document.getElementById('find-membership-dob');
+        var mobileInput = document.getElementById('find-membership-mobile');
+
+        var submitButton = document.getElementById(
+            'find-membership-submit'
+        );
+
+        var resultNumber = document.getElementById(
+            'find-membership-result-number'
+        );
+
+        var resultName = document.getElementById(
+            'find-membership-result-name'
+        );
+
+        function showAlert(type, message) {
+            alertBox.className = 'alert alert-' + type;
+            alertBox.textContent = message;
+        }
+
+        function clearAlert() {
+            alertBox.className = '';
+            alertBox.textContent = '';
+        }
+
+        function resetFindMembershipView() {
+            clearAlert();
+
+            form.reset();
+
+            resultCard.hidden = true;
+            resultNumber.textContent = '—';
+            resultName.textContent = '—';
+        }
+
+        function renderResult(data) {
+            resultNumber.textContent = data.membershipNumber;
+            resultName.textContent = data.fullName;
+
+            resultCard.hidden = false;
+
+            resultCard.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            clearAlert();
+            resultCard.hidden = true;
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            var apiBase = SLNA_CONFIG.API_BASE_URL;
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Searching...';
+
+            try {
+                var response = await fetch(
+                    apiBase + '/membership/find-membership-number',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            nic: nicInput.value.trim(),
+                            dateOfBirth: dobInput.value,
+                            mobileNumber: mobileInput.value.trim()
+                        })
+                    }
+                );
+
+                var data = await response.json().catch(function () {
+                    return {};
+                });
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message ||
+                        'No approved membership was found matching those details.'
+                    );
+                }
+
+                renderResult(data);
+            } catch (error) {
+                showAlert(
+                    'error',
+                    error.message ||
+                    'Could not look up your membership number. Please try again.'
+                );
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Find Membership Number';
+            }
+        });
+        window.SLNA_RESET_FIND_MEMBERSHIP = resetFindMembershipView;
+    }
+
     function initAll() {
         initJoinForm();
         initJoinTabs();
         initStatusCheck();
+        initFindMembershipNumber();
     }
 
     if (document.readyState === 'loading') {

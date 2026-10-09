@@ -3348,6 +3348,15 @@ document.addEventListener('DOMContentLoaded', function () {
             let value = application[key];
 
             if (
+                (key === 'slncRegistrationNumber' ||
+                    key === 'slncRegistrationDate') &&
+                !value
+            ) {
+              field.textContent = 'Not provided yet';
+              return;
+            }
+
+            if (
                 key === 'dateOfBirth' ||
                 key === 'slncRegistrationDate' ||
                 key === 'firstAppointmentDate' ||
