@@ -1744,6 +1744,71 @@
     </div>
   </div>
 
+  <div
+          class="admin-confirm-modal"
+          id="event-registration-reject-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-registration-reject-modal-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-icon" aria-hidden="true">
+        !
+      </div>
+
+      <div class="admin-confirm-content">
+        <h2 id="event-registration-reject-modal-title">
+          Reject Registration
+        </h2>
+
+        <p>
+          Please provide a reason for rejecting this registration. The
+          registrant will see this reason in their notification email.
+        </p>
+
+        <div class="form-group">
+          <label for="event-registration-reject-reason">
+            Rejection Reason
+          </label>
+
+          <textarea
+                  id="event-registration-reject-reason"
+                  rows="4"
+                  placeholder="e.g. Bank receipt amount does not match the event fee."
+                  aria-describedby="event-registration-reject-reason-error"
+          ></textarea>
+
+          <p
+                  id="event-registration-reject-reason-error"
+                  class="membership-field-error"
+                  aria-live="polite"
+          ></p>
+        </div>
+
+        <div class="admin-confirm-actions">
+          <button
+                  type="button"
+                  class="btn btn-outline"
+                  id="cancel-event-registration-reject"
+          >
+            Cancel
+          </button>
+
+          <button
+                  type="button"
+                  class="btn btn-danger"
+                  id="confirm-event-registration-reject"
+          >
+            Reject Registration
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/config.js"></script>
   <script src="../js/admin-auth.js"></script>
   <script src="../js/admin-panel.js"></script>

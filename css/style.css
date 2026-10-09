@@ -2543,6 +2543,13 @@ fieldset.sex-field .radio-option input[type="radio"] {
   background: #fde7e9;
 }
 
+.registration-rejection-reason {
+  margin: 6px 0 0;
+  font-size: 0.74rem;
+  color: #8a2730;
+  max-width: 220px;
+}
+
 .registration-review-toolbar {
   display: flex;
   flex-wrap: wrap;

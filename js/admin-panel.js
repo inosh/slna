@@ -124,6 +124,68 @@ function showSimpleConfirm(options) {
   });
 }
 
+// Prompts the admin for a required rejection reason when rejecting an event
+// registration. Resolves the trimmed reason, or null if cancelled.
+function showEventRegistrationRejectPrompt() {
+  return new Promise(function (resolve) {
+    const modal = document.getElementById('event-registration-reject-modal');
+
+    if (!modal) {
+      const reason = window.prompt('Please provide a rejection reason:');
+      resolve(reason && reason.trim() ? reason.trim() : null);
+      return;
+    }
+
+    const reasonInput = document.getElementById('event-registration-reject-reason');
+    const reasonError = document.getElementById('event-registration-reject-reason-error');
+    const cancelBtn = document.getElementById('cancel-event-registration-reject');
+    const confirmBtn = document.getElementById('confirm-event-registration-reject');
+    const backdrop = modal.querySelector('.admin-confirm-backdrop');
+
+    reasonInput.value = '';
+    reasonError.textContent = '';
+    reasonError.classList.remove('is-visible');
+    reasonInput.classList.remove('input-error');
+
+    function cleanup(result) {
+      modal.hidden = true;
+      cancelBtn.removeEventListener('click', onCancel);
+      confirmBtn.removeEventListener('click', onConfirm);
+      backdrop.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKeydown);
+      resolve(result);
+    }
+
+    function onCancel() { cleanup(null); }
+
+    function onConfirm() {
+      const reason = reasonInput.value.trim();
+
+      if (!reason) {
+        reasonError.textContent = 'A rejection reason is required.';
+        reasonError.classList.add('is-visible');
+        reasonInput.classList.add('input-error');
+        reasonInput.focus();
+        return;
+      }
+
+      cleanup(reason);
+    }
+
+    function onKeydown(event) {
+      if (event.key === 'Escape') cleanup(null);
+    }
+
+    cancelBtn.addEventListener('click', onCancel);
+    confirmBtn.addEventListener('click', onConfirm);
+    backdrop.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKeydown);
+
+    modal.hidden = false;
+    reasonInput.focus();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const session = requireAuth();
   if (!session) return;
@@ -1109,6 +1171,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <span class="registration-status-badge ${registrationStatusClass(status)}">
               ${escapeHtmlForModal(status)}
             </span>
+            ${status === 'Rejected' && registration.rejection_reason
+              ? `<p class="registration-rejection-reason">${escapeHtmlForModal(registration.rejection_reason)}</p>`
+              : ''}
           </td>
           <td>
             <div class="row-actions">
@@ -1388,7 +1453,34 @@ document.addEventListener('DOMContentLoaded', function () {
         const status = actionButton.getAttribute('data-registration-action');
         const registrationId = actionButton.getAttribute('data-registration-id');
 
+        let rejectionReason = null;
+
+        if (status === 'Confirmed') {
+          const confirmed = await showSimpleConfirm({
+            title: 'Confirm Registration',
+            message: 'Are you sure you want to confirm this registration? The registrant will be notified by email.',
+            confirmText: 'Confirm',
+            danger: false
+          });
+
+          if (!confirmed) {
+            return;
+          }
+        } else if (status === 'Rejected') {
+          rejectionReason = await showEventRegistrationRejectPrompt();
+
+          if (!rejectionReason) {
+            return;
+          }
+        }
+
         try {
+          const body = { status: status };
+
+          if (status === 'Rejected') {
+            body.rejectionReason = rejectionReason;
+          }
+
           const response = await fetch(
               SLNA_CONFIG.API_BASE_URL + '/event-registrations/' + encodeURIComponent(registrationId) + '/status',
               {
@@ -1397,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   Authorization: 'Bearer ' + getToken(),
                   'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ status: status })
+                body: JSON.stringify(body)
               }
           );
 
