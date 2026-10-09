@@ -207,6 +207,25 @@ document.addEventListener('DOMContentLoaded', function () {
     if (otherEventAdminConfig && typeof otherEventAdminConfig.resetForm === 'function') otherEventAdminConfig.resetForm();
   }
 
+  // Clears every top-level status alert box (leftover "Confirmed." /
+  // "Could not update..." messages) whenever the admin switches main tabs,
+  // so a stale message from a previous visit doesn't linger when they come
+  // back to a tab later. Scoped to div[tabindex="-1"] alert boxes only --
+  // not the inline per-field <p> error messages, which share the same
+  // aria-live="polite" attribute but shouldn't be swept here.
+  function clearAllTabAlerts() {
+    document.querySelectorAll('div[aria-live="polite"][tabindex="-1"]').forEach(function (box) {
+      // Two different alert patterns are in use across the admin panel:
+      // some set box.className/textContent directly (e.g. the membership
+      // applications alert), others inject an inner <div class="alert..">
+      // via showAlert() and auto-clear it after 6s. Clearing both covers
+      // either pattern regardless of which one owns a given box.
+      clearTimeout(box._alertTimeout);
+      box.className = '';
+      box.innerHTML = '';
+    });
+  }
+
   document.querySelectorAll('.main-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
@@ -214,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
       btn.classList.add('active');
       document.getElementById(btn.dataset.maintab).classList.add('active');
       resetAddItemForms();
+      clearAllTabAlerts();
     });
   });
   // The .tab-btn/.tab-panel classes are reused by several unrelated button
@@ -1123,6 +1143,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const haystack = [
         registration.nic,
+        registration.email,
         registration.full_name,
         registration.membership_number
       ].join(' ').toLowerCase();
@@ -1157,7 +1178,12 @@ document.addEventListener('DOMContentLoaded', function () {
       return `
         <tr class="${isNonMember ? 'registration-row-non-member' : ''}">
           <td>${escapeHtmlForModal(registration.full_name)}</td>
-          <td>${escapeHtmlForModal(registration.nic)}</td>
+          <td>
+            ${escapeHtmlForModal(registration.nic)}
+            ${registration.email
+              ? '<br><span class="admin-muted">' + escapeHtmlForModal(registration.email) + '</span>'
+              : ''}
+          </td>
           <td>${escapeHtmlForModal(registration.registrant_type)}</td>
           <td>${escapeHtmlForModal(registration.membership_number || '—')}</td>
           <td>${formatRegistrationFee(registration.paid_amount)}</td>
@@ -1288,6 +1314,30 @@ document.addEventListener('DOMContentLoaded', function () {
     // The admin may have closed the modal (or opened a different event)
     // while the fetch was in flight -- don't clobber whatever's showing now.
     if (activeRegistrationEventId !== eventId) {
+      return;
+    }
+
+    renderRegistrationReviewBody();
+  }
+
+  async function refreshActiveRegistrations() {
+    if (activeRegistrationEventId === null) {
+      return;
+    }
+
+    const reviewBody = document.getElementById('registration-review-body');
+
+    if (reviewBody) {
+      reviewBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="empty-table-state">Loading registrations…</td>
+        </tr>
+      `;
+    }
+
+    await loadRegistrationsForEvent(activeRegistrationEventId);
+
+    if (activeRegistrationEventId === null) {
       return;
     }
 
@@ -1557,6 +1607,22 @@ document.addEventListener('DOMContentLoaded', function () {
     if (exportExcelButton) {
       exportExcelButton.addEventListener('click', function () {
         downloadRegistrationExport('excel');
+      });
+    }
+
+    const refreshEventsButton = document.getElementById('refresh-event-registrations-events');
+
+    if (refreshEventsButton) {
+      refreshEventsButton.addEventListener('click', function () {
+        loadEventRegistrationsAdmin();
+      });
+    }
+
+    const refreshRegistrationsButton = document.getElementById('registration-review-refresh');
+
+    if (refreshRegistrationsButton) {
+      refreshRegistrationsButton.addEventListener('click', function () {
+        refreshActiveRegistrations();
       });
     }
 
@@ -3348,6 +3414,15 @@ document.addEventListener('DOMContentLoaded', function () {
             let value = application[key];
 
             if (
+                (key === 'slncRegistrationNumber' ||
+                    key === 'slncRegistrationDate') &&
+                !value
+            ) {
+              field.textContent = 'Not provided yet';
+              return;
+            }
+
+            if (
                 key === 'dateOfBirth' ||
                 key === 'slncRegistrationDate' ||
                 key === 'firstAppointmentDate' ||
@@ -3817,18 +3892,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
         clearMembershipDecisionModal();
 
+        reviewCard.hidden = true;
+        selectedApplication = null;
+
+        // loadApplications() clears the message box as part of its own
+        // render, so the success message has to be set *after* it finishes
+        // -- setting it before gets wiped out before it's ever seen.
+        await loadApplications();
+
         setMembershipMessage(
             'success',
             referenceNumber +
             ' has been updated to ' +
             status.replace(/_/g, ' ') +
-            '.'
+            '.',
+            { focus: true }
         );
-
-        reviewCard.hidden = true;
-        selectedApplication = null;
-
-        await loadApplications();
       } catch (error) {
         if (
             status === 'approved' &&
@@ -3840,6 +3919,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
           return;
         }
+
+        // Close the modal first -- otherwise the message is set behind its
+        // still-open overlay and the admin never actually sees it.
+        clearMembershipDecisionModal();
 
         setMembershipMessage(
             'error',
@@ -4420,21 +4503,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
         closeIdConfirmationModal();
 
-        setMembershipMessage(
-            'success',
-            data.message ||
-            'ID application generation has been confirmed.'
-        );
-
         reviewCard.hidden = true;
         selectedApplication = null;
 
+        // loadApplications() clears the message box as part of its own
+        // render, so the success message has to be set *after* it finishes
+        // -- setting it before gets wiped out before it's ever seen.
         await loadApplications();
+
+        setMembershipMessage(
+            'success',
+            data.message ||
+            'ID application generation has been confirmed.',
+            { focus: true }
+        );
       } catch (error) {
+        // Close the modal first -- otherwise the message is set behind its
+        // still-open overlay and the admin never actually sees it.
+        closeIdConfirmationModal();
+
         setMembershipMessage(
             'error',
             error.message ||
-            'Could not confirm ID application generation.'
+            'Could not confirm ID application generation.',
+            { focus: true }
         );
       } finally {
         confirmIdModalButton.disabled = false;

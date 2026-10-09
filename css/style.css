@@ -1841,7 +1841,7 @@ fieldset.sex-field .radio-option input[type="radio"] {
   display: none;
 }
 
-.membership-review-card .membership-admin-heading {
+.membership-admin-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1851,7 +1851,7 @@ fieldset.sex-field .radio-option input[type="radio"] {
   border-bottom: 1px solid #dce5ee;
 }
 
-.membership-review-card .membership-admin-heading h2 {
+.membership-admin-heading h2 {
   margin: 0 0 8px;
   color: #073f73;
   font-size: 1.55rem;
@@ -2071,11 +2071,11 @@ fieldset.sex-field .radio-option input[type="radio"] {
     padding: 18px;
   }
 
-  .membership-review-card .membership-admin-heading {
+  .membership-admin-heading {
     display: block;
   }
 
-  .membership-review-card .membership-admin-heading .btn {
+  .membership-admin-heading .btn {
     margin-top: 16px;
   }
 
