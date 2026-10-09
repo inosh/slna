@@ -612,12 +612,24 @@
 
     <div class="main-tab-panel" id="maintab-event-registrations" role="tabpanel">
       <div class="admin-card">
-        <h2>CPD Event Registrations</h2>
+        <div class="membership-admin-heading">
+          <div>
+            <h2>CPD Event Registrations</h2>
 
-        <p class="admin-muted">
-          Review registrations submitted for each CPD event, verify the uploaded
-          bank receipt, then confirm or reject the payment.
-        </p>
+            <p class="admin-muted">
+              Review registrations submitted for each CPD event, verify the uploaded
+              bank receipt, then confirm or reject the payment.
+            </p>
+          </div>
+
+          <button
+                  class="btn btn-outline btn-sm"
+                  id="refresh-event-registrations-events"
+                  type="button"
+          >
+            Refresh List
+          </button>
+        </div>
 
         <div id="event-registrations-alert" aria-live="polite" tabindex="-1"></div>
 
@@ -1617,11 +1629,12 @@
           <input
                   type="search"
                   id="registration-review-search"
-                  placeholder="Search by NIC, name, or membership number"
+                  placeholder="Search by NIC, email, name, or membership number"
           >
         </div>
 
         <div class="registration-export-group">
+          <button type="button" class="btn btn-outline btn-sm" id="registration-review-refresh">Refresh List</button>
           <button type="button" class="btn btn-outline btn-sm" id="registration-export-pdf">Download PDF</button>
           <button type="button" class="btn btn-outline btn-sm" id="registration-export-excel">Download Excel</button>
         </div>
@@ -1632,7 +1645,7 @@
           <thead>
           <tr>
             <th>Name</th>
-            <th>NIC</th>
+            <th>NIC / Email</th>
             <th>Type</th>
             <th>Membership #</th>
             <th>Paid Amount</th>

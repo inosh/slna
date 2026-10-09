@@ -913,7 +913,6 @@
         }
 
         var nicInput = document.getElementById('find-membership-nic');
-        var dobInput = document.getElementById('find-membership-dob');
         var mobileInput = document.getElementById('find-membership-mobile');
 
         var submitButton = document.getElementById(
@@ -986,7 +985,6 @@
                         },
                         body: JSON.stringify({
                             nic: nicInput.value.trim(),
-                            dateOfBirth: dobInput.value,
                             mobileNumber: mobileInput.value.trim()
                         })
                     }
