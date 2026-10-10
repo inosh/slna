@@ -260,6 +260,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initContactQueries();
   initEditNewsForm();
   initAlbumTitleEditModal();
+  initMembershipFees();
 
   function populateTimeSelectGroup(group) {
     if (!group) {
@@ -5180,4 +5181,123 @@ function initContactQueries() {
   }
 
   loadContactQueries();
+}
+
+function renderMembershipFeeField(fee) {
+  const amountValue = fee.amount === null ? '' : fee.amount;
+
+  return `
+    <div class="form-group membership-fee-field" data-fee-key="${escapeHtml(fee.key)}">
+      <label>${escapeHtml(fee.label)}</label>
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          class="fee-amount-input"
+          value="${escapeHtml(amountValue)}"
+          ${fee.is_tba ? 'disabled' : ''}
+          style="max-width:160px;"
+        >
+        <label style="font-weight:400; display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" class="fee-tba-checkbox" style="width:auto; padding:0;" ${fee.is_tba ? 'checked' : ''}>
+          To be announced
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+function isValidFeeAmount(value) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return false;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed >= 0;
+}
+
+async function loadMembershipFees() {
+  const container = document.getElementById('membership-fees-fields');
+  if (!container) return;
+
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/membership-fees');
+    if (!res.ok) throw new Error('bad status');
+    const fees = await res.json();
+
+    if (!fees.length) {
+      container.innerHTML = '<div class="empty-table-state">No fees configured.</div>';
+      return;
+    }
+
+    container.innerHTML = fees.map(renderMembershipFeeField).join('');
+
+    container.querySelectorAll('.membership-fee-field').forEach(function (field) {
+      const checkbox = field.querySelector('.fee-tba-checkbox');
+      const amountInput = field.querySelector('.fee-amount-input');
+
+      checkbox.addEventListener('change', function () {
+        amountInput.disabled = checkbox.checked;
+        if (!checkbox.checked) amountInput.focus();
+      });
+    });
+  } catch (err) {
+    container.innerHTML = '<div class="empty-table-state">Could not load fees. Is the backend server running?</div>';
+  }
+}
+
+function initMembershipFees() {
+  const form = document.getElementById('membership-fees-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const fields = Array.from(document.querySelectorAll('.membership-fee-field'));
+    const updates = [];
+
+    for (const field of fields) {
+      const key = field.dataset.feeKey;
+      const isTba = field.querySelector('.fee-tba-checkbox').checked;
+      const amountValue = field.querySelector('.fee-amount-input').value;
+
+      if (!isTba && !isValidFeeAmount(amountValue)) {
+        showAlert('membership-fees-alert', field.querySelector('label').textContent + ': enter a valid amount of 0 or more, or tick "To be announced".', 'error');
+        return;
+      }
+
+      updates.push({ key: key, amount: isTba ? 0 : Number(amountValue), is_tba: isTba });
+    }
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    try {
+      const results = await Promise.all(updates.map(function (update) {
+        return fetch(SLNA_CONFIG.API_BASE_URL + '/membership-fees/' + encodeURIComponent(update.key), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ amount: update.amount, is_tba: update.is_tba })
+        });
+      }));
+
+      if (results.some(function (res) { return !res.ok; })) {
+        throw new Error('One or more fees could not be saved.');
+      }
+
+      showAlert('membership-fees-alert', 'Membership fees updated.', 'success');
+      await loadMembershipFees();
+    } catch (err) {
+      showAlert('membership-fees-alert', 'Could not save fees. Is the backend server running?', 'error');
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+  loadMembershipFees();
 }
