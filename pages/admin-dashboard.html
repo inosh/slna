@@ -48,6 +48,8 @@
       <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
 
       <button class="main-tab-btn" data-maintab="maintab-queries" role="tab" aria-selected="false">User Queries <span class="application-count-badge" id="queries-new-count">0</span></button>
+
+      <button class="main-tab-btn" data-maintab="maintab-fees" role="tab" aria-selected="false">Membership Fees</button>
     </div>
 
     <div class="main-tab-panel active" id="maintab-news" role="tabpanel">
@@ -1247,6 +1249,26 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <div class="main-tab-panel" id="maintab-fees" role="tabpanel">
+      <div class="admin-card">
+        <h2>Membership Fees</h2>
+        <p class="admin-muted">
+          Fees shown on the public Membership Categories &amp; Fees page. Tick
+          &ldquo;To be announced&rdquo; for a fee that hasn&rsquo;t been
+          finalised yet &mdash; the page will show that instead of an amount.
+        </p>
+
+        <div id="membership-fees-alert" aria-live="polite" tabindex="-1"></div>
+
+        <form id="membership-fees-form">
+          <div id="membership-fees-fields">
+            <div class="empty-table-state">Loading fees...</div>
+          </div>
+          <button type="submit" class="btn btn-primary">Save Fees</button>
+        </form>
       </div>
     </div>
   </div>

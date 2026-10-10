@@ -28,7 +28,7 @@
   <div class="plan-card featured">
     <span class="plan-badge">For Registered Nurses</span>
     <h3>Lifetime Member</h3>
-    <div class="plan-price">Rs. 6,000<span>One-time payment, no renewals</span></div>
+    <div class="plan-price"><span id="fee-amount-lifetime">Rs. 6,000</span><span class="plan-price-note">One-time payment, no renewals</span></div>
     <ul class="plan-features">
       <li>Open to nurses registered with the Sri Lanka Nursing Council (SLNC)</li>
       <li>Pay once &mdash; membership is valid for life, with nothing further to renew</li>
@@ -40,7 +40,7 @@
   <div class="plan-card">
     <span class="plan-badge">For Nursing Students</span>
     <h3>Associate Member</h3>
-    <div class="plan-price">Rs. 3,000<span>For the duration of your studies</span></div>
+    <div class="plan-price"><span id="fee-amount-associate">Rs. 3,000</span><span class="plan-price-note">For the duration of your studies</span></div>
     <ul class="plan-features">
       <li>Open to nursing students enrolled at a recognised nursing school, college, or university</li>
       <li>Covers the full period of pre-registration training</li>
@@ -55,20 +55,21 @@
 <h3>From Student to Registered Nurse</h3>
 <p>Associate Membership is designed to carry you through your studies at an affordable rate, with a clear upgrade route once you qualify.</p>
 <div class="upgrade-path">
-  <div class="upgrade-step">Associate Member<span>Nursing student &middot; Rs. 3,000</span></div>
+  <div class="upgrade-step">Associate Member<span class="upgrade-step-note">Nursing student &middot; <span id="fee-amount-associate-step">Rs. 3,000</span></span></div>
   <div class="upgrade-arrow">&rarr;</div>
-  <div class="upgrade-step">Register with the SLNC<span>On completing your training</span></div>
+  <div class="upgrade-step">Register with the SLNC<span class="upgrade-step-note">On completing your training</span></div>
   <div class="upgrade-arrow">&rarr;</div>
-  <div class="upgrade-step">Upgrade to Lifetime Member<span>Additional fee to be announced</span></div>
+  <div class="upgrade-step">Upgrade to Lifetime Member<span class="upgrade-step-note" id="fee-amount-upgrade-step">Additional fee to be announced</span></div>
 </div>
-<div class="info-box"><p><strong>Upgrading from Associate to Lifetime Membership:</strong> once you are registered with the Sri Lanka Nursing Council, you can upgrade your Associate Membership to a full Lifetime Membership for an additional fee. This upgrade fee is yet to be finalised by the Executive Committee &mdash; check this page or contact the SLNA office for the latest figure before you apply.</p></div>
+<div class="info-box" id="upgrade-tba-notice"><p><strong>Upgrading from Associate to Lifetime Membership:</strong> once you are registered with the Sri Lanka Nursing Council, you can upgrade your Associate Membership to a full Lifetime Membership for an additional fee. This upgrade fee is yet to be finalised by the Executive Committee &mdash; check this page or contact the SLNA office for the latest figure before you apply.</p></div>
+<div class="info-box" id="upgrade-fee-set-notice" hidden><p><strong>Upgrading from Associate to Lifetime Membership:</strong> once you are registered with the Sri Lanka Nursing Council, you can upgrade your Associate Membership to a full Lifetime Membership for an additional fee of <span id="fee-amount-upgrade-notice">Rs. 0</span>, payable on top of your original Associate Membership fee.</p></div>
 
 <h3>Fees at a Glance</h3>
 <table>
   <tr><th>Category</th><th>Eligibility</th><th>Fee</th><th>Validity</th></tr>
-  <tr><td>Associate Member</td><td>Nursing students</td><td>Rs. 3,000</td><td>Duration of studies</td></tr>
-  <tr><td>Lifetime Member</td><td>Registered nurses (SLNC)</td><td>Rs. 6,000 (one-time)</td><td>Lifetime</td></tr>
-  <tr><td>Associate &rarr; Lifetime Upgrade</td><td>Associate Members who complete SLNC registration</td><td>To be announced</td><td>One-time, on upgrade</td></tr>
+  <tr><td>Associate Member</td><td>Nursing students</td><td><span id="fee-amount-associate-table">Rs. 3,000</span></td><td>Duration of studies</td></tr>
+  <tr><td>Lifetime Member</td><td>Registered nurses (SLNC)</td><td><span id="fee-amount-lifetime-table">Rs. 6,000 (one-time)</span></td><td>Lifetime</td></tr>
+  <tr><td>Associate &rarr; Lifetime Upgrade</td><td>Associate Members who complete SLNC registration</td><td><span id="fee-amount-upgrade-table">To be announced</span></td><td>One-time, on upgrade</td></tr>
 </table>
 
 <h3>How to Pay</h3>
@@ -86,8 +87,8 @@
 
 <h3>Frequently Asked Questions</h3>
 <div class="pillar-grid grid grid-2">
-  <div class="pillar-card"><div class="pillar-icon">1</div><div><h4>Is Lifetime Membership really a one-time fee?</h4><p>Yes. The Rs. 6,000 fee is paid once, and your membership remains valid for your entire nursing career &mdash; there are no annual renewal fees.</p></div></div>
-  <div class="pillar-card"><div class="pillar-icon">2</div><div><h4>What happens when I graduate and register with the SLNC?</h4><p>You remain an Associate Member until you choose to upgrade. Once registered with the SLNC, you can upgrade to Lifetime Membership for an additional fee to be announced.</p></div></div>
+  <div class="pillar-card"><div class="pillar-icon">1</div><div><h4>Is Lifetime Membership really a one-time fee?</h4><p>Yes. The <span id="fee-amount-lifetime-faq">Rs. 6,000</span> fee is paid once, and your membership remains valid for your entire nursing career &mdash; there are no annual renewal fees.</p></div></div>
+  <div class="pillar-card"><div class="pillar-icon">2</div><div><h4>What happens when I graduate and register with the SLNC?</h4><p>You remain an Associate Member until you choose to upgrade. Once registered with the SLNC, you can upgrade to Lifetime Membership for an additional fee <span id="fee-amount-upgrade-faq">to be announced</span>.</p></div></div>
   <div class="pillar-card"><div class="pillar-icon">3</div><div><h4>Can membership fees change?</h4><p>Fees are reviewed periodically by the Executive Committee and any changes are formally approved at the Annual General Meeting.</p></div></div>
   <div class="pillar-card"><div class="pillar-icon">4</div><div><h4>What do I need to apply?</h4><p>Your SLNC registration details (for Lifetime Membership), a bank-transfer receipt, and a passport-size photograph for your SLNA identity card.</p></div></div>
   <div class="pillar-card"><div class="pillar-icon">5</div><div><h4>How do I apply as an Associate Member?</h4><p>Online applications currently support Lifetime Membership only. To apply as an Associate Member, <a href="contact-slna.html?subject=membership&amp;category=associate">contact the SLNA Secretariat</a> and we'll guide you through the process.</p></div></div>
@@ -106,5 +107,6 @@
 <script src="../js/config.js"></script>
 <script src="../js/include-header.js"></script>
 <script src="../js/main.js"></script>
+<script src="../js/membership-fees-display.js"></script>
 </body>
 </html>
