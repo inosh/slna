@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | SLNA</title>
   <link rel="icon" type="image/png" sizes="48x48" href="../images/favicon-48.png"><link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16.png"><link rel="apple-touch-icon" href="../images/apple-touch-icon.png"><link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/vendor/quill.snow.css">
 </head>
 <body class="admin-body">
   <div class="admin-header">
@@ -75,7 +76,14 @@
             </div>
             <div class="form-group"><label>Date</label><input type="date" id="type-date" required></div>
             <div class="form-group"><label>Short Summary</label><input type="text" id="type-summary"></div>
-            <div class="form-group"><label>Full Content</label><textarea id="type-body" rows="6" required></textarea></div>
+            <div class="form-group">
+              <label>Full Content</label>
+              <div class="rte-shell" id="type-body-shell">
+                <button type="button" class="rte-expand-btn" id="type-body-expand" title="Expand editor" aria-label="Expand editor">&#10530;</button>
+                <div id="type-body-editor"></div>
+              </div>
+              <textarea id="type-body" style="display:none;"></textarea>
+            </div>
             <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="type-photo-input" accept="image/*"><div id="type-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
               <label>Photo &amp; Video Gallery (optional &mdash; select multiple, or add more separately)</label>
@@ -158,7 +166,14 @@
           </div>
           <div class="form-group"><label>Date</label><input type="date" id="edit-news-date" required></div>
           <div class="form-group"><label>Short Summary</label><input type="text" id="edit-news-summary"></div>
-          <div class="form-group"><label>Full Content</label><textarea id="edit-news-body" rows="6" required></textarea></div>
+          <div class="form-group">
+            <label>Full Content</label>
+            <div class="rte-shell" id="edit-news-body-shell">
+              <button type="button" class="rte-expand-btn" id="edit-news-body-expand" title="Expand editor" aria-label="Expand editor">&#10530;</button>
+              <div id="edit-news-body-editor"></div>
+            </div>
+            <textarea id="edit-news-body" style="display:none;"></textarea>
+          </div>
 
           <div class="form-group">
             <label>Cover Photo</label>
@@ -1846,6 +1861,7 @@
 
   <script src="../js/config.js"></script>
   <script src="../js/admin-auth.js"></script>
+  <script src="../js/vendor/quill.min.js"></script>
   <script src="../js/admin-panel.js"></script>
 </body>
 </html>
