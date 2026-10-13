@@ -73,6 +73,35 @@ function compressImageFiles(files) {
   return Promise.all(files.map((file) => compressImageFile(file)));
 }
 
+// Quill embeds pasted/inserted images as base64 data URIs directly in the
+// content HTML. Rather than saving that bloat straight into the news body,
+// this pulls each one out as a real (compressed) file -- to be uploaded
+// alongside the cover photo/gallery on Publish -- and swaps its src for a
+// placeholder token the backend replaces with the uploaded file's real URL.
+// Images that are already a real URL (editing an existing article) are left
+// untouched, so this only ever processes newly added images.
+async function extractContentImages(html) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  const imgs = Array.from(container.querySelectorAll('img[src^="data:"]'));
+  const files = [];
+
+  for (let i = 0; i < imgs.length; i++) {
+    const img = imgs[i];
+    try {
+      const blob = await (await fetch(img.src)).blob();
+      const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+      const file = new File([blob], 'content-image-' + i + '.' + ext, { type: blob.type });
+      files.push(await compressImageFile(file));
+      img.setAttribute('src', '__CONTENT_IMG_' + i + '__');
+    } catch (e) {
+      console.error('Could not process an embedded image, leaving it as-is:', e);
+    }
+  }
+
+  return { html: container.innerHTML, files };
+}
+
 // Generic "are you sure?" modal used in place of the browser's built-in
 // confirm() throughout the admin panel (News/Gallery/Queries deletes,
 // closing event registration, etc). Resolves true/false instead of
@@ -2516,15 +2545,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const body = document.getElementById('type-body').value.trim();
     if (!title || !news_type || !event_date || !body) { showAlert('type-alert', 'Please fill in title, type, date, and content.', 'error'); return; }
 
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('news_type', news_type);
-    formData.append('event_date', event_date);
-    formData.append('summary', summary);
-    formData.append('body', body);
-    if (typePhotoFile) formData.append('photo', typePhotoFile);
-    typeGalleryFiles.forEach(file => formData.append('photos', file));
-
     const typeSubmitButton = typeForm.querySelector('button[type="submit"]');
     const typeSubmitLabel = typeSubmitButton ? typeSubmitButton.textContent : '';
     document.body.classList.add('is-busy');
@@ -2534,6 +2554,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     try {
+      const { html: processedBody, files: contentImageFiles } = await extractContentImages(body);
+
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('news_type', news_type);
+      formData.append('event_date', event_date);
+      formData.append('summary', summary);
+      formData.append('body', processedBody);
+      if (typePhotoFile) formData.append('photo', typePhotoFile);
+      typeGalleryFiles.forEach(file => formData.append('photos', file));
+      contentImageFiles.forEach(file => formData.append('content_images', file));
+
       const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/typed', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + getToken() },
@@ -4921,17 +4953,20 @@ function initEditNewsForm() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('news_type', news_type);
-    formData.append('event_date', event_date);
-    formData.append('summary', summary);
-    formData.append('body', body);
-    formData.append('override_album', overrideAlbum ? 'true' : 'false');
-    if (editNewsPhotoFile) formData.append('photo', editNewsPhotoFile);
-    if (overrideAlbum) editNewsGalleryFiles.forEach(file => formData.append('photos', file));
-
     try {
+      const { html: processedBody, files: contentImageFiles } = await extractContentImages(body);
+
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('news_type', news_type);
+      formData.append('event_date', event_date);
+      formData.append('summary', summary);
+      formData.append('body', processedBody);
+      formData.append('override_album', overrideAlbum ? 'true' : 'false');
+      if (editNewsPhotoFile) formData.append('photo', editNewsPhotoFile);
+      if (overrideAlbum) editNewsGalleryFiles.forEach(file => formData.append('photos', file));
+      contentImageFiles.forEach(file => formData.append('content_images', file));
+
       const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/news/' + editNewsCurrentItem.id, {
         method: 'PUT',
         headers: { 'Authorization': 'Bearer ' + getToken() },
