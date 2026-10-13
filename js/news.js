@@ -28,6 +28,14 @@ function escapeHtml(value) {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 }
+// Full Content is stored as rich HTML; strip tags before using it as a
+// plain-text excerpt (card previews, meta description) so truncation can't
+// cut mid-tag and corrupt the surrounding markup.
+function stripHtml(html) {
+  const div = document.createElement('div');
+  div.innerHTML = String(html || '');
+  return (div.textContent || '').replace(/\s+/g, ' ').trim();
+}
 async function renderPublicNewsList() {
   const container = document.getElementById('news-list-container');
 
@@ -47,7 +55,7 @@ async function renderPublicNewsList() {
       const title = escapeHtml(item.title || 'News Update');
       const date = formatDateLong(item.event_date);
       const excerpt = escapeHtml(
-          item.summary || (item.body ? item.body.substring(0, 230) : '')
+          item.summary || (item.body ? stripHtml(item.body).substring(0, 230) : '')
       );
 
       const imageHtml = item.photo_url
@@ -122,7 +130,8 @@ async function renderHomeNewsPreview() {
     if (items.length === 0) { container.innerHTML = '<div class="news-empty">No news items published yet.</div>'; return; }
     container.innerHTML = '<div class="grid grid-3">' + items.map(item => {
       const imgHtml = item.photo_url ? '<img src="' + fullUrl(item.photo_url) + '" alt="">' : item.title.charAt(0);
-      return '<a href="pages/news-detail.html?id=' + item.id + '" class="card"><div class="card-img">' + imgHtml + '</div><div class="card-body"><div class="date">' + formatDateLong(item.event_date) + '</div><h3>' + item.title + '</h3><p>' + (item.summary || item.body.substring(0, 120)) + '</p></div></a>';
+      const preview = escapeHtml(item.summary || stripHtml(item.body).substring(0, 120));
+      return '<a href="pages/news-detail.html?id=' + item.id + '" class="card"><div class="card-img">' + imgHtml + '</div><div class="card-body"><div class="date">' + formatDateLong(item.event_date) + '</div><h3>' + item.title + '</h3><p>' + preview + '</p></div></a>';
     }).join('') + '</div>';
   } catch (err) { container.innerHTML = '<div class="news-empty">Could not load news. Is the backend server running?</div>'; console.error(err); }
 }
@@ -187,7 +196,7 @@ async function renderNewsDetail() {
     if (bcEl) bcEl.textContent = item.title;
     const badge = formatDateBadge(item.event_date);
     const badgeHtml = '<div class="news-date-badge"><span class="day">' + badge.day + '</span><span class="month">' + badge.month + '</span></div>';
-    container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + item.title + '</h1></div>' + photoHtml + '<div class="detail-body">' + item.body + '</div>' + galleryHtml + attachmentHtml;
+    container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + item.title + '</h1></div>' + photoHtml + '<div class="detail-body ql-editor">' + item.body + '</div>' + galleryHtml + attachmentHtml;
   } catch (err) { container.innerHTML = '<div class="news-empty">News item not found.</div>'; console.error(err); }
 }
 async function renderNewsSidebar() {

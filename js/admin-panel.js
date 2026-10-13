@@ -186,6 +186,64 @@ function showEventRegistrationRejectPrompt() {
   });
 }
 
+// Wires a Quill rich-text editor to a hidden textarea so the rest of the
+// code (reads, validation, form.reset()) keeps working against a plain
+// textarea value, unaware the field is backed by a WYSIWYG editor.
+function createRichTextEditor(editorId, textareaId) {
+  const editorEl = document.getElementById(editorId);
+  const textarea = document.getElementById(textareaId);
+  if (!editorEl || !textarea || typeof Quill === 'undefined') return null;
+
+  const quill = new Quill(editorEl, {
+    theme: 'snow',
+    placeholder: 'Write the full news content here...',
+    modules: {
+      toolbar: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['blockquote', 'link', 'image'],
+        ['clean']
+      ]
+    }
+  });
+
+  function syncTextarea() {
+    textarea.value = quill.getText().trim().length ? quill.root.innerHTML : '';
+  }
+  quill.on('text-change', syncTextarea);
+
+  quill.setHtml = function (html) {
+    quill.setContents([]);
+    if (html) quill.clipboard.dangerouslyPasteHTML(html);
+    syncTextarea();
+  };
+
+  return quill;
+}
+
+// Gmail-style "pop out to a larger window" toggle for a rich-text editor shell.
+function initRichTextExpandToggle(shellId, buttonId) {
+  const shell = document.getElementById(shellId);
+  const btn = document.getElementById(buttonId);
+  if (!shell || !btn) return;
+
+  function setExpanded(expanded) {
+    shell.classList.toggle('is-fullscreen', expanded);
+    document.body.classList.toggle('rte-fullscreen-active', expanded);
+    btn.innerHTML = expanded ? '&#10529;' : '&#10530;';
+    btn.title = expanded ? 'Collapse editor' : 'Expand editor';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
+  btn.addEventListener('click', function () {
+    setExpanded(!shell.classList.contains('is-fullscreen'));
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && shell.classList.contains('is-fullscreen')) setExpanded(false);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const session = requireAuth();
   if (!session) return;
@@ -2384,6 +2442,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---- News: Type in UI ----
   const typeForm = document.getElementById('type-news-form');
+  const typeBodyQuill = createRichTextEditor('type-body-editor', 'type-body');
+  initRichTextExpandToggle('type-body-shell', 'type-body-expand');
   let typePhotoFile = null;
   document.getElementById('type-photo-input').addEventListener('change', async function (e) {
     if (e.target.files.length) {
@@ -2437,6 +2497,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function resetTypeNewsForm() {
     typeForm.reset();
+    if (typeBodyQuill) typeBodyQuill.setHtml('');
+    document.getElementById('type-body-shell').classList.remove('is-fullscreen');
+    document.body.classList.remove('rte-fullscreen-active');
     typePhotoFile = null;
     typeGalleryFiles = [];
     document.getElementById('type-photo-preview').innerHTML = '';
@@ -2479,6 +2542,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!res.ok) { showAlert('type-alert', await parseApiError(res), 'error'); return; }
       showAlert('type-alert', 'News item published.', 'success');
       typeForm.reset(); typePhotoFile = null; typeGalleryFiles = [];
+      if (typeBodyQuill) typeBodyQuill.setHtml('');
       document.getElementById('type-photo-preview').innerHTML = '';
       renderTypeGalleryPicker();
       loadAdminNewsTable();
@@ -4714,6 +4778,7 @@ async function handleDeleteNews(id) {
 let editNewsCurrentItem = null;
 let editNewsPhotoFile = null;
 let editNewsGalleryFiles = [];
+let editNewsQuill = null;
 
 async function handleEditNews(id) {
   try {
@@ -4732,7 +4797,8 @@ async function handleEditNews(id) {
     document.getElementById('edit-news-type').value = item.news_type || '';
     document.getElementById('edit-news-date').value = (item.event_date || '').slice(0, 10);
     document.getElementById('edit-news-summary').value = item.summary || '';
-    document.getElementById('edit-news-body').value = item.body || '';
+    if (editNewsQuill) editNewsQuill.setHtml(item.body || '');
+    else document.getElementById('edit-news-body').value = item.body || '';
 
     document.getElementById('edit-news-current-photo').innerHTML = item.photo_url
         ? '<img src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:80px;height:80px;">'
@@ -4761,6 +4827,8 @@ async function handleEditNews(id) {
 
 function closeEditNewsCard() {
   document.getElementById('edit-news-card').hidden = true;
+  document.getElementById('edit-news-body-shell').classList.remove('is-fullscreen');
+  document.body.classList.remove('rte-fullscreen-active');
   editNewsCurrentItem = null;
 }
 
@@ -4785,6 +4853,8 @@ window._removeEditNewsGalleryPhoto = function (idx) { editNewsGalleryFiles.splic
 
 function initEditNewsForm() {
   const form = document.getElementById('edit-news-form');
+  editNewsQuill = createRichTextEditor('edit-news-body-editor', 'edit-news-body');
+  initRichTextExpandToggle('edit-news-body-shell', 'edit-news-body-expand');
   const closeButton = document.getElementById('close-edit-news');
   const photoInput = document.getElementById('edit-news-photo-input');
   const overrideCheckbox = document.getElementById('edit-news-override-album');
