@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
-    var committeeCards = document.querySelectorAll('.committee-card');
+    var listEl = document.querySelector('#committee-list');
+    var detailEl = document.querySelector('#committee-detail');
     var committeeNumber = document.querySelector('#committee-number');
     var committeeName = document.querySelector('#committee-name');
     var committeeDescription = document.querySelector(
@@ -8,7 +9,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var committeeMembers = document.querySelector('#committee-members');
 
     if (
-        !committeeCards.length ||
+        !listEl ||
+        !detailEl ||
         !committeeNumber ||
         !committeeName ||
         !committeeDescription ||
@@ -22,105 +24,16 @@ document.addEventListener('DOMContentLoaded', function () {
         '<path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2.5c-3.34 0-10 1.68-10 5V22h20v-2.5c0-3.32-6.66-5-10-5z"/>' +
         '</svg>';
 
-    var committees = {
-        'nursing-education': {
-            number: '01',
-            name: 'Nursing Education Committee',
-            description:
-                'The Nursing Education Committee supports the advancement of nursing education, continuing professional development, and initiatives that strengthen the knowledge and clinical skills of nurses across Sri Lanka.',
-            members: [
-                { designation: 'Professor', name: 'Prof. Thamara Amarasekara' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. I. D. T. N. K. Thilakarathne' },
-                { designation: 'Nursing Sister', name: 'Ms. Ganga Mulleriyawa' },
-                { designation: 'Nursing Director', name: 'Ms. Dayani Perera' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. N. P. Dullewa' }
-            ]
-        },
+    var committees = [];
 
-        'nursing-services': {
-            number: '02',
-            name: 'Nursing Services Committee',
-            description:
-                'The Nursing Services Committee considers matters affecting nursing service delivery, professional practice, quality of care, and the working conditions of nurses in clinical and public health settings.',
-            members: [
-                { designation: 'Professor', name: 'Prof. S. S. P. Warnakulasuriya' },
-                { designation: 'Nursing Officer', name: 'Ms. Samudra Gunarathne' },
-                { designation: 'Nursing Officer', name: 'Mr. Keerthi Weerakoon' },
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. R. S. Abeyrama' },
-                { designation: 'Nursing Sister', name: 'Ms. Lasanthi Nagasinghe' }
-            ]
-        },
-
-        'development-planning': {
-            number: '03',
-            name: 'Development and Planning Committee',
-            description:
-                'The Development and Planning Committee plans and coordinates the Association’s conferences, workshops, seminars, and other member programmes and events, and supports strategic development initiatives for the Association.',
-            members: [
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. R. Dharmika' },
-                { designation: 'Nursing Officer', name: 'Ms. C. U. Erawwala' },
-                { designation: 'Nursing Officer', name: 'Ms. R. M. P. B. Senavirathna' },
-                { designation: 'Nursing Officer', name: 'Mr. A. G. H. Lahiru Siriwardana' },
-                { designation: 'Nursing Officer', name: 'Mrs. K. A. A. N. Damayanthi' }
-            ]
-        },
-
-        'publicity-public-relations': {
-            number: '04',
-            name: 'Publicity and Public Relations Committee',
-            description:
-                'The Publicity and Public Relations Committee oversees SLNA publicity, publications, and communications, and promotes public awareness of the nursing profession and the Association’s work.',
-            members: [
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. Manohari' },
-                { designation: 'Nursing Sister', name: 'Ms. K. A. D. P. Vidyarathna' },
-                { designation: 'Nursing Officer', name: 'Ms. D. M. A. S. Dissanayaka' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. G. B. Rohini' },
-                { designation: 'Nursing Officer', name: 'Mr. K. H. D. Madushanka' }
-            ]
-        },
-
-        nominations: {
-            number: '05',
-            name: 'Nominations Committee',
-            description:
-                'The Nominations Committee conducts and oversees the Association’s elections, including nominations, balloting, and the proper administration of election procedures in accordance with the SLNA constitution.',
-            members: [
-                { designation: 'Sp. Gr. Nursing Officer', name: 'Ms. Chamari Perera' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. K. M. D. G. Krishanthi' },
-                { designation: 'Sp. Gr. Nursing Officer', name: 'Ms. T. A. D. R. G. Thalagala' },
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. A. N. Palliyaguru' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. R. M. P. S. K. Rupasinghe' }
-            ]
-        },
-
-        'social-economic-welfare': {
-            number: '06',
-            name: 'Social and Economic Welfare Committee',
-            description:
-                'The Social and Economic Welfare Committee supports member welfare, social welfare initiatives, and programmes that advance the economic wellbeing of nurses and their communities.',
-            members: [
-                { designation: 'Nursing Officer', name: 'Ms. B. G. S. C. K. Ariyadas' },
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. Lahiru Subha Rodrigo' },
-                { designation: 'Nursing Officer', name: 'Mr. S. M. D. D. Senanayake' },
-                { designation: 'Nursing Officer', name: 'Ms. P. R. Chamudi Lalindika' },
-                { designation: 'Nursing Officer', name: 'Mrs. K. A. A. Udayangani' }
-            ]
-        },
-
-        finance: {
-            number: '07',
-            name: 'Finance Committee',
-            description:
-                'The Finance Committee supports responsible financial planning, budget oversight, income and expenditure review, and the sustainable use of Association resources.',
-            members: [
-                { designation: 'Nursing Officer', name: 'Ms. A. M. C. Niroshika' },
-                { designation: 'Nursing Officer', name: 'Ms. P. A. D. Nimali' },
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. Lahiru Subhashini' },
-                { designation: 'Nursing Officer', name: 'Mr. C. Madhushan Abeywickrama' },
-                { designation: 'Nursing Officer', name: 'Ms. H. P. N. Hansika Jayasinghe' }
-            ]
-        }
-    };
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 
     function renderMembers(members) {
         committeeMembers.innerHTML = members
@@ -131,8 +44,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     avatarIcon +
                     '</div>' +
                     '<div class="committee-member-info">' +
-                    '<h5>' + member.name + '</h5>' +
-                    '<p>' + member.designation + '</p>' +
+                    '<h5>' + escapeHtml(member.name) + '</h5>' +
+                    '<p>' + escapeHtml(member.designation || '') + '</p>' +
                     '</div>' +
                     '</article>'
                 );
@@ -140,34 +53,31 @@ document.addEventListener('DOMContentLoaded', function () {
             .join('');
     }
 
-    function showCommittee(card) {
-        var committeeKey = card.getAttribute('data-committee');
-        var committee = committees[committeeKey];
+    function showCommittee(slotKey) {
+        var committee = committees.filter(function (c) {
+            return c.slot_key === slotKey;
+        })[0];
 
-        if (!committee) {
-            return;
-        }
+        if (!committee) return;
 
-        committeeCards.forEach(function (item) {
-            item.classList.remove('active');
-            item.setAttribute('aria-pressed', 'false');
+        listEl.querySelectorAll('.committee-card').forEach(function (card) {
+            var isActive = card.getAttribute('data-committee') === slotKey;
+            card.classList.toggle('active', isActive);
+            card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         });
 
-        card.classList.add('active');
-        card.setAttribute('aria-pressed', 'true');
-
-        committeeNumber.textContent = committee.number;
+        detailEl.hidden = false;
+        committeeNumber.textContent = String(committee.display_order).padStart(2, '0');
         committeeName.textContent = committee.name;
-        committeeDescription.textContent = committee.description;
-        renderMembers(committee.members);
+        committeeDescription.textContent = committee.description || '';
+        renderMembers(committee.members || []);
     }
 
     function scrollToDetail() {
-        var detail = document.querySelector('#committee-detail');
         var header = document.querySelector('.site-header');
         var headerHeight = header ? header.getBoundingClientRect().height : 0;
         var targetTop =
-            detail.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+            detailEl.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
 
         window.scrollTo({
             top: Math.max(targetTop, 0),
@@ -175,13 +85,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    committeeCards.forEach(function (card) {
-        card.addEventListener('click', function () {
-            showCommittee(card);
-            scrollToDetail();
-        });
-    });
+    function renderList() {
+        listEl.innerHTML = committees.map(function (committee) {
+            return (
+                '<button class="committee-card" type="button" data-committee="' + escapeHtml(committee.slot_key) + '" aria-controls="committee-detail" aria-pressed="false">' +
+                '<span class="committee-number">' + String(committee.display_order).padStart(2, '0') + '</span>' +
+                '<span class="committee-title">' + escapeHtml(committee.name.replace(/\s+Committee$/, '')) + '</span>' +
+                '<span class="committee-arrow" aria-hidden="true">→</span>' +
+                '</button>'
+            );
+        }).join('');
 
-    var initialCard = document.querySelector('.committee-card.active') || committeeCards[0];
-    showCommittee(initialCard);
+        listEl.querySelectorAll('.committee-card').forEach(function (card) {
+            card.addEventListener('click', function () {
+                showCommittee(card.getAttribute('data-committee'));
+                scrollToDetail();
+            });
+        });
+    }
+
+    fetch(SLNA_CONFIG.API_BASE_URL + '/sub-committees')
+        .then(function (res) {
+            if (!res.ok) throw new Error('bad status');
+            return res.json();
+        })
+        .then(function (data) {
+            committees = data || [];
+
+            if (!committees.length) {
+                listEl.innerHTML = '<div class="empty-table-state">Sub Committee details are not available right now.</div>';
+                return;
+            }
+
+            renderList();
+            showCommittee(committees[0].slot_key);
+        })
+        .catch(function () {
+            listEl.innerHTML = '<div class="empty-table-state">Could not load the Sub Committees. Please try again later.</div>';
+        });
 });
