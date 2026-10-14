@@ -1358,11 +1358,13 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 }
 
 .placeholder-photo {
-  color: #6c7c8e;
-  background: #e2e9f0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  color: #ffffff;
+  background: #173f73;
+}
+
+.placeholder-photo svg {
+  width: 60%;
+  height: 60%;
 }
 
 .committee-member-info h5 {
