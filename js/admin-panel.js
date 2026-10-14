@@ -348,6 +348,8 @@ document.addEventListener('DOMContentLoaded', function () {
   initEditNewsForm();
   initAlbumTitleEditModal();
   initMembershipFees();
+  initExecCommitteeAdmin();
+  initSubCommitteesAdmin();
 
   function populateTimeSelectGroup(group) {
     if (!group) {
@@ -5405,4 +5407,433 @@ function initMembershipFees() {
   });
 
   loadMembershipFees();
+}
+
+// --- Executive Committee (Committees tab) ---
+// The 10 seats are fixed by the SLNA constitution -- this only ever loads
+// and updates the existing rows, it never adds or removes a seat.
+
+async function execParseApiError(res) {
+  try {
+    const data = await res.json();
+    if (data && data.error) return data.error;
+  } catch (e) {
+    // response wasn't JSON (rare) -- fall through to generic message
+  }
+  return 'Something went wrong (status ' + res.status + '). Please try again.';
+}
+
+function resolveExecMediaUrl(url) {
+  if (!url) return null;
+  const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
+  return /^https?:\/\//i.test(url) ? url : apiOrigin + url;
+}
+
+function renderExecMemberRow(member) {
+  const photoUrl = resolveExecMediaUrl(member.photo_url);
+  const inputId = 'exec-photo-' + member.slot_key;
+
+  return (
+    '<form class="exec-member-row" data-slot-key="' + escapeHtml(member.slot_key) + '">' +
+      '<div class="exec-member-photo-col">' +
+        '<div class="exec-member-photo">' +
+          (photoUrl ? '<img src="' + photoUrl + '" alt="">' : '') +
+        '</div>' +
+        '<label class="btn btn-outline btn-sm file-input-trigger" for="' + inputId + '">Change Photo</label>' +
+        '<input type="file" id="' + inputId + '" class="file-input-hidden exec-member-photo-input" accept="image/*">' +
+      '</div>' +
+      '<div class="exec-member-fields">' +
+        '<div class="exec-member-role-title">' + escapeHtml(member.role_title) + '</div>' +
+        '<input type="hidden" class="exec-member-role-title-input" value="' + escapeHtml(member.role_title) + '">' +
+        '<div class="exec-member-fields-row">' +
+          '<div class="form-group">' +
+            '<label for="exec-name-' + escapeHtml(member.slot_key) + '">Name</label>' +
+            '<input type="text" id="exec-name-' + escapeHtml(member.slot_key) + '" class="exec-member-name" value="' + escapeHtml(member.name) + '" required>' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label for="exec-designation-' + escapeHtml(member.slot_key) + '">Designation</label>' +
+            '<input type="text" id="exec-designation-' + escapeHtml(member.slot_key) + '" class="exec-member-designation" value="' + escapeHtml(member.designation || '') + '" placeholder="e.g. Nursing Officer">' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="exec-member-actions">' +
+        '<button type="submit" class="btn btn-primary btn-sm">Save</button>' +
+      '</div>' +
+    '</form>'
+  );
+}
+
+function initExecMemberRowHandlers() {
+  document.querySelectorAll('.exec-member-row').forEach(function (row) {
+    row.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const slotKey = row.dataset.slotKey;
+      const roleTitle = row.querySelector('.exec-member-role-title-input').value;
+      const name = row.querySelector('.exec-member-name').value.trim();
+      const designation = row.querySelector('.exec-member-designation').value.trim();
+      const photoInput = row.querySelector('.exec-member-photo-input');
+      const submitButton = row.querySelector('button[type="submit"]');
+
+      if (!name) {
+        showAlert('exec-committee-members-alert', 'Name is required.', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('role_title', roleTitle);
+      formData.append('name', name);
+      formData.append('designation', designation);
+      if (photoInput.croppedBlob) {
+        formData.append('photo', photoInput.croppedBlob, 'photo.jpg');
+      } else if (photoInput.files[0]) {
+        formData.append('photo', photoInput.files[0]);
+      }
+
+      submitButton.disabled = true;
+
+      try {
+        const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/executive-committee/' + encodeURIComponent(slotKey), {
+          method: 'PUT',
+          headers: { Authorization: 'Bearer ' + getToken() },
+          body: formData
+        });
+
+        if (!res.ok) throw new Error(await execParseApiError(res));
+
+        showAlert('exec-committee-members-alert', escapeHtml(roleTitle) + ' updated.', 'success');
+        await loadExecCommitteeMembers();
+      } catch (err) {
+        showAlert('exec-committee-members-alert', err.message || 'Could not save this committee member.', 'error');
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    row.querySelector('.exec-member-photo-input').addEventListener('change', function (e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) openExecPhotoCropModal(file, row);
+    });
+  });
+}
+
+// --- Photo crop modal (used by the Executive Committee photo picker) ---
+// A seat's "Change Photo" input opens this shared modal instead of
+// uploading the raw file straight away, so the admin can frame the face
+// before it's saved. The cropped result is stashed on the row's file
+// input (`.croppedBlob`) and used in place of the raw file when the row
+// is submitted.
+
+let execPhotoCropper = null;
+let execPhotoCropTargetRow = null;
+
+function openExecPhotoCropModal(file, row) {
+  const modal = document.getElementById('exec-photo-crop-modal');
+  const image = document.getElementById('exec-photo-crop-image');
+  if (!modal || !image) return;
+
+  execPhotoCropTargetRow = row;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    image.src = e.target.result;
+    modal.hidden = false;
+
+    if (execPhotoCropper) {
+      execPhotoCropper.destroy();
+    }
+
+    execPhotoCropper = new Cropper(image, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 0.9,
+      background: false,
+      guides: false
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function closeExecPhotoCropModal(resetInput) {
+  const modal = document.getElementById('exec-photo-crop-modal');
+  if (modal) modal.hidden = true;
+
+  if (execPhotoCropper) {
+    execPhotoCropper.destroy();
+    execPhotoCropper = null;
+  }
+
+  if (resetInput && execPhotoCropTargetRow) {
+    const input = execPhotoCropTargetRow.querySelector('.exec-member-photo-input');
+    if (input) input.value = '';
+  }
+
+  execPhotoCropTargetRow = null;
+}
+
+function initExecPhotoCropModal() {
+  const modal = document.getElementById('exec-photo-crop-modal');
+  if (!modal) return;
+
+  document.getElementById('exec-photo-crop-cancel').addEventListener('click', function () {
+    closeExecPhotoCropModal(true);
+  });
+
+  document.getElementById('exec-photo-crop-backdrop').addEventListener('click', function () {
+    closeExecPhotoCropModal(true);
+  });
+
+  document.getElementById('exec-photo-crop-confirm').addEventListener('click', function () {
+    if (!execPhotoCropper || !execPhotoCropTargetRow) return;
+
+    const row = execPhotoCropTargetRow;
+    const canvas = execPhotoCropper.getCroppedCanvas({ width: 480, height: 480 });
+
+    if (!canvas) return;
+
+    canvas.toBlob(function (blob) {
+      if (!blob) return;
+
+      const input = row.querySelector('.exec-member-photo-input');
+      if (input) input.croppedBlob = blob;
+
+      const photoEl = row.querySelector('.exec-member-photo');
+      if (photoEl) {
+        photoEl.innerHTML = '<img src="' + URL.createObjectURL(blob) + '" alt="">';
+      }
+
+      closeExecPhotoCropModal(false);
+    }, 'image/jpeg', 0.92);
+  });
+}
+
+async function loadExecCommitteeMembers() {
+  const listEl = document.getElementById('exec-committee-members-list');
+  if (!listEl) return;
+
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/executive-committee');
+    if (!res.ok) throw new Error('bad status');
+    const data = await res.json();
+
+    if (!data.members || !data.members.length) {
+      listEl.innerHTML = '<div class="empty-table-state">No committee members found. Run the exec-committee migration on the backend.</div>';
+      return;
+    }
+
+    listEl.innerHTML = data.members.map(renderExecMemberRow).join('');
+    initExecMemberRowHandlers();
+
+    if (data.settings) {
+      const startInput = document.getElementById('exec-term-start-year');
+      if (startInput && !startInput.value) {
+        document.getElementById('exec-term-start-year').value = data.settings.term_start_year;
+        document.getElementById('exec-term-end-year').value = data.settings.term_end_year;
+        document.getElementById('exec-agm-number').value = data.settings.agm_number;
+        document.getElementById('exec-agm-date').value = data.settings.agm_date;
+        document.getElementById('exec-agm-venue').value = data.settings.agm_venue || '';
+      }
+    }
+  } catch (err) {
+    listEl.innerHTML = '<div class="empty-table-state">Could not load committee members. Is the backend server running?</div>';
+  }
+}
+
+function initExecCommitteeSettingsForm() {
+  const form = document.getElementById('exec-committee-settings-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const payload = {
+      term_start_year: document.getElementById('exec-term-start-year').value,
+      term_end_year: document.getElementById('exec-term-end-year').value,
+      agm_number: document.getElementById('exec-agm-number').value,
+      agm_date: document.getElementById('exec-agm-date').value,
+      agm_venue: document.getElementById('exec-agm-venue').value
+    };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    try {
+      const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/executive-committee/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + getToken()
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(await execParseApiError(res));
+
+      showAlert('exec-committee-settings-alert', 'Term and AGM details updated.', 'success');
+    } catch (err) {
+      showAlert('exec-committee-settings-alert', err.message || 'Could not save term and AGM details.', 'error');
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+}
+
+function initExecCommitteeAdmin() {
+  if (!document.getElementById('maintab-committees')) return;
+  initExecCommitteeSettingsForm();
+  initExecPhotoCropModal();
+  loadExecCommitteeMembers();
+}
+
+// --- Sub Committees (Committees tab) ---
+// The 7 committees and their 5 seats each are fixed -- this only ever
+// loads and updates the existing rows, it never adds or removes a
+// committee or a seat. Unlike the Executive Committee, members have no
+// photo, so there's no file upload here -- just name and designation.
+
+let subCommitteesCache = [];
+let activeSubCommitteeKey = null;
+
+function renderSubCommitteePicker() {
+  const picker = document.getElementById('subcom-picker');
+  if (!picker) return;
+
+  picker.innerHTML = subCommitteesCache.map(function (committee) {
+    const isActive = committee.slot_key === activeSubCommitteeKey;
+    const number = String(committee.display_order).padStart(2, '0');
+
+    return (
+      '<button type="button" class="subcom-pick-btn' + (isActive ? ' active' : '') + '" data-committee-key="' + escapeHtml(committee.slot_key) + '">' +
+        '<span class="subcom-pick-number">' + number + '</span>' +
+        escapeHtml(committee.name) +
+      '</button>'
+    );
+  }).join('');
+
+  picker.querySelectorAll('.subcom-pick-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      activeSubCommitteeKey = btn.dataset.committeeKey;
+      renderSubCommitteePicker();
+      renderSubCommitteeDetail();
+    });
+  });
+}
+
+function renderSubCommitteeMemberRow(member) {
+  return (
+    '<form class="subcom-member-row" data-member-id="' + member.id + '">' +
+      '<div class="subcom-member-index">' + member.display_order + '</div>' +
+      '<div class="subcom-member-fields">' +
+        '<div class="form-group">' +
+          '<label for="subcom-name-' + member.id + '">Name</label>' +
+          '<input type="text" id="subcom-name-' + member.id + '" class="subcom-member-name" value="' + escapeHtml(member.name) + '" required>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label for="subcom-designation-' + member.id + '">Designation</label>' +
+          '<input type="text" id="subcom-designation-' + member.id + '" class="subcom-member-designation" value="' + escapeHtml(member.designation || '') + '">' +
+        '</div>' +
+      '</div>' +
+      '<div class="subcom-member-actions">' +
+        '<button type="submit" class="btn btn-primary btn-sm">Save</button>' +
+      '</div>' +
+    '</form>'
+  );
+}
+
+function initSubCommitteeMemberRowHandlers() {
+  document.querySelectorAll('.subcom-member-row').forEach(function (row) {
+    row.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const memberId = Number(row.dataset.memberId);
+      const name = row.querySelector('.subcom-member-name').value.trim();
+      const designation = row.querySelector('.subcom-member-designation').value.trim();
+      const submitButton = row.querySelector('button[type="submit"]');
+
+      if (!name) {
+        showAlert('subcom-alert', 'Name is required.', 'error');
+        return;
+      }
+
+      submitButton.disabled = true;
+
+      try {
+        const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/sub-committees/members/' + encodeURIComponent(memberId), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ name: name, designation: designation })
+        });
+
+        if (!res.ok) throw new Error(await execParseApiError(res));
+
+        const data = await res.json();
+
+        const committee = subCommitteesCache.find(function (c) { return c.slot_key === activeSubCommitteeKey; });
+        const member = committee && committee.members.find(function (m) { return m.id === memberId; });
+
+        if (member) {
+          member.name = data.member.name;
+          member.designation = data.member.designation;
+        }
+
+        showAlert('subcom-alert', 'Committee member updated.', 'success');
+      } catch (err) {
+        showAlert('subcom-alert', err.message || 'Could not save this committee member.', 'error');
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+  });
+}
+
+function renderSubCommitteeDetail() {
+  const detail = document.getElementById('subcom-detail');
+  if (!detail) return;
+
+  const committee = subCommitteesCache.find(function (c) { return c.slot_key === activeSubCommitteeKey; });
+
+  if (!committee) {
+    detail.hidden = true;
+    return;
+  }
+
+  detail.hidden = false;
+  document.getElementById('subcom-detail-name').textContent = committee.name;
+  document.getElementById('subcom-detail-description').textContent = committee.description || '';
+  document.getElementById('subcom-members-list').innerHTML = committee.members.map(renderSubCommitteeMemberRow).join('');
+  initSubCommitteeMemberRowHandlers();
+}
+
+async function loadSubCommittees() {
+  const picker = document.getElementById('subcom-picker');
+  if (!picker) return;
+
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/sub-committees');
+    if (!res.ok) throw new Error('bad status');
+    subCommitteesCache = await res.json();
+
+    if (!subCommitteesCache.length) {
+      picker.innerHTML = '<div class="empty-table-state">No sub committees found. Run the sub-committees migration on the backend.</div>';
+      return;
+    }
+
+    if (!activeSubCommitteeKey || !subCommitteesCache.some(function (c) { return c.slot_key === activeSubCommitteeKey; })) {
+      activeSubCommitteeKey = subCommitteesCache[0].slot_key;
+    }
+
+    renderSubCommitteePicker();
+    renderSubCommitteeDetail();
+  } catch (err) {
+    picker.innerHTML = '<div class="empty-table-state">Could not load sub committees. Is the backend server running?</div>';
+  }
+}
+
+function initSubCommitteesAdmin() {
+  if (!document.getElementById('tab-sub-committees')) return;
+  loadSubCommittees();
 }

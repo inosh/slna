@@ -6,6 +6,7 @@
   <title>Admin Dashboard | SLNA</title>
   <link rel="icon" type="image/png" sizes="48x48" href="../images/favicon-48.png"><link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16.png"><link rel="apple-touch-icon" href="../images/apple-touch-icon.png"><link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/vendor/quill.snow.css">
+  <link rel="stylesheet" href="../css/vendor/cropper.min.css">
 </head>
 <body class="admin-body">
   <div class="admin-header">
@@ -51,6 +52,8 @@
       <button class="main-tab-btn" data-maintab="maintab-queries" role="tab" aria-selected="false">User Queries <span class="application-count-badge" id="queries-new-count">0</span></button>
 
       <button class="main-tab-btn" data-maintab="maintab-fees" role="tab" aria-selected="false">Membership Fees</button>
+
+      <button class="main-tab-btn" data-maintab="maintab-committees" role="tab" aria-selected="false">Committees</button>
     </div>
 
     <div class="main-tab-panel active" id="maintab-news" role="tabpanel">
@@ -1286,6 +1289,117 @@
         </form>
       </div>
     </div>
+
+    <div class="main-tab-panel" id="maintab-committees" role="tabpanel">
+      <div class="admin-card">
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-tab="tab-exec-committee">Executive Committee</button>
+          <button class="tab-btn" data-tab="tab-sub-committees">Sub Committees</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-exec-committee">
+          <h2>Term &amp; Annual General Meeting</h2>
+          <p class="admin-muted">
+            Shown above the roster on the public Executive Committee page
+            (e.g. &ldquo;Board of Officers &middot; 2025&ndash;2027&rdquo;,
+            &ldquo;Elected at the 82nd Annual General Meeting...&rdquo;).
+          </p>
+
+          <div id="exec-committee-settings-alert" aria-live="polite" tabindex="-1"></div>
+
+          <form id="exec-committee-settings-form">
+            <div class="form-group" style="display:flex; gap:12px;">
+              <div style="flex:1;">
+                <label for="exec-term-start-year">Term From (Year)</label>
+                <input type="number" id="exec-term-start-year" min="2000" max="2100" required>
+              </div>
+              <div style="flex:1;">
+                <label for="exec-term-end-year">Term To (Year)</label>
+                <input type="number" id="exec-term-end-year" min="2000" max="2100" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="exec-agm-number">Annual General Meeting Number</label>
+              <input type="number" id="exec-agm-number" min="1" placeholder="e.g. 82" required>
+            </div>
+            <div class="form-group">
+              <label for="exec-agm-date">Annual General Meeting Date</label>
+              <input type="date" id="exec-agm-date" required>
+            </div>
+            <div class="form-group">
+              <label for="exec-agm-venue">Annual General Meeting Venue</label>
+              <input type="text" id="exec-agm-venue" placeholder="e.g. Post Basic College of Nursing, Colombo">
+            </div>
+            <button type="submit" class="btn btn-primary">Save Term &amp; AGM Details</button>
+          </form>
+
+          <hr style="margin:28px 0; border-color:var(--border);">
+
+          <h2>Executive Committee Members</h2>
+          <p class="admin-muted">
+            The 10 Executive Committee seats are fixed by the SLNA
+            constitution &mdash; update the name, designation, and photo for
+            each seat after an office bearer change. Seats cannot be added
+            or removed here.
+          </p>
+
+          <div id="exec-committee-members-alert" aria-live="polite" tabindex="-1"></div>
+
+          <div id="exec-committee-members-list">
+            <div class="empty-table-state">Loading committee members...</div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-sub-committees">
+          <h2>Sub Committees</h2>
+          <p class="admin-muted">
+            There are 7 fixed Sub Committees with 5 members each. Select a
+            committee below, then update each member&rsquo;s name and
+            designation. Committees and seats cannot be added or removed
+            here.
+          </p>
+
+          <div id="subcom-alert" aria-live="polite" tabindex="-1"></div>
+
+          <div class="subcom-picker" id="subcom-picker">
+            <div class="empty-table-state">Loading sub committees...</div>
+          </div>
+
+          <div class="subcom-detail" id="subcom-detail" hidden>
+            <h3 id="subcom-detail-name"></h3>
+            <p class="admin-muted" id="subcom-detail-description"></p>
+            <div id="subcom-members-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="exec-photo-crop-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="exec-photo-crop-title"
+  >
+    <div class="admin-confirm-backdrop" id="exec-photo-crop-backdrop"></div>
+
+    <div class="admin-confirm-dialog exec-photo-crop-dialog">
+      <div class="admin-confirm-content" style="width:100%;">
+        <h2 id="exec-photo-crop-title">Crop Photo</h2>
+        <p>Drag to position the photo and resize the box to frame the face. The area inside the circle is what will be shown on the public page.</p>
+
+        <div class="exec-photo-crop-wrap">
+          <img id="exec-photo-crop-image" alt="">
+        </div>
+
+        <div class="admin-confirm-actions">
+          <button type="button" class="btn btn-outline" id="exec-photo-crop-cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="exec-photo-crop-confirm">Use This Photo</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div
@@ -1862,6 +1976,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/admin-auth.js"></script>
   <script src="../js/vendor/quill.min.js"></script>
+  <script src="../js/vendor/cropper.min.js"></script>
   <script src="../js/admin-panel.js"></script>
 </body>
 </html>
