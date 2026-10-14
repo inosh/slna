@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded', function () {
         '</svg>';
 
     var committees = {
-        'educational-service': {
+        'nursing-education': {
             number: '01',
-            name: 'Educational Service Committee',
+            name: 'Nursing Education Committee',
             description:
-                'The Educational Service Committee supports the advancement of nursing education, continuing professional development, and initiatives that strengthen the knowledge and clinical skills of nurses across Sri Lanka.',
+                'The Nursing Education Committee supports the advancement of nursing education, continuing professional development, and initiatives that strengthen the knowledge and clinical skills of nurses across Sri Lanka.',
             members: [
                 { designation: 'Professor', name: 'Prof. Thamara Amarasekara' },
                 { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. I. D. T. N. K. Thilakarathne' },
@@ -37,11 +37,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ]
         },
 
-        'nursing-service': {
+        'nursing-services': {
             number: '02',
-            name: 'Nursing Service Committee',
+            name: 'Nursing Services Committee',
             description:
-                'The Nursing Service Committee considers matters affecting nursing service delivery, professional practice, quality of care, and the working conditions of nurses in clinical and public health settings.',
+                'The Nursing Services Committee considers matters affecting nursing service delivery, professional practice, quality of care, and the working conditions of nurses in clinical and public health settings.',
             members: [
                 { designation: 'Professor', name: 'Prof. S. S. P. Warnakulasuriya' },
                 { designation: 'Nursing Officer', name: 'Ms. Samudra Gunarathne' },
@@ -51,53 +51,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ]
         },
 
-        election: {
+        'development-planning': {
             number: '03',
-            name: 'Election Committee',
+            name: 'Development and Planning Committee',
             description:
-                'The Election Committee conducts and oversees the Association’s elections, including nominations, balloting, and the proper administration of election procedures in accordance with the SLNA constitution.',
-            members: [
-                { designation: 'Sp. Gr. Nursing Officer', name: 'Ms. Chamari Perera' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. K. M. D. G. Krishanthi' },
-                { designation: 'Sp. Gr. Nursing Officer', name: 'Ms. T. A. D. R. G. Thalagala' },
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. A. N. Palliyaguru' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. R. M. P. S. K. Rupasinghe' }
-            ]
-        },
-
-        'publications-public-awareness': {
-            number: '04',
-            name: 'Publications & Public Awareness Committee',
-            description:
-                'The Publications & Public Awareness Committee oversees SLNA publications and communications, and promotes public awareness of the nursing profession and the Association’s work.',
-            members: [
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. Manohari' },
-                { designation: 'Nursing Sister', name: 'Ms. K. A. D. P. Vidyarathna' },
-                { designation: 'Nursing Officer', name: 'Ms. D. M. A. S. Dissanayaka' },
-                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. G. B. Rohini' },
-                { designation: 'Nursing Officer', name: 'Mr. K. H. D. Madushanka' }
-            ]
-        },
-
-        finance: {
-            number: '05',
-            name: 'Finance Committee',
-            description:
-                'The Finance Committee supports responsible financial planning, budget oversight, income and expenditure review, and the sustainable use of Association resources.',
-            members: [
-                { designation: 'Nursing Officer', name: 'Ms. A. M. C. Niroshika' },
-                { designation: 'Nursing Officer', name: 'Ms. P. A. D. Nimali' },
-                { designation: 'Nursing Sister (Public Health)', name: 'Ms. Lahiru Subhashini' },
-                { designation: 'Nursing Officer', name: 'Mr. C. Madhushan Abeywickrama' },
-                { designation: 'Nursing Officer', name: 'Ms. H. P. N. Hansika Jayasinghe' }
-            ]
-        },
-
-        'programme-organizing': {
-            number: '06',
-            name: 'Programme Organizing Committee',
-            description:
-                'The Programme Organizing Committee plans and coordinates the Association’s conferences, workshops, seminars, and other member programmes and events.',
+                'The Development and Planning Committee plans and coordinates the Association’s conferences, workshops, seminars, and other member programmes and events, and supports strategic development initiatives for the Association.',
             members: [
                 { designation: 'Nursing Sister (Public Health)', name: 'Ms. R. Dharmika' },
                 { designation: 'Nursing Officer', name: 'Ms. C. U. Erawwala' },
@@ -107,17 +65,59 @@ document.addEventListener('DOMContentLoaded', function () {
             ]
         },
 
-        'social-economic-development': {
-            number: '07',
-            name: 'Social and Economic Development Committee',
+        'publicity-public-relations': {
+            number: '04',
+            name: 'Publicity and Public Relations Committee',
             description:
-                'The Social and Economic Development Committee supports member welfare, social development initiatives, and programmes that advance the economic wellbeing of nurses and their communities.',
+                'The Publicity and Public Relations Committee oversees SLNA publicity, publications, and communications, and promotes public awareness of the nursing profession and the Association’s work.',
+            members: [
+                { designation: 'Nursing Sister (Public Health)', name: 'Ms. Manohari' },
+                { designation: 'Nursing Sister', name: 'Ms. K. A. D. P. Vidyarathna' },
+                { designation: 'Nursing Officer', name: 'Ms. D. M. A. S. Dissanayaka' },
+                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. G. B. Rohini' },
+                { designation: 'Nursing Officer', name: 'Mr. K. H. D. Madushanka' }
+            ]
+        },
+
+        nominations: {
+            number: '05',
+            name: 'Nominations Committee',
+            description:
+                'The Nominations Committee conducts and oversees the Association’s elections, including nominations, balloting, and the proper administration of election procedures in accordance with the SLNA constitution.',
+            members: [
+                { designation: 'Sp. Gr. Nursing Officer', name: 'Ms. Chamari Perera' },
+                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. K. M. D. G. Krishanthi' },
+                { designation: 'Sp. Gr. Nursing Officer', name: 'Ms. T. A. D. R. G. Thalagala' },
+                { designation: 'Nursing Sister (Public Health)', name: 'Ms. A. N. Palliyaguru' },
+                { designation: 'Sp. Gr. Nursing Tutor', name: 'Ms. R. M. P. S. K. Rupasinghe' }
+            ]
+        },
+
+        'social-economic-welfare': {
+            number: '06',
+            name: 'Social and Economic Welfare Committee',
+            description:
+                'The Social and Economic Welfare Committee supports member welfare, social welfare initiatives, and programmes that advance the economic wellbeing of nurses and their communities.',
             members: [
                 { designation: 'Nursing Officer', name: 'Ms. B. G. S. C. K. Ariyadas' },
                 { designation: 'Nursing Sister (Public Health)', name: 'Ms. Lahiru Subha Rodrigo' },
                 { designation: 'Nursing Officer', name: 'Mr. S. M. D. D. Senanayake' },
                 { designation: 'Nursing Officer', name: 'Ms. P. R. Chamudi Lalindika' },
                 { designation: 'Nursing Officer', name: 'Mrs. K. A. A. Udayangani' }
+            ]
+        },
+
+        finance: {
+            number: '07',
+            name: 'Finance Committee',
+            description:
+                'The Finance Committee supports responsible financial planning, budget oversight, income and expenditure review, and the sustainable use of Association resources.',
+            members: [
+                { designation: 'Nursing Officer', name: 'Ms. A. M. C. Niroshika' },
+                { designation: 'Nursing Officer', name: 'Ms. P. A. D. Nimali' },
+                { designation: 'Nursing Sister (Public Health)', name: 'Ms. Lahiru Subhashini' },
+                { designation: 'Nursing Officer', name: 'Mr. C. Madhushan Abeywickrama' },
+                { designation: 'Nursing Officer', name: 'Ms. H. P. N. Hansika Jayasinghe' }
             ]
         }
     };
