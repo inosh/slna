@@ -516,7 +516,9 @@ label.file-input-trigger { display:inline-block; margin-bottom:0; }
   .news-detail-layout { grid-template-columns:1fr; } .news-sidebar { position:static; }
   .grid-3, .grid-4, .grid-2, .pillar-grid, .album-grid, .photo-grid { grid-template-columns:repeat(2,1fr); }
   .footer-grid { grid-template-columns:repeat(2,1fr); }
-  .main-tab-buttons { flex-direction:column; }
+  .main-tab-buttons { display:grid; grid-template-columns:1fr 1fr; }
+  .main-tab-btn { flex:0 0 auto; }
+  .main-tab-btn:last-child:nth-child(odd) { grid-column:1 / -1; }
   .carousel { height:420px; }
   .carousel-slide .carousel-text-col, .carousel-slide.reverse .carousel-text-col { padding:0 32px; }
   .carousel-text h2 { font-size:26px; }
