@@ -747,6 +747,7 @@ document.addEventListener('DOMContentLoaded', function () {
         </a>
       </div>
     `;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function loadEvent() {
