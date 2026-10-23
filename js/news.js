@@ -36,6 +36,18 @@ function stripHtml(html) {
   div.innerHTML = String(html || '');
   return (div.textContent || '').replace(/\s+/g, ' ').trim();
 }
+// News/album body is admin-authored rich HTML (from the Quill editor) that
+// we DO want to render as HTML, not escape -- so it needs sanitizing
+// instead, to strip any <script>/event-handler/etc. a compromised or
+// careless admin account could have saved. Falls back to escaped plain
+// text (rather than ever injecting the raw HTML) if DOMPurify fails to load.
+function sanitizeHtml(html) {
+  if (typeof DOMPurify !== 'undefined') {
+    return DOMPurify.sanitize(String(html || ''));
+  }
+  console.error('DOMPurify failed to load; rendering rich text as plain text.');
+  return escapeHtml(stripHtml(html));
+}
 async function renderPublicNewsList() {
   const container = document.getElementById('news-list-container');
 
@@ -129,9 +141,10 @@ async function renderHomeNewsPreview() {
     const items = (await apiGet('/news')).slice(0, 3);
     if (items.length === 0) { container.innerHTML = '<div class="news-empty">No news items published yet.</div>'; return; }
     container.innerHTML = '<div class="grid grid-3">' + items.map(item => {
-      const imgHtml = item.photo_url ? '<img src="' + fullUrl(item.photo_url) + '" alt="">' : item.title.charAt(0);
+      const title = escapeHtml(item.title || 'News Update');
+      const imgHtml = item.photo_url ? '<img src="' + fullUrl(item.photo_url) + '" alt="">' : title.charAt(0);
       const preview = escapeHtml(item.summary || stripHtml(item.body).substring(0, 120));
-      return '<a href="pages/news-detail.html?id=' + item.id + '" class="card"><div class="card-img">' + imgHtml + '</div><div class="card-body"><div class="date">' + formatDateLong(item.event_date) + '</div><h3>' + item.title + '</h3><p>' + preview + '</p></div></a>';
+      return '<a href="pages/news-detail.html?id=' + item.id + '" class="card"><div class="card-img">' + imgHtml + '</div><div class="card-body"><div class="date">' + formatDateLong(item.event_date) + '</div><h3>' + title + '</h3><p>' + preview + '</p></div></a>';
     }).join('') + '</div>';
   } catch (err) { container.innerHTML = '<div class="news-empty">Could not load news. Is the backend server running?</div>'; console.error(err); }
 }
@@ -188,15 +201,16 @@ async function renderNewsDetail() {
   const params = new URLSearchParams(window.location.search);
   try {
     const item = await apiGet('/news/' + params.get('id'));
-    document.title = item.title + ' | SLNA';
+    const title = escapeHtml(item.title || 'News Update');
+    document.title = (item.title || 'News Update') + ' | SLNA';
     const photoHtml = item.photo_url ? '<div class="detail-photo"><img src="' + fullUrl(item.photo_url) + '" alt=""></div>' : '';
-    const attachmentHtml = item.file_name ? '<div class="detail-attachment">Attachment: ' + item.file_name + '</div>' : '';
+    const attachmentHtml = item.file_name ? '<div class="detail-attachment">Attachment: ' + escapeHtml(item.file_name) + '</div>' : '';
     const galleryHtml = renderNewsGallery(item.photos);
     const bcEl = document.getElementById('news-detail-breadcrumb');
     if (bcEl) bcEl.textContent = item.title;
     const badge = formatDateBadge(item.event_date);
     const badgeHtml = '<div class="news-date-badge"><span class="day">' + badge.day + '</span><span class="month">' + badge.month + '</span></div>';
-    container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + item.title + '</h1></div>' + photoHtml + '<div class="detail-body ql-editor">' + item.body + '</div>' + galleryHtml + attachmentHtml;
+    container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + title + '</h1></div>' + photoHtml + '<div class="detail-body ql-editor">' + sanitizeHtml(item.body) + '</div>' + galleryHtml + attachmentHtml;
   } catch (err) { container.innerHTML = '<div class="news-empty">News item not found.</div>'; console.error(err); }
 }
 async function renderNewsSidebar() {
@@ -236,7 +250,7 @@ async function renderAlbumGrid() {
         : album.cover_media_type === 'video'
           ? '<video src="' + fullUrl(album.cover_photo) + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
           : '<img src="' + fullUrl(album.cover_photo) + '" alt="">';
-      return '<a href="album.html?id=' + album.id + '" class="album-tile"><div class="album-cover">' + cover + '<span class="album-count-badge">' + album.photo_count + ' item(s)</span></div><div class="album-info"><h3>' + album.title + '</h3><div class="album-date">' + formatDateLong(album.event_date) + '</div></div></a>';
+      return '<a href="album.html?id=' + album.id + '" class="album-tile"><div class="album-cover">' + cover + '<span class="album-count-badge">' + album.photo_count + ' item(s)</span></div><div class="album-info"><h3>' + escapeHtml(album.title) + '</h3><div class="album-date">' + formatDateLong(album.event_date) + '</div></div></a>';
     }).join('');
   } catch (err) { container.innerHTML = '<div class="news-empty">Could not load albums. Is the backend server running?</div>'; console.error(err); }
 }
