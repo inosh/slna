@@ -769,7 +769,7 @@ label.file-input-trigger { display:inline-block; margin-bottom:0; }
 }
 
 .join-application-form textarea {
-  min-height: 96px;
+  min-height: 60px;
   resize: vertical;
 }
 
