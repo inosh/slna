@@ -350,6 +350,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initMembershipFees();
   initExecCommitteeAdmin();
   initSubCommitteesAdmin();
+  initMemberDirectoryAdmin();
 
   function populateTimeSelectGroup(group) {
     if (!group) {
@@ -5407,6 +5408,487 @@ function initMembershipFees() {
   });
 
   loadMembershipFees();
+}
+
+// --- Member Directory (Member Directory tab) ---
+// Everyone who is currently a lifetime member, from two sources:
+//   - legacy_lifetime_members (the pre-digital roll -- "Legacy Members")
+//   - membership_applications with application_status = 'approved'
+//     ("Newly Accepted")
+// Both are read/search/edit (personal details only, never the membership
+// number -- that's assigned through the approval flow's collision check,
+// or was fixed at import time for legacy members). "All Members" is a
+// read-only combined view (legacy first, then new -- matching the Excel
+// export order) with no file uploads anywhere, since none of this is the
+// original application paperwork.
+
+async function memberDirectoryParseApiError(res) {
+  try {
+    const data = await res.json();
+    if (data && data.error) return data.error;
+    if (data && data.message) return data.message;
+  } catch (e) {
+    // response wasn't JSON -- fall through to generic message
+  }
+  return 'Something went wrong (status ' + res.status + '). Please try again.';
+}
+
+const MEMBER_EDIT_FIELD_MAP = [
+  ['fullName', 'member-edit-full-name'],
+  ['nameWithInitials', 'member-edit-name-with-initials'],
+  ['title', 'member-edit-title'],
+  ['nicNumber', 'member-edit-nic'],
+  ['dateOfBirth', 'member-edit-dob'],
+  ['sex', 'member-edit-sex'],
+  ['maritalStatus', 'member-edit-marital-status'],
+  ['permanentAddress', 'member-edit-permanent-address'],
+  ['currentWorkingPlace', 'member-edit-working-place'],
+  ['officialAddress', 'member-edit-official-address'],
+  ['mobileNumber', 'member-edit-mobile'],
+  ['whatsappNumber', 'member-edit-whatsapp'],
+  ['residentialNumber', 'member-edit-residential'],
+  ['officeNumber', 'member-edit-office-number'],
+  ['emailAddress', 'member-edit-email'],
+  ['slncRegistrationNumber', 'member-edit-slnc-number'],
+  ['slncRegistrationDate', 'member-edit-slnc-date'],
+  ['designation', 'member-edit-designation'],
+  ['firstAppointmentDate', 'member-edit-first-appointment-date'],
+  ['firstAppointmentPlace', 'member-edit-first-appointment-place'],
+  ['nursingSchool', 'member-edit-nursing-school'],
+  ['batch', 'member-edit-batch'],
+  ['higherEducationalQualification', 'member-edit-higher-qualification']
+];
+
+function initMemberDirectoryAdmin() {
+  const newTbody = document.getElementById('new-members-table-body');
+  const legacyTbody = document.getElementById('legacy-members-table-body');
+  const allTbody = document.getElementById('all-members-table-body');
+  if (!newTbody || !legacyTbody || !allTbody) return;
+
+  const newSearchInput = document.getElementById('new-members-search');
+  const legacySearchInput = document.getElementById('legacy-members-search');
+  const allSearchInput = document.getElementById('all-members-search');
+  const refreshButton = document.getElementById('refresh-member-directory');
+  const downloadButton = document.getElementById('download-member-directory');
+  const addLegacyMemberButton = document.getElementById('add-legacy-member');
+
+  const modal = document.getElementById('member-edit-modal');
+  const form = document.getElementById('member-edit-form');
+  const closeButton = document.getElementById('member-edit-close');
+  const cancelButton = document.getElementById('member-edit-cancel');
+  const backdrop = modal ? modal.querySelector('.admin-confirm-backdrop') : null;
+  const membershipNumberDisplay = document.getElementById('member-edit-membership-number');
+
+  let legacyMembers = [];
+  let newMembers = [];
+  let activeEdit = null; // { source: 'legacy'|'new'|'legacy-create', id, referenceNumber, fullName }
+
+  async function loadMemberDirectory() {
+    newTbody.innerHTML = '<tr><td colspan="6" class="empty-table-state">Loading&hellip;</td></tr>';
+    legacyTbody.innerHTML = '<tr><td colspan="6" class="empty-table-state">Loading&hellip;</td></tr>';
+    allTbody.innerHTML = '<tr><td colspan="6" class="empty-table-state">Loading&hellip;</td></tr>';
+
+    try {
+      const [legacyRes, applicationsRes] = await Promise.all([
+        fetch(SLNA_CONFIG.API_BASE_URL + '/legacy-members', {
+          headers: { Authorization: 'Bearer ' + getToken() }
+        }),
+        fetch(SLNA_CONFIG.API_BASE_URL + '/membership/admin/applications', {
+          headers: { Authorization: 'Bearer ' + getToken() }
+        })
+      ]);
+
+      if (!legacyRes.ok) throw new Error(await memberDirectoryParseApiError(legacyRes));
+      if (!applicationsRes.ok) throw new Error(await memberDirectoryParseApiError(applicationsRes));
+
+      const legacyData = await legacyRes.json();
+      const applicationsData = await applicationsRes.json();
+
+      legacyMembers = legacyData.members || [];
+      newMembers = (applicationsData.applications || []).filter(
+          function (app) { return app.applicationStatus === 'approved'; }
+      );
+
+      renderNewMembers();
+      renderLegacyMembers();
+      renderAllMembers();
+      updateTotalMemberCount();
+    } catch (error) {
+      const message = '<tr><td colspan="6" class="empty-table-state">Could not load members. Is the backend server running?</td></tr>';
+      newTbody.innerHTML = message;
+      legacyTbody.innerHTML = message;
+      allTbody.innerHTML = message;
+      console.error(error);
+    }
+  }
+
+  // Total count only -- no breakdown by source, per request.
+  function updateTotalMemberCount() {
+    const total = legacyMembers.length + newMembers.length;
+
+    const tabBadge = document.getElementById('member-directory-total-count');
+    if (tabBadge) tabBadge.textContent = String(total);
+
+    const panelCount = document.getElementById('member-directory-panel-total-count');
+    if (panelCount) panelCount.textContent = '(' + total + ' total)';
+  }
+
+  function matchesSearch(record, searchTerm) {
+    if (!searchTerm) return true;
+    const searchable = [record.fullName, record.membershipNumber, record.nicNumber]
+        .join(' ')
+        .toLowerCase();
+    return searchable.indexOf(searchTerm) !== -1;
+  }
+
+  function editableRow(member, source) {
+    const key = source === 'legacy' ? member.id : member.referenceNumber;
+    return '<tr>' +
+        '<td>' + escapeHtml(member.membershipNumber || '') + '</td>' +
+        '<td>' + escapeHtml(member.fullName) + '</td>' +
+        '<td>' + escapeHtml(member.currentWorkingPlace || '') + '</td>' +
+        '<td>' + escapeHtml(member.nicNumber || '') + '</td>' +
+        '<td>' + escapeHtml(member.mobileNumber || '') + '</td>' +
+        '<td><button type="button" class="btn btn-outline btn-sm" data-edit-source="' + source +
+        '" data-edit-key="' + escapeHtml(String(key)) + '">Edit</button></td>' +
+        '</tr>';
+  }
+
+  function renderNewMembers() {
+    const searchTerm = (newSearchInput && newSearchInput.value || '').toLowerCase().trim();
+    const filtered = newMembers.filter(function (m) { return matchesSearch(m, searchTerm); });
+
+    newTbody.innerHTML = filtered.length
+        ? filtered.map(function (m) { return editableRow(m, 'new'); }).join('')
+        : '<tr><td colspan="6" class="empty-table-state">No newly accepted members to display.</td></tr>';
+  }
+
+  function renderLegacyMembers() {
+    const searchTerm = (legacySearchInput && legacySearchInput.value || '').toLowerCase().trim();
+    const filtered = legacyMembers.filter(function (m) { return matchesSearch(m, searchTerm); });
+
+    legacyTbody.innerHTML = filtered.length
+        ? filtered.map(function (m) { return editableRow(m, 'legacy'); }).join('')
+        : '<tr><td colspan="6" class="empty-table-state">No legacy members to display.</td></tr>';
+  }
+
+  function renderAllMembers() {
+    const searchTerm = (allSearchInput && allSearchInput.value || '').toLowerCase().trim();
+
+    // Legacy members first, then newly accepted -- same order as the
+    // Excel export.
+    const combined = legacyMembers.map(function (m) { return { member: m, source: 'Legacy' }; })
+        .concat(newMembers.map(function (m) { return { member: m, source: 'New' }; }))
+        .filter(function (entry) { return matchesSearch(entry.member, searchTerm); });
+
+    allTbody.innerHTML = combined.length
+        ? combined.map(function (entry) {
+          const m = entry.member;
+          return '<tr>' +
+              '<td>' + escapeHtml(m.membershipNumber || '') + '</td>' +
+              '<td>' + escapeHtml(entry.source) + '</td>' +
+              '<td>' + escapeHtml(m.fullName) + '</td>' +
+              '<td>' + escapeHtml(m.currentWorkingPlace || '') + '</td>' +
+              '<td>' + escapeHtml(m.nicNumber || '') + '</td>' +
+              '<td>' + escapeHtml(m.mobileNumber || '') + '</td>' +
+              '</tr>';
+        }).join('')
+        : '<tr><td colspan="6" class="empty-table-state">No members to display.</td></tr>';
+  }
+
+  // Membership Number, Full Name, and Name with Initials behave
+  // differently depending on whether the shared modal is adding a brand
+  // new legacy member or editing an existing legacy/new member: only the
+  // "create" case lets membershipNumber be typed in, and only it requires
+  // nameWithInitials while making fullName optional (it falls back to
+  // nameWithInitials server-side if left blank).
+  // Matches the show/clear inline-error pattern already used for
+  // #membership-number above (an .input-error class on the field plus a
+  // sibling .membership-field-error paragraph toggled with .is-visible)
+  // rather than relying on the browser's native required-field bubble.
+  function showFieldError(inputId, errorId, message) {
+    const input = document.getElementById(inputId);
+    const errorEl = document.getElementById(errorId);
+
+    if (input) {
+      input.classList.add('input-error');
+      input.setAttribute('aria-invalid', 'true');
+    }
+
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.classList.add('is-visible');
+    }
+  }
+
+  function clearFieldError(inputId, errorId) {
+    const input = document.getElementById(inputId);
+    const errorEl = document.getElementById(errorId);
+
+    if (input) {
+      input.classList.remove('input-error');
+      input.removeAttribute('aria-invalid');
+    }
+
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.classList.remove('is-visible');
+    }
+  }
+
+  function setEditModalMode(mode) {
+    const isCreate = mode === 'create';
+
+    document.getElementById('member-edit-modal-title').textContent =
+        isCreate ? 'Add Legacy Member' : 'Update Member Details';
+
+    const createInfo = document.getElementById('member-edit-create-info');
+    if (createInfo) createInfo.style.display = isCreate ? '' : 'none';
+
+    if (membershipNumberDisplay) {
+      membershipNumberDisplay.disabled = !isCreate;
+      membershipNumberDisplay.required = isCreate;
+    }
+
+    const nameWithInitialsInput = document.getElementById('member-edit-name-with-initials');
+    if (nameWithInitialsInput) nameWithInitialsInput.required = isCreate;
+
+    const fullNameInput = document.getElementById('member-edit-full-name');
+    if (fullNameInput) fullNameInput.required = !isCreate;
+
+    const fullNameHelp = document.getElementById('member-edit-full-name-help');
+    if (fullNameHelp) fullNameHelp.style.display = isCreate ? '' : 'none';
+
+    const membershipNumberHelp = document.getElementById('member-edit-membership-number-help');
+    if (membershipNumberHelp) membershipNumberHelp.style.display = isCreate ? 'none' : '';
+
+    const nameWithInitialsAsterisk = document.getElementById('member-edit-name-with-initials-asterisk');
+    if (nameWithInitialsAsterisk) nameWithInitialsAsterisk.style.display = isCreate ? '' : 'none';
+
+    const membershipNumberAsterisk = document.getElementById('member-edit-membership-number-asterisk');
+    if (membershipNumberAsterisk) membershipNumberAsterisk.style.display = isCreate ? '' : 'none';
+
+    clearFieldError('member-edit-membership-number', 'member-edit-membership-number-error');
+    clearFieldError('member-edit-name-with-initials', 'member-edit-name-with-initials-error');
+  }
+
+  function openMemberEditModal(source, member) {
+    if (!modal) return;
+
+    activeEdit = { source: source, id: member.id, referenceNumber: member.referenceNumber, fullName: member.fullName };
+    setEditModalMode('edit');
+
+    if (membershipNumberDisplay) membershipNumberDisplay.value = member.membershipNumber || '';
+
+    MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
+      const input = document.getElementById(pair[1]);
+      if (input) input.value = member[pair[0]] || '';
+    });
+
+    document.getElementById('member-edit-alert').innerHTML = '';
+    modal.hidden = false;
+
+    // The dialog itself scrolls (it's taller than the viewport with all
+    // these fields) -- without this, a previous edit's scroll position
+    // carries over into the next one, landing mid-form instead of at the
+    // top.
+    const dialog = modal.querySelector('.admin-edit-dialog');
+    if (dialog) dialog.scrollTop = 0;
+  }
+
+  function openAddLegacyMemberModal() {
+    if (!modal) return;
+
+    activeEdit = { source: 'legacy-create' };
+    setEditModalMode('create');
+
+    if (membershipNumberDisplay) membershipNumberDisplay.value = '';
+
+    MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
+      const input = document.getElementById(pair[1]);
+      if (input) input.value = '';
+    });
+
+    document.getElementById('member-edit-alert').innerHTML = '';
+    modal.hidden = false;
+
+    const dialog = modal.querySelector('.admin-edit-dialog');
+    if (dialog) dialog.scrollTop = 0;
+  }
+
+  function closeMemberEditModal() {
+    if (!modal) return;
+    modal.hidden = true;
+    activeEdit = null;
+  }
+
+  // Reads newMembers/legacyMembers live (by closure) rather than a
+  // snapshot, so these keep working correctly after loadMemberDirectory()
+  // reassigns those arrays on refresh/save.
+  function handleNewMemberEditClick(event) {
+    const button = event.target.closest('[data-edit-source="new"]');
+    if (!button) return;
+
+    const key = button.getAttribute('data-edit-key');
+    const member = newMembers.find(function (m) { return String(m.referenceNumber) === key; });
+    if (member) openMemberEditModal('new', member);
+  }
+
+  function handleLegacyMemberEditClick(event) {
+    const button = event.target.closest('[data-edit-source="legacy"]');
+    if (!button) return;
+
+    const key = button.getAttribute('data-edit-key');
+    const member = legacyMembers.find(function (m) { return String(m.id) === key; });
+    if (member) openMemberEditModal('legacy', member);
+  }
+
+  newTbody.addEventListener('click', handleNewMemberEditClick);
+  legacyTbody.addEventListener('click', handleLegacyMemberEditClick);
+
+  if (newSearchInput) newSearchInput.addEventListener('input', renderNewMembers);
+  if (legacySearchInput) legacySearchInput.addEventListener('input', renderLegacyMembers);
+  if (allSearchInput) allSearchInput.addEventListener('input', renderAllMembers);
+  if (refreshButton) refreshButton.addEventListener('click', loadMemberDirectory);
+  if (addLegacyMemberButton) addLegacyMemberButton.addEventListener('click', openAddLegacyMemberModal);
+
+  if (membershipNumberDisplay) {
+    membershipNumberDisplay.addEventListener('input', function () {
+      clearFieldError('member-edit-membership-number', 'member-edit-membership-number-error');
+    });
+  }
+
+  const nameWithInitialsField = document.getElementById('member-edit-name-with-initials');
+  if (nameWithInitialsField) {
+    nameWithInitialsField.addEventListener('input', function () {
+      clearFieldError('member-edit-name-with-initials', 'member-edit-name-with-initials-error');
+    });
+  }
+
+  if (closeButton) closeButton.addEventListener('click', closeMemberEditModal);
+  if (cancelButton) cancelButton.addEventListener('click', closeMemberEditModal);
+  if (backdrop) backdrop.addEventListener('click', closeMemberEditModal);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && modal && !modal.hidden) closeMemberEditModal();
+  });
+
+  if (downloadButton) {
+    downloadButton.addEventListener('click', async function () {
+      downloadButton.disabled = true;
+
+      try {
+        const response = await fetch(SLNA_CONFIG.API_BASE_URL + '/member-directory/export', {
+          headers: { Authorization: 'Bearer ' + getToken() }
+        });
+
+        if (!response.ok) throw new Error(await memberDirectoryParseApiError(response));
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'slna-member-directory.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 60000);
+      } catch (error) {
+        showAlert('member-directory-alert', error.message || 'Could not generate the export.', 'error');
+      } finally {
+        downloadButton.disabled = false;
+      }
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      if (!activeEdit) return;
+
+      const isCreate = activeEdit.source === 'legacy-create';
+
+      const body = {};
+      MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
+        const input = document.getElementById(pair[1]);
+        if (input) body[pair[0]] = input.value.trim();
+      });
+
+      if (isCreate && membershipNumberDisplay) {
+        body.membershipNumber = membershipNumberDisplay.value.trim();
+      }
+
+      if (isCreate) {
+        clearFieldError('member-edit-membership-number', 'member-edit-membership-number-error');
+        clearFieldError('member-edit-name-with-initials', 'member-edit-name-with-initials-error');
+
+        let hasError = false;
+
+        if (!body.membershipNumber) {
+          showFieldError('member-edit-membership-number', 'member-edit-membership-number-error', 'Membership Number is required.');
+          hasError = true;
+        }
+
+        if (!body.nameWithInitials) {
+          showFieldError('member-edit-name-with-initials', 'member-edit-name-with-initials-error', 'Name with Initials is required.');
+          hasError = true;
+        }
+
+        if (hasError) return;
+      }
+
+      const endpoint = isCreate
+          ? '/legacy-members'
+          : activeEdit.source === 'legacy'
+              ? '/legacy-members/' + encodeURIComponent(activeEdit.id)
+              : '/membership/admin/applications/' + encodeURIComponent(activeEdit.referenceNumber) + '/details';
+
+      const confirmed = await showSimpleConfirm({
+        title: isCreate ? 'Add Legacy Member' : 'Update Member Details',
+        message: isCreate
+            ? 'Add ' + (body.nameWithInitials || 'this member') + ' as a legacy member?'
+            : 'Save these changes to ' + (activeEdit.fullName || 'this member') + '\'s details?',
+        confirmText: isCreate ? 'Add Member' : 'Save Changes',
+        danger: false
+      });
+
+      if (!confirmed) return;
+
+      const submitButton = form.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+      }
+
+      try {
+        const response = await fetch(SLNA_CONFIG.API_BASE_URL + endpoint, {
+          method: isCreate ? 'POST' : 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + getToken()
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) throw new Error(await memberDirectoryParseApiError(response));
+
+        closeMemberEditModal();
+        showAlert('member-directory-alert', isCreate ? 'Legacy member added.' : 'Member details updated.', 'success');
+        await loadMemberDirectory();
+      } catch (error) {
+        showAlert('member-edit-alert', error.message || 'Could not save changes.', 'error');
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save Changes';
+        }
+      }
+    });
+  }
+
+  loadMemberDirectory();
 }
 
 // --- Executive Committee (Committees tab) ---

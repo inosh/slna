@@ -49,11 +49,13 @@
 
       <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
 
-      <button class="main-tab-btn" data-maintab="maintab-queries" role="tab" aria-selected="false">User Queries <span class="application-count-badge" id="queries-new-count">0</span></button>
+      <button class="main-tab-btn" data-maintab="maintab-member-directory" role="tab" aria-selected="false">Member Directory <span class="application-count-badge" id="member-directory-total-count">0</span></button>
 
       <button class="main-tab-btn" data-maintab="maintab-fees" role="tab" aria-selected="false">Membership Fees</button>
 
       <button class="main-tab-btn" data-maintab="maintab-committees" role="tab" aria-selected="false">Committees</button>
+
+      <button class="main-tab-btn" data-maintab="maintab-queries" role="tab" aria-selected="false">User Queries <span class="application-count-badge" id="queries-new-count">0</span></button>
     </div>
 
     <div class="main-tab-panel active" id="maintab-news" role="tabpanel">
@@ -1214,6 +1216,157 @@
       </div>
     </div>
 
+    <div class="main-tab-panel" id="maintab-member-directory" role="tabpanel">
+      <div class="admin-card">
+        <div class="membership-admin-heading">
+          <div>
+            <h2>Member Directory <span class="admin-muted" style="font-size:0.95rem; font-weight:600;" id="member-directory-panel-total-count"></span></h2>
+            <p class="admin-muted">
+              Everyone who is currently a lifetime member: the pre-digital roll and
+              newly accepted digital applications.
+            </p>
+          </div>
+
+          <button
+                  class="btn btn-outline btn-sm"
+                  id="refresh-member-directory"
+                  type="button"
+          >
+            Refresh List
+          </button>
+        </div>
+
+        <div
+                id="member-directory-alert"
+                aria-live="polite"
+                tabindex="-1"
+        ></div>
+
+        <div
+                class="tab-buttons"
+                role="tablist"
+                aria-label="Member directory view"
+        >
+          <button class="tab-btn active" data-tab="directory-new-members" type="button">Newly Accepted</button>
+          <button class="tab-btn" data-tab="directory-legacy-members" type="button">Legacy Members</button>
+          <button class="tab-btn" data-tab="directory-all-members" type="button">All Members</button>
+        </div>
+
+        <div class="tab-panel active" id="directory-new-members">
+          <div class="form-group" style="max-width:360px;">
+            <input
+                    type="search"
+                    id="new-members-search"
+                    placeholder="Search by name, NIC, or membership number"
+            >
+          </div>
+
+          <div class="table-scroll">
+            <table class="news-table">
+              <thead>
+              <tr>
+                <th>Membership #</th>
+                <th>Name</th>
+                <th>Working Place</th>
+                <th>NIC</th>
+                <th>Mobile</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+
+              <tbody id="new-members-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="directory-legacy-members">
+          <div class="membership-admin-heading" style="flex-wrap:wrap;">
+            <div class="form-group" style="flex:1 1 240px; max-width:360px; min-width:0; margin-bottom:0;">
+              <input
+                      type="search"
+                      id="legacy-members-search"
+                      placeholder="Search by name or membership number"
+              >
+            </div>
+
+            <button
+                    class="btn btn-primary btn-sm"
+                    id="add-legacy-member"
+                    type="button"
+                    style="flex-shrink:0;"
+            >
+              Add Legacy Member
+            </button>
+          </div>
+
+          <p class="admin-muted">
+            For members from the pre-digital roll who aren't in the imported spreadsheet.
+            Only Membership Number and Name with Initials are required here.
+          </p>
+
+          <div class="table-scroll">
+            <table class="news-table">
+              <thead>
+              <tr>
+                <th>Membership #</th>
+                <th>Name</th>
+                <th>Working Place</th>
+                <th>NIC</th>
+                <th>Mobile</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+
+              <tbody id="legacy-members-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="directory-all-members">
+          <div class="membership-admin-heading" style="flex-wrap:wrap;">
+            <div class="form-group" style="flex:1 1 240px; max-width:360px; min-width:0; margin-bottom:0;">
+              <input
+                      type="search"
+                      id="all-members-search"
+                      placeholder="Search by name or membership number"
+              >
+            </div>
+
+            <button
+                    class="btn btn-outline btn-sm"
+                    id="download-member-directory"
+                    type="button"
+                    style="flex-shrink:0;"
+            >
+              Download Excel
+            </button>
+          </div>
+
+          <p class="admin-muted">
+            Read-only. Legacy members are listed first, then newly accepted members.
+            To edit a member's details, use the Newly Accepted or Legacy Members tab.
+          </p>
+
+          <div class="table-scroll">
+            <table class="news-table">
+              <thead>
+              <tr>
+                <th>Membership #</th>
+                <th>Source</th>
+                <th>Name</th>
+                <th>Working Place</th>
+                <th>NIC</th>
+                <th>Mobile</th>
+              </tr>
+              </thead>
+
+              <tbody id="all-members-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="main-tab-panel" id="maintab-queries" role="tabpanel">
       <div class="admin-card">
         <div class="membership-admin-heading">
@@ -1860,6 +2013,197 @@
           </div>
         </form>
       </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="member-edit-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="member-edit-modal-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog admin-edit-dialog">
+      <div class="admin-edit-header">
+        <h2 id="member-edit-modal-title">Update Member Details</h2>
+
+        <button
+                type="button"
+                class="admin-edit-close"
+                id="member-edit-close"
+                aria-label="Close"
+        >
+          &times;
+        </button>
+      </div>
+
+      <div id="member-edit-alert" aria-live="polite" tabindex="-1"></div>
+
+      <div class="info-box" id="member-edit-create-info" style="display:none;">
+        <p>
+          A legacy member can be added with just a Membership Number and Name with
+          Initials if the rest of their details aren't available yet &mdash; those
+          can be filled in later.
+        </p>
+      </div>
+
+      <form id="member-edit-form" novalidate>
+        <div class="application-grid">
+          <div class="form-group">
+            <label for="member-edit-name-with-initials">
+              Name with Initials
+              <span id="member-edit-name-with-initials-asterisk" aria-hidden="true" style="display:none;">*</span>
+            </label>
+            <input type="text" id="member-edit-name-with-initials" aria-describedby="member-edit-name-with-initials-error">
+            <p class="membership-field-error" id="member-edit-name-with-initials-error" aria-live="polite"></p>
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-membership-number">
+              Membership Number
+              <span id="member-edit-membership-number-asterisk" aria-hidden="true" style="display:none;">*</span>
+            </label>
+            <input type="text" id="member-edit-membership-number" disabled aria-describedby="member-edit-membership-number-error">
+            <p class="form-help" id="member-edit-membership-number-help">Not editable here.</p>
+            <p class="membership-field-error" id="member-edit-membership-number-error" aria-live="polite"></p>
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-full-name">Full Name</label>
+            <input type="text" id="member-edit-full-name" required>
+            <p class="form-help" id="member-edit-full-name-help" style="display:none;">If left blank, this will be set to Name with Initials.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-title">Title</label>
+            <select id="member-edit-title">
+              <option value="">Not provided</option>
+              <option value="Prof.">Prof.</option>
+              <option value="Dr.">Dr.</option>
+              <option value="Mr.">Mr.</option>
+              <option value="Miss.">Miss.</option>
+              <option value="Mrs.">Mrs.</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-nic">National ID Number</label>
+            <input type="text" id="member-edit-nic">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-dob">Date of Birth</label>
+            <input type="date" id="member-edit-dob">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-sex">Sex</label>
+            <select id="member-edit-sex">
+              <option value="">Not provided</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-marital-status">Marital Status</label>
+            <select id="member-edit-marital-status">
+              <option value="">Not provided</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group application-grid-full">
+            <label for="member-edit-permanent-address">Permanent Address</label>
+            <textarea id="member-edit-permanent-address" rows="2"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-working-place">Current Working Place</label>
+            <input type="text" id="member-edit-working-place">
+          </div>
+
+          <div class="form-group application-grid-full">
+            <label for="member-edit-official-address">Official Address</label>
+            <textarea id="member-edit-official-address" rows="2"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-mobile">Mobile</label>
+            <input type="tel" id="member-edit-mobile">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-whatsapp">WhatsApp</label>
+            <input type="tel" id="member-edit-whatsapp">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-residential">Residential</label>
+            <input type="tel" id="member-edit-residential">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-office-number">Office</label>
+            <input type="tel" id="member-edit-office-number">
+          </div>
+
+          <div class="form-group application-grid-full">
+            <label for="member-edit-email">Email</label>
+            <input type="email" id="member-edit-email">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-slnc-number">SLNC Registration Number</label>
+            <input type="text" id="member-edit-slnc-number">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-slnc-date">SLNC Registration Date</label>
+            <input type="date" id="member-edit-slnc-date">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-designation">Designation</label>
+            <input type="text" id="member-edit-designation">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-first-appointment-date">First Appointment Date</label>
+            <input type="date" id="member-edit-first-appointment-date">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-first-appointment-place">First Appointment Place</label>
+            <input type="text" id="member-edit-first-appointment-place">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-nursing-school">Nursing School</label>
+            <input type="text" id="member-edit-nursing-school">
+          </div>
+
+          <div class="form-group">
+            <label for="member-edit-batch">Batch</label>
+            <input type="text" id="member-edit-batch">
+          </div>
+
+          <div class="form-group application-grid-full">
+            <label for="member-edit-higher-qualification">Higher Educational Qualification</label>
+            <textarea id="member-edit-higher-qualification" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="admin-edit-actions">
+          <button type="button" class="btn btn-outline" id="member-edit-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
     </div>
   </div>
 
