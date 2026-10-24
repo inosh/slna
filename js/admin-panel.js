@@ -300,8 +300,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // back to a tab later. Scoped to div[tabindex="-1"] alert boxes only --
   // not the inline per-field <p> error messages, which share the same
   // aria-live="polite" attribute but shouldn't be swept here.
-  function clearAllTabAlerts() {
-    document.querySelectorAll('div[aria-live="polite"][tabindex="-1"]').forEach(function (box) {
+  function clearAllTabAlerts(scope) {
+    (scope || document).querySelectorAll('div[aria-live="polite"][tabindex="-1"]').forEach(function (box) {
       // Two different alert patterns are in use across the admin panel:
       // some set box.className/textContent directly (e.g. the membership
       // applications alert), others inject an inner <div class="alert..">
@@ -338,6 +338,11 @@ document.addEventListener('DOMContentLoaded', function () {
       scope.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.tab).classList.add('active');
+      // A status message (e.g. "Member deactivated.") belongs to the
+      // sub-tab the admin just acted on -- clear it so it doesn't linger
+      // when they switch to a different one (Member Directory's Newly
+      // Accepted/Legacy Members/Deactivated Members/All Active Members).
+      clearAllTabAlerts(scope);
     });
   });
 
@@ -3041,6 +3046,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const APPLICATIONS_PAGE_SIZE = 50;
     const paginationBar = document.getElementById('membership-applications-pagination');
 
+    // Applications in these statuses never became a member -- safe to
+    // permanently erase. Approved applications (and the ID Application
+    // sub-view, which is just a filter over approved ones) are
+    // deliberately left out: those members are deactivated instead, from
+    // Member Directory, never deleted.
+    const DELETABLE_APPLICATION_STATUSES = ['pending', 'more_information_required', 'rejected'];
+
     function membershipUrl(path) {
       return SLNA_CONFIG.API_BASE_URL + path;
     }
@@ -3454,6 +3466,21 @@ document.addEventListener('DOMContentLoaded', function () {
             '">' +
             'Review' +
             '</button>' +
+            (
+                // Only applications that never became a member can be
+                // deleted here -- approved members are deactivated
+                // instead (Member Directory), never erased.
+                DELETABLE_APPLICATION_STATUSES.includes(application.applicationStatus)
+                    ? ' <button ' +
+                    'type="button" ' +
+                    'class="btn btn-danger btn-sm" ' +
+                    'data-delete-reference="' +
+                    escapeHtml(application.referenceNumber) +
+                    '">' +
+                    'Delete' +
+                    '</button>'
+                    : ''
+            ) +
             '</td>';
 
         tbody.appendChild(row);
@@ -3717,7 +3744,14 @@ document.addEventListener('DOMContentLoaded', function () {
             ? data
             : data.applications || [];
 
-        applications = source.map(normalizeApplication);
+        // Manually-added members (see Member Directory -> Newly Accepted
+        // -> Add New Member) are inserted already-approved, with no
+        // payment receipt or ID photo -- there's nothing for this review
+        // workflow to do with them, so they're left out of this tab
+        // entirely and only ever shown in Member Directory.
+        applications = source
+            .filter(function (app) { return !(app.isManualEntry || app.is_manual_entry); })
+            .map(normalizeApplication);
 
         currentPage = 1;
         updateCounts();
@@ -4130,11 +4164,82 @@ document.addEventListener('DOMContentLoaded', function () {
             selectedApplication = null;
             currentPage = 1;
 
+            // A status message (e.g. "Membership application deleted.")
+            // is about the tab the admin just acted on, not whichever one
+            // they switch to next -- leaving it up would misattribute it.
+            clearMembershipMessage();
+
             renderApplications();
           });
         });
 
+    async function handleDeleteApplication(referenceNumber) {
+      const application = applications.find(function (item) {
+        return item.referenceNumber === referenceNumber;
+      });
+
+      if (!application) return;
+
+      const confirmed = await showSimpleConfirm({
+        title: 'Delete Membership Application',
+        message:
+            'Permanently delete the application from ' +
+            (application.fullName || 'this applicant') +
+            ' (' + application.referenceNumber + ')? ' +
+            'This will erase the application record along with its uploaded ' +
+            'payment receipt and ID photo from storage. This cannot be undone.',
+        confirmText: 'Delete Application'
+      });
+
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch(
+            membershipUrl('/membership/admin/applications/' + encodeURIComponent(referenceNumber)),
+            {
+              method: 'DELETE',
+              headers: { Authorization: 'Bearer ' + getToken() }
+            }
+        );
+
+        if (!response.ok) {
+          throw await parseMembershipError(response);
+        }
+
+        if (selectedApplication && selectedApplication.referenceNumber === referenceNumber) {
+          reviewCard.hidden = true;
+          selectedApplication = null;
+        }
+
+        applications = applications.filter(function (item) {
+          return item.referenceNumber !== referenceNumber;
+        });
+
+        updateCounts();
+        renderApplications();
+
+        setMembershipMessage('success', 'Membership application deleted.');
+      } catch (error) {
+        setMembershipMessage(
+            'error',
+            error.message || 'Could not delete this application.',
+            { focus: true }
+        );
+      }
+    }
+
     tbody.addEventListener('click', function (event) {
+      const deleteButton = event.target.closest(
+          '[data-delete-reference]'
+      );
+
+      if (deleteButton) {
+        handleDeleteApplication(
+            deleteButton.getAttribute('data-delete-reference')
+        );
+        return;
+      }
+
       const reviewButton = event.target.closest(
           '[data-review-reference]'
       );
@@ -5411,16 +5516,19 @@ function initMembershipFees() {
 }
 
 // --- Member Directory (Member Directory tab) ---
-// Everyone who is currently a lifetime member, from two sources:
+// Everyone who is currently or was a lifetime member, from two sources:
 //   - legacy_lifetime_members (the pre-digital roll -- "Legacy Members")
 //   - membership_applications with application_status = 'approved'
 //     ("Newly Accepted")
-// Both are read/search/edit (personal details only, never the membership
-// number -- that's assigned through the approval flow's collision check,
-// or was fixed at import time for legacy members). "All Members" is a
-// read-only combined view (legacy first, then new -- matching the Excel
-// export order) with no file uploads anywhere, since none of this is the
-// original application paperwork.
+// Both sources now carry an is_active flag (see db/migrate-member-
+// deactivation.js). Newly Accepted/Legacy Members are read/search/edit
+// (personal details only, never the membership number) and show active
+// members only; deactivating moves a member out of those and into
+// Deactivated Members instead -- a soft flag, never a delete (see the
+// backend's PATCH .../deactivate routes). "Deactivated Members" and "All
+// Active Members" are both read-only combined views (legacy first, then
+// new -- matching the Excel export order), with a Review action instead
+// of Edit/Deactivate.
 
 async function memberDirectoryParseApiError(res) {
   try {
@@ -5462,15 +5570,18 @@ const MEMBER_EDIT_FIELD_MAP = [
 function initMemberDirectoryAdmin() {
   const newTbody = document.getElementById('new-members-table-body');
   const legacyTbody = document.getElementById('legacy-members-table-body');
+  const deactivatedTbody = document.getElementById('deactivated-members-table-body');
   const allTbody = document.getElementById('all-members-table-body');
-  if (!newTbody || !legacyTbody || !allTbody) return;
+  if (!newTbody || !legacyTbody || !deactivatedTbody || !allTbody) return;
 
   const newSearchInput = document.getElementById('new-members-search');
   const legacySearchInput = document.getElementById('legacy-members-search');
+  const deactivatedSearchInput = document.getElementById('deactivated-members-search');
   const allSearchInput = document.getElementById('all-members-search');
   const refreshButton = document.getElementById('refresh-member-directory');
   const downloadButton = document.getElementById('download-member-directory');
   const addLegacyMemberButton = document.getElementById('add-legacy-member');
+  const addNewMemberButton = document.getElementById('add-new-member');
 
   const modal = document.getElementById('member-edit-modal');
   const form = document.getElementById('member-edit-form');
@@ -5486,7 +5597,8 @@ function initMemberDirectoryAdmin() {
   async function loadMemberDirectory() {
     newTbody.innerHTML = '<tr><td colspan="6" class="empty-table-state">Loading&hellip;</td></tr>';
     legacyTbody.innerHTML = '<tr><td colspan="6" class="empty-table-state">Loading&hellip;</td></tr>';
-    allTbody.innerHTML = '<tr><td colspan="6" class="empty-table-state">Loading&hellip;</td></tr>';
+    deactivatedTbody.innerHTML = '<tr><td colspan="7" class="empty-table-state">Loading&hellip;</td></tr>';
+    allTbody.innerHTML = '<tr><td colspan="7" class="empty-table-state">Loading&hellip;</td></tr>';
 
     try {
       const [legacyRes, applicationsRes] = await Promise.all([
@@ -5511,26 +5623,42 @@ function initMemberDirectoryAdmin() {
 
       renderNewMembers();
       renderLegacyMembers();
+      renderDeactivatedMembers();
       renderAllMembers();
       updateTotalMemberCount();
     } catch (error) {
-      const message = '<tr><td colspan="6" class="empty-table-state">Could not load members. Is the backend server running?</td></tr>';
-      newTbody.innerHTML = message;
-      legacyTbody.innerHTML = message;
-      allTbody.innerHTML = message;
+      const errorRow = function (colspan) {
+        return '<tr><td colspan="' + colspan + '" class="empty-table-state">Could not load members. Is the backend server running?</td></tr>';
+      };
+      newTbody.innerHTML = errorRow(6);
+      legacyTbody.innerHTML = errorRow(6);
+      deactivatedTbody.innerHTML = errorRow(7);
+      allTbody.innerHTML = errorRow(7);
       console.error(error);
     }
   }
 
-  // Total count only -- no breakdown by source, per request.
+  function isActiveMember(member) {
+    return member.isActive !== false;
+  }
+
+  // The tab badge and the non-bracketed heading number are both the
+  // ACTIVE count -- that's the number that actually matters day to day.
+  // The bracketed "(X total)" keeps the grand total (active + deactivated)
+  // visible too, just secondary.
   function updateTotalMemberCount() {
-    const total = legacyMembers.length + newMembers.length;
+    const activeTotal = legacyMembers.filter(isActiveMember).length +
+        newMembers.filter(isActiveMember).length;
+    const grandTotal = legacyMembers.length + newMembers.length;
 
     const tabBadge = document.getElementById('member-directory-total-count');
-    if (tabBadge) tabBadge.textContent = String(total);
+    if (tabBadge) tabBadge.textContent = String(activeTotal);
+
+    const activeCountEl = document.getElementById('member-directory-panel-active-count');
+    if (activeCountEl) activeCountEl.textContent = activeTotal + ' Active';
 
     const panelCount = document.getElementById('member-directory-panel-total-count');
-    if (panelCount) panelCount.textContent = '(' + total + ' total)';
+    if (panelCount) panelCount.textContent = '(' + grandTotal + ' total)';
   }
 
   function matchesSearch(record, searchTerm) {
@@ -5541,22 +5669,51 @@ function initMemberDirectoryAdmin() {
     return searchable.indexOf(searchTerm) !== -1;
   }
 
+  function manualEntryBadge(member) {
+    return member.isManualEntry
+        ? ' <span class="badge-source badge-manual">Manually Added</span>'
+        : '';
+  }
+
   function editableRow(member, source) {
     const key = source === 'legacy' ? member.id : member.referenceNumber;
     return '<tr>' +
         '<td>' + escapeHtml(member.membershipNumber || '') + '</td>' +
-        '<td>' + escapeHtml(member.fullName) + '</td>' +
+        '<td>' + escapeHtml(member.fullName) + manualEntryBadge(member) + '</td>' +
         '<td>' + escapeHtml(member.currentWorkingPlace || '') + '</td>' +
         '<td>' + escapeHtml(member.nicNumber || '') + '</td>' +
         '<td>' + escapeHtml(member.mobileNumber || '') + '</td>' +
-        '<td><button type="button" class="btn btn-outline btn-sm" data-edit-source="' + source +
-        '" data-edit-key="' + escapeHtml(String(key)) + '">Edit</button></td>' +
+        '<td>' +
+        '<button type="button" class="btn btn-outline btn-sm" data-edit-source="' + source +
+        '" data-edit-key="' + escapeHtml(String(key)) + '">Edit</button> ' +
+        '<button type="button" class="btn btn-danger btn-sm" data-deactivate-source="' + source +
+        '" data-deactivate-key="' + escapeHtml(String(key)) + '">Deactivate</button>' +
+        '</td>' +
+        '</tr>';
+  }
+
+  // Shared row shape for the two combined (legacy + new) views --
+  // Deactivated Members and All Active Members -- both read-only, both
+  // with a Review action instead of Edit/Deactivate.
+  function combinedViewRow(member, sourceLabel, sourceKey) {
+    const key = sourceKey === 'legacy' ? member.id : member.referenceNumber;
+    return '<tr>' +
+        '<td>' + escapeHtml(member.membershipNumber || '') + '</td>' +
+        '<td>' + escapeHtml(sourceLabel) + '</td>' +
+        '<td>' + escapeHtml(member.fullName) + manualEntryBadge(member) + '</td>' +
+        '<td>' + escapeHtml(member.currentWorkingPlace || '') + '</td>' +
+        '<td>' + escapeHtml(member.nicNumber || '') + '</td>' +
+        '<td>' + escapeHtml(member.mobileNumber || '') + '</td>' +
+        '<td><button type="button" class="btn btn-outline btn-sm" data-view-source="' + sourceKey +
+        '" data-view-key="' + escapeHtml(String(key)) + '">Review</button></td>' +
         '</tr>';
   }
 
   function renderNewMembers() {
     const searchTerm = (newSearchInput && newSearchInput.value || '').toLowerCase().trim();
-    const filtered = newMembers.filter(function (m) { return matchesSearch(m, searchTerm); });
+    const filtered = newMembers
+        .filter(isActiveMember)
+        .filter(function (m) { return matchesSearch(m, searchTerm); });
 
     newTbody.innerHTML = filtered.length
         ? filtered.map(function (m) { return editableRow(m, 'new'); }).join('')
@@ -5565,35 +5722,50 @@ function initMemberDirectoryAdmin() {
 
   function renderLegacyMembers() {
     const searchTerm = (legacySearchInput && legacySearchInput.value || '').toLowerCase().trim();
-    const filtered = legacyMembers.filter(function (m) { return matchesSearch(m, searchTerm); });
+    const filtered = legacyMembers
+        .filter(isActiveMember)
+        .filter(function (m) { return matchesSearch(m, searchTerm); });
 
     legacyTbody.innerHTML = filtered.length
         ? filtered.map(function (m) { return editableRow(m, 'legacy'); }).join('')
         : '<tr><td colspan="6" class="empty-table-state">No legacy members to display.</td></tr>';
   }
 
+  // Legacy members first, then newly accepted -- same order as the Excel
+  // export -- used by both combined (read-only) views below.
+  function combinedEntries(predicate) {
+    return legacyMembers
+        .filter(predicate)
+        .map(function (m) { return { member: m, source: 'Legacy', sourceKey: 'legacy' }; })
+        .concat(
+            newMembers
+                .filter(predicate)
+                .map(function (m) { return { member: m, source: 'New', sourceKey: 'new' }; })
+        );
+  }
+
+  function renderDeactivatedMembers() {
+    const searchTerm = (deactivatedSearchInput && deactivatedSearchInput.value || '').toLowerCase().trim();
+    const combined = combinedEntries(function (m) { return !isActiveMember(m); })
+        .filter(function (entry) { return matchesSearch(entry.member, searchTerm); });
+
+    deactivatedTbody.innerHTML = combined.length
+        ? combined.map(function (entry) {
+          return combinedViewRow(entry.member, entry.source, entry.sourceKey);
+        }).join('')
+        : '<tr><td colspan="7" class="empty-table-state">No deactivated members to display.</td></tr>';
+  }
+
   function renderAllMembers() {
     const searchTerm = (allSearchInput && allSearchInput.value || '').toLowerCase().trim();
-
-    // Legacy members first, then newly accepted -- same order as the
-    // Excel export.
-    const combined = legacyMembers.map(function (m) { return { member: m, source: 'Legacy' }; })
-        .concat(newMembers.map(function (m) { return { member: m, source: 'New' }; }))
+    const combined = combinedEntries(isActiveMember)
         .filter(function (entry) { return matchesSearch(entry.member, searchTerm); });
 
     allTbody.innerHTML = combined.length
         ? combined.map(function (entry) {
-          const m = entry.member;
-          return '<tr>' +
-              '<td>' + escapeHtml(m.membershipNumber || '') + '</td>' +
-              '<td>' + escapeHtml(entry.source) + '</td>' +
-              '<td>' + escapeHtml(m.fullName) + '</td>' +
-              '<td>' + escapeHtml(m.currentWorkingPlace || '') + '</td>' +
-              '<td>' + escapeHtml(m.nicNumber || '') + '</td>' +
-              '<td>' + escapeHtml(m.mobileNumber || '') + '</td>' +
-              '</tr>';
+          return combinedViewRow(entry.member, entry.source, entry.sourceKey);
         }).join('')
-        : '<tr><td colspan="6" class="empty-table-state">No members to display.</td></tr>';
+        : '<tr><td colspan="7" class="empty-table-state">No members to display.</td></tr>';
   }
 
   // Membership Number, Full Name, and Name with Initials behave
@@ -5636,14 +5808,47 @@ function initMemberDirectoryAdmin() {
     }
   }
 
+  const CREATE_INFO_TEXT = {
+    'legacy-create':
+        'A legacy member can be added with just a Membership Number and Name with ' +
+        'Initials if the rest of their details aren\'t available yet — those ' +
+        'can be filled in later.',
+    'new-create':
+        'For a member accepted outside the online application (e.g. a paper/PDF ' +
+        'join form submitted directly to SLNA). Only a Membership Number and Name ' +
+        'with Initials are required here — the rest can be filled in later. ' +
+        'This record will be marked “Manually Added” for audit.'
+  };
+
+  const CREATE_MODAL_TITLE = {
+    'legacy-create': 'Add Legacy Member',
+    'new-create': 'Add New Member'
+  };
+
   function setEditModalMode(mode) {
-    const isCreate = mode === 'create';
+    const isCreate = mode === 'legacy-create' || mode === 'new-create';
+    const isView = mode === 'view';
 
     document.getElementById('member-edit-modal-title').textContent =
-        isCreate ? 'Add Legacy Member' : 'Update Member Details';
+        isCreate ? CREATE_MODAL_TITLE[mode] : (isView ? 'View Member Details' : 'Update Member Details');
 
     const createInfo = document.getElementById('member-edit-create-info');
     if (createInfo) createInfo.style.display = isCreate ? '' : 'none';
+
+    const createInfoText = document.getElementById('member-edit-create-info-text');
+    if (createInfoText && isCreate) createInfoText.textContent = CREATE_INFO_TEXT[mode];
+
+    // Read-only review for Deactivated Members / All Active Members --
+    // every field disabled, no Save, "Close" instead of "Cancel".
+    MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
+      const input = document.getElementById(pair[1]);
+      if (input) input.disabled = isView;
+    });
+
+    const submitButton = document.getElementById('member-edit-submit');
+    if (submitButton) submitButton.style.display = isView ? 'none' : '';
+
+    if (cancelButton) cancelButton.textContent = isView ? 'Close' : 'Cancel';
 
     if (membershipNumberDisplay) {
       membershipNumberDisplay.disabled = !isCreate;
@@ -5700,13 +5905,56 @@ function initMemberDirectoryAdmin() {
     if (!modal) return;
 
     activeEdit = { source: 'legacy-create' };
-    setEditModalMode('create');
+    setEditModalMode('legacy-create');
 
     if (membershipNumberDisplay) membershipNumberDisplay.value = '';
 
     MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
       const input = document.getElementById(pair[1]);
       if (input) input.value = '';
+    });
+
+    document.getElementById('member-edit-alert').innerHTML = '';
+    modal.hidden = false;
+
+    const dialog = modal.querySelector('.admin-edit-dialog');
+    if (dialog) dialog.scrollTop = 0;
+  }
+
+  function openAddNewMemberModal() {
+    if (!modal) return;
+
+    activeEdit = { source: 'new-create' };
+    setEditModalMode('new-create');
+
+    if (membershipNumberDisplay) membershipNumberDisplay.value = '';
+
+    MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
+      const input = document.getElementById(pair[1]);
+      if (input) input.value = '';
+    });
+
+    document.getElementById('member-edit-alert').innerHTML = '';
+    modal.hidden = false;
+
+    const dialog = modal.querySelector('.admin-edit-dialog');
+    if (dialog) dialog.scrollTop = 0;
+  }
+
+  // Read-only review used by Deactivated Members and All Active Members --
+  // same fields as the edit modal, but every field disabled and no Save
+  // (see setEditModalMode's isView branch).
+  function openViewMemberModal(source, member) {
+    if (!modal) return;
+
+    activeEdit = { source: 'view' };
+    setEditModalMode('view');
+
+    if (membershipNumberDisplay) membershipNumberDisplay.value = member.membershipNumber || '';
+
+    MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
+      const input = document.getElementById(pair[1]);
+      if (input) input.value = member[pair[0]] || '';
     });
 
     document.getElementById('member-edit-alert').innerHTML = '';
@@ -5743,14 +5991,91 @@ function initMemberDirectoryAdmin() {
     if (member) openMemberEditModal('legacy', member);
   }
 
+  // Deactivating is a soft flag, not a delete -- see the backend routes
+  // (PATCH .../deactivate on both sources). The member keeps their
+  // membership number and full record, they just move from Newly
+  // Accepted/Legacy Members + All Active Members into Deactivated Members.
+  async function handleDeactivate(source, key) {
+    const list = source === 'legacy' ? legacyMembers : newMembers;
+    const member = list.find(function (m) {
+      return String(source === 'legacy' ? m.id : m.referenceNumber) === key;
+    });
+
+    if (!member) return;
+
+    const confirmed = await showSimpleConfirm({
+      title: 'Deactivate Member',
+      message:
+          'Deactivate ' + (member.fullName || 'this member') + '? ' +
+          'They will be removed from ' +
+          (source === 'legacy' ? 'Legacy Members' : 'Newly Accepted') +
+          ' and All Active Members, and will only appear under Deactivated ' +
+          'Members from now on. Their membership number and full record are ' +
+          'kept -- this does not delete anything, and there is currently no ' +
+          'way to reactivate a member from this screen.',
+      confirmText: 'Deactivate Member'
+    });
+
+    if (!confirmed) return;
+
+    const endpoint = source === 'legacy'
+        ? '/legacy-members/' + encodeURIComponent(member.id) + '/deactivate'
+        : '/membership/admin/applications/' + encodeURIComponent(member.referenceNumber) + '/deactivate';
+
+    try {
+      const response = await fetch(SLNA_CONFIG.API_BASE_URL + endpoint, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + getToken() }
+      });
+
+      if (!response.ok) throw new Error(await memberDirectoryParseApiError(response));
+
+      showAlert('member-directory-alert', 'Member deactivated.', 'success');
+      await loadMemberDirectory();
+    } catch (error) {
+      showAlert('member-directory-alert', error.message || 'Could not deactivate this member.', 'error');
+    }
+  }
+
+  function handleDeactivateClick(event) {
+    const button = event.target.closest('[data-deactivate-source]');
+    if (!button) return;
+
+    handleDeactivate(
+        button.getAttribute('data-deactivate-source'),
+        button.getAttribute('data-deactivate-key')
+    );
+  }
+
+  function handleViewClick(event) {
+    const button = event.target.closest('[data-view-source]');
+    if (!button) return;
+
+    const source = button.getAttribute('data-view-source');
+    const key = button.getAttribute('data-view-key');
+    const list = source === 'legacy' ? legacyMembers : newMembers;
+
+    const member = list.find(function (m) {
+      return String(source === 'legacy' ? m.id : m.referenceNumber) === key;
+    });
+
+    if (member) openViewMemberModal(source, member);
+  }
+
   newTbody.addEventListener('click', handleNewMemberEditClick);
+  newTbody.addEventListener('click', handleDeactivateClick);
   legacyTbody.addEventListener('click', handleLegacyMemberEditClick);
+  legacyTbody.addEventListener('click', handleDeactivateClick);
+  deactivatedTbody.addEventListener('click', handleViewClick);
+  allTbody.addEventListener('click', handleViewClick);
 
   if (newSearchInput) newSearchInput.addEventListener('input', renderNewMembers);
   if (legacySearchInput) legacySearchInput.addEventListener('input', renderLegacyMembers);
+  if (deactivatedSearchInput) deactivatedSearchInput.addEventListener('input', renderDeactivatedMembers);
   if (allSearchInput) allSearchInput.addEventListener('input', renderAllMembers);
   if (refreshButton) refreshButton.addEventListener('click', loadMemberDirectory);
   if (addLegacyMemberButton) addLegacyMemberButton.addEventListener('click', openAddLegacyMemberModal);
+  if (addNewMemberButton) addNewMemberButton.addEventListener('click', openAddNewMemberModal);
 
   if (membershipNumberDisplay) {
     membershipNumberDisplay.addEventListener('input', function () {
@@ -5806,9 +6131,11 @@ function initMemberDirectoryAdmin() {
   if (form) {
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
-      if (!activeEdit) return;
+      if (!activeEdit || activeEdit.source === 'view') return;
 
-      const isCreate = activeEdit.source === 'legacy-create';
+      const isLegacyCreate = activeEdit.source === 'legacy-create';
+      const isNewMemberCreate = activeEdit.source === 'new-create';
+      const isCreate = isLegacyCreate || isNewMemberCreate;
 
       const body = {};
       MEMBER_EDIT_FIELD_MAP.forEach(function (pair) {
@@ -5839,17 +6166,25 @@ function initMemberDirectoryAdmin() {
         if (hasError) return;
       }
 
-      const endpoint = isCreate
+      const endpoint = isLegacyCreate
           ? '/legacy-members'
-          : activeEdit.source === 'legacy'
-              ? '/legacy-members/' + encodeURIComponent(activeEdit.id)
-              : '/membership/admin/applications/' + encodeURIComponent(activeEdit.referenceNumber) + '/details';
+          : isNewMemberCreate
+              ? '/membership/admin/applications/manual'
+              : activeEdit.source === 'legacy'
+                  ? '/legacy-members/' + encodeURIComponent(activeEdit.id)
+                  : '/membership/admin/applications/' + encodeURIComponent(activeEdit.referenceNumber) + '/details';
 
       const confirmed = await showSimpleConfirm({
-        title: isCreate ? 'Add Legacy Member' : 'Update Member Details',
-        message: isCreate
+        title: isLegacyCreate
+            ? 'Add Legacy Member'
+            : isNewMemberCreate
+                ? 'Add New Member'
+                : 'Update Member Details',
+        message: isLegacyCreate
             ? 'Add ' + (body.nameWithInitials || 'this member') + ' as a legacy member?'
-            : 'Save these changes to ' + (activeEdit.fullName || 'this member') + '\'s details?',
+            : isNewMemberCreate
+                ? 'Add ' + (body.nameWithInitials || 'this member') + ' as a newly accepted member? This will be marked as manually added.'
+                : 'Save these changes to ' + (activeEdit.fullName || 'this member') + '\'s details?',
         confirmText: isCreate ? 'Add Member' : 'Save Changes',
         danger: false
       });
@@ -5875,7 +6210,15 @@ function initMemberDirectoryAdmin() {
         if (!response.ok) throw new Error(await memberDirectoryParseApiError(response));
 
         closeMemberEditModal();
-        showAlert('member-directory-alert', isCreate ? 'Legacy member added.' : 'Member details updated.', 'success');
+        showAlert(
+            'member-directory-alert',
+            isLegacyCreate
+                ? 'Legacy member added.'
+                : isNewMemberCreate
+                    ? 'New member added to the directory.'
+                    : 'Member details updated.',
+            'success'
+        );
         await loadMemberDirectory();
       } catch (error) {
         showAlert('member-edit-alert', error.message || 'Could not save changes.', 'error');

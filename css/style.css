@@ -411,6 +411,16 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 .news-table th, .news-table td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13px; }
 .news-table th { background:var(--bg-light); color:var(--primary-dark); font-weight:700; white-space:nowrap; }
 .news-table .admin-muted { font-size:12px; color:var(--muted); }
+/* Member Directory's combined (legacy + new) read-only tables -- Deactivated
+   Members and All Active Members. table-layout:fixed makes the <colgroup>
+   percentages authoritative instead of just a hint, so a sparsely-filled
+   column (NIC/Mobile are often blank for legacy members) can't balloon and
+   push the Actions column off the edge of .table-scroll -- long Name/
+   Working Place values wrap within their column instead. */
+.member-directory-combined-table { table-layout:fixed; }
+.member-directory-combined-table th { white-space:normal; }
+.member-directory-combined-table td { white-space:normal; word-break:break-word; }
+.member-directory-combined-table td:last-child { white-space:nowrap; word-break:normal; }
 .pagination-bar { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:14px; }
 .pagination-bar .pagination-status { font-size:12.5px; color:var(--muted); }
 .pagination-bar .btn[disabled] { opacity:0.45; cursor:default; pointer-events:none; }
@@ -422,6 +432,7 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 .badge-source { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; text-transform:uppercase; }
 .badge-typed { background:#dbeafe; color:#1d4ed8; }
 .badge-file { background:#fef3c7; color:#b45309; }
+.badge-manual { background:#ede9fe; color:#6d28d9; }
 .alert {
   display:flex;
   align-items:flex-start;

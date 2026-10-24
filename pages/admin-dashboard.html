@@ -1220,7 +1220,11 @@
       <div class="admin-card">
         <div class="membership-admin-heading">
           <div>
-            <h2>Member Directory <span class="admin-muted" style="font-size:0.95rem; font-weight:600;" id="member-directory-panel-total-count"></span></h2>
+            <h2>
+              Member Directory
+              <span id="member-directory-panel-active-count" style="font-size:0.95rem; font-weight:700; color:var(--primary, #0b3d63);"></span>
+              <span class="admin-muted" style="font-size:0.85rem; font-weight:600;" id="member-directory-panel-total-count"></span>
+            </h2>
             <p class="admin-muted">
               Everyone who is currently a lifetime member: the pre-digital roll and
               newly accepted digital applications.
@@ -1249,17 +1253,37 @@
         >
           <button class="tab-btn active" data-tab="directory-new-members" type="button">Newly Accepted</button>
           <button class="tab-btn" data-tab="directory-legacy-members" type="button">Legacy Members</button>
-          <button class="tab-btn" data-tab="directory-all-members" type="button">All Members</button>
+          <button class="tab-btn" data-tab="directory-deactivated-members" type="button">Deactivated Members</button>
+          <button class="tab-btn" data-tab="directory-all-members" type="button">All Active Members</button>
         </div>
 
         <div class="tab-panel active" id="directory-new-members">
-          <div class="form-group" style="max-width:360px;">
-            <input
-                    type="search"
-                    id="new-members-search"
-                    placeholder="Search by name, NIC, or membership number"
+          <div class="membership-admin-heading" style="flex-wrap:wrap;">
+            <div class="form-group" style="flex:1 1 240px; max-width:360px; min-width:0; margin-bottom:0;">
+              <input
+                      type="search"
+                      id="new-members-search"
+                      placeholder="Search by name, NIC, or membership number"
+              >
+            </div>
+
+            <button
+                    class="btn btn-primary btn-sm"
+                    id="add-new-member"
+                    type="button"
+                    style="flex-shrink:0;"
             >
+              Add New Member
+            </button>
           </div>
+
+          <p class="admin-muted">
+            For members accepted outside the online application &mdash; e.g. a
+            paper/PDF join form submitted directly to SLNA. Added members are
+            marked &ldquo;Manually Added&rdquo; below for audit purposes. Only
+            active members are listed here &mdash; deactivated members move to
+            the Deactivated Members tab.
+          </p>
 
           <div class="table-scroll">
             <table class="news-table">
@@ -1301,7 +1325,9 @@
 
           <p class="admin-muted">
             For members from the pre-digital roll who aren't in the imported spreadsheet.
-            Only Membership Number and Name with Initials are required here.
+            Only Membership Number and Name with Initials are required here. Only
+            active members are listed here &mdash; deactivated members move to
+            the Deactivated Members tab.
           </p>
 
           <div class="table-scroll">
@@ -1318,6 +1344,49 @@
               </thead>
 
               <tbody id="legacy-members-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="directory-deactivated-members">
+          <div class="form-group" style="max-width:360px;">
+            <input
+                    type="search"
+                    id="deactivated-members-search"
+                    placeholder="Search by name, NIC, or membership number"
+            >
+          </div>
+
+          <p class="admin-muted">
+            Read-only. Deactivated legacy and newly-accepted members &mdash; kept
+            on record but no longer counted as active. Use Review to see a
+            member's full details.
+          </p>
+
+          <div class="table-scroll">
+            <table class="news-table member-directory-combined-table">
+              <colgroup>
+                <col style="width:12%;">
+                <col style="width:8%;">
+                <col style="width:18%;">
+                <col style="width:18%;">
+                <col style="width:14%;">
+                <col style="width:14%;">
+                <col style="width:16%;">
+              </colgroup>
+              <thead>
+              <tr>
+                <th>Membership #</th>
+                <th>Source</th>
+                <th>Name</th>
+                <th>Working Place</th>
+                <th>NIC</th>
+                <th>Mobile</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+
+              <tbody id="deactivated-members-table-body"></tbody>
             </table>
           </div>
         </div>
@@ -1343,12 +1412,22 @@
           </div>
 
           <p class="admin-muted">
-            Read-only. Legacy members are listed first, then newly accepted members.
-            To edit a member's details, use the Newly Accepted or Legacy Members tab.
+            Read-only. Active members only &mdash; legacy members are listed first,
+            then newly accepted members. To edit a member's details, use the
+            Newly Accepted or Legacy Members tab.
           </p>
 
           <div class="table-scroll">
-            <table class="news-table">
+            <table class="news-table member-directory-combined-table">
+              <colgroup>
+                <col style="width:12%;">
+                <col style="width:8%;">
+                <col style="width:18%;">
+                <col style="width:18%;">
+                <col style="width:14%;">
+                <col style="width:14%;">
+                <col style="width:16%;">
+              </colgroup>
               <thead>
               <tr>
                 <th>Membership #</th>
@@ -1357,6 +1436,7 @@
                 <th>Working Place</th>
                 <th>NIC</th>
                 <th>Mobile</th>
+                <th>Actions</th>
               </tr>
               </thead>
 
@@ -2043,7 +2123,7 @@
       <div id="member-edit-alert" aria-live="polite" tabindex="-1"></div>
 
       <div class="info-box" id="member-edit-create-info" style="display:none;">
-        <p>
+        <p id="member-edit-create-info-text">
           A legacy member can be added with just a Membership Number and Name with
           Initials if the rest of their details aren't available yet &mdash; those
           can be filled in later.
@@ -2201,7 +2281,7 @@
 
         <div class="admin-edit-actions">
           <button type="button" class="btn btn-outline" id="member-edit-cancel">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="submit" class="btn btn-primary" id="member-edit-submit">Save Changes</button>
         </div>
       </form>
     </div>
