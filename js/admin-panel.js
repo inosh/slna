@@ -16,6 +16,26 @@ document.addEventListener('wheel', function () {
   }
 }, { passive: true });
 
+// All the search filters on this page already run live on every keystroke
+// (see each 'input' listener below), so the mobile keyboard's dedicated
+// Search/Go key has nothing left to submit. Without a <form> to submit,
+// some mobile browsers leave that key doing nothing, which reads as "the
+// search button doesn't work". Blurring on Enter dismisses the keyboard,
+// giving that key a visible, expected effect on every device.
+document.addEventListener('keydown', function (event) {
+  const active = document.activeElement;
+
+  if (
+    event.key === 'Enter' &&
+    active &&
+    active.tagName === 'INPUT' &&
+    active.type === 'search'
+  ) {
+    event.preventDefault();
+    active.blur();
+  }
+});
+
 // Client-side photo compression -- album and news photo uploads only.
 // Downscales to a max dimension and re-encodes as JPEG at high quality
 // (similar target to Facebook's upload pipeline) so large camera photos
