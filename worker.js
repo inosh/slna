@@ -27,11 +27,18 @@ export default {
     const isCrawler = CRAWLER_UA_PATTERN.test(userAgent);
     const id = url.searchParams.get('id');
 
+    // Cloudflare's asset handling serves these pages at both the real
+    // ".html" path and the "clean" extensionless path (redirecting browsers
+    // from one to the other) -- crawlers can end up requesting either, so
+    // both need to be recognized here.
+    const isNewsPath = url.pathname === '/pages/news-detail.html' || url.pathname === '/pages/news-detail';
+    const isEventPath = url.pathname === '/pages/event-detail.html' || url.pathname === '/pages/event-detail';
+
     if (isCrawler && id) {
-      if (url.pathname === '/pages/news-detail.html') {
+      if (isNewsPath) {
         const response = await buildNewsPreview(url, id);
         if (response) return response;
-      } else if (url.pathname === '/pages/event-detail.html') {
+      } else if (isEventPath) {
         const category = url.searchParams.get('category') === 'other' ? 'other' : 'cpd';
         const response = await buildEventPreview(url, id, category);
         if (response) return response;
