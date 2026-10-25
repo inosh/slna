@@ -97,9 +97,6 @@ document.addEventListener('DOMContentLoaded', function () {
           back soon, or browse the full events calendar for past and future
           SLNA programmes.
         </p>
-        <a href="pages/events-calendar.html" class="btn btn-outline btn-sm" style="margin-top:14px;">
-          View Events Calendar
-        </a>
       </div>
     `;
     }

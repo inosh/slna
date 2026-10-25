@@ -312,6 +312,8 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="event-detail-badges">${badgesMarkup}</div>
 
       ${layoutMarkup}
+
+      ${slnaShareButtonsHtml(title)}
     `;
     }
 

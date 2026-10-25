@@ -210,7 +210,7 @@ async function renderNewsDetail() {
     if (bcEl) bcEl.textContent = item.title;
     const badge = formatDateBadge(item.event_date);
     const badgeHtml = '<div class="news-date-badge"><span class="day">' + badge.day + '</span><span class="month">' + badge.month + '</span></div>';
-    container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + title + '</h1></div>' + photoHtml + '<div class="detail-body ql-editor">' + sanitizeHtml(item.body) + '</div>' + galleryHtml + attachmentHtml;
+    container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + title + '</h1></div>' + photoHtml + '<div class="detail-body ql-editor">' + sanitizeHtml(item.body) + '</div>' + galleryHtml + attachmentHtml + slnaShareButtonsHtml(item.title);
   } catch (err) { container.innerHTML = '<div class="news-empty">News item not found.</div>'; console.error(err); }
 }
 async function renderNewsSidebar() {
