@@ -1,3 +1,31 @@
+// Shared by news-detail and event-detail pages, called once the real
+// article/event has loaded. The build-time canonical tag (see
+// build-pages.js) only knows the bare template URL, not which article is
+// being viewed, so this points it at the real ?id= URL and drops a
+// schema.org JSON-LD block describing the actual item -- both only
+// matter to crawlers that render JS (Googlebot does; the social-preview
+// bots in worker.js don't, which is why that file sets its own canonical
+// and skips schema.org entirely).
+function slnaSetCanonicalAndSchema(jsonLd) {
+  var canonicalUrl = window.location.href;
+  var link = document.querySelector('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'canonical';
+    document.head.appendChild(link);
+  }
+  link.href = canonicalUrl;
+
+  var script = document.getElementById('slna-item-schema');
+  if (!script) {
+    script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'slna-item-schema';
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify(jsonLd);
+}
+
 // Shared by news-detail and event-detail pages to render a small
 // icon-only "share this" row for the current page, meant to sit below the
 // content (standard article placement, and keeps the headline area free

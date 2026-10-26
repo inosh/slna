@@ -315,6 +315,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
       ${slnaShareButtonsHtml(title)}
     `;
+
+        slnaSetCanonicalAndSchema({
+            '@context': 'https://schema.org',
+            '@type': 'Event',
+            name: title,
+            startDate: event.event_date,
+            eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+            location: location ? { '@type': 'Place', name: location } : undefined,
+            description: summary || undefined,
+            image: photoUrl ? [photoUrl] : undefined,
+            offers: hasFeeData ? {
+                '@type': 'Offer',
+                price: String(memberFee),
+                priceCurrency: 'LKR',
+                availability: status === 'Registration Open'
+                    ? 'https://schema.org/InStock'
+                    : 'https://schema.org/SoldOut',
+                url: window.location.href
+            } : undefined,
+            organizer: {
+                '@type': 'Organization',
+                name: "Sri Lanka Nurses' Association",
+                url: 'https://slna.lk/'
+            }
+        });
     }
 
     async function loadEvent() {

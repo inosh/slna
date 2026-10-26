@@ -211,6 +211,24 @@ async function renderNewsDetail() {
     const badge = formatDateBadge(item.event_date);
     const badgeHtml = '<div class="news-date-badge"><span class="day">' + badge.day + '</span><span class="month">' + badge.month + '</span></div>';
     container.innerHTML = '<div class="news-detail-header">' + badgeHtml + '<h1>' + title + '</h1></div>' + photoHtml + '<div class="detail-body ql-editor">' + sanitizeHtml(item.body) + '</div>' + galleryHtml + attachmentHtml + slnaShareButtonsHtml(item.title);
+
+    const bodyText = container.querySelector('.detail-body');
+    const description = item.summary || (bodyText ? bodyText.textContent.trim().slice(0, 300) : '');
+    slnaSetCanonicalAndSchema({
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: item.title || 'News Update',
+      description: description,
+      datePublished: item.event_date,
+      dateModified: item.updated_at || item.event_date,
+      image: item.photo_url ? [fullUrl(item.photo_url)] : undefined,
+      publisher: {
+        '@type': 'Organization',
+        name: "Sri Lanka Nurses' Association",
+        logo: { '@type': 'ImageObject', url: 'https://slna.lk/images/slna-logo-footer.png' }
+      },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': window.location.href }
+    });
   } catch (err) { container.innerHTML = '<div class="news-empty">News item not found.</div>'; console.error(err); }
 }
 async function renderNewsSidebar() {
