@@ -14,6 +14,8 @@
     <h1 style="font-size:16px;">SLNA Content Management</h1>
     <div style="display:flex; align-items:center; gap:14px;">
       <span id="welcome-user" style="font-size:13px;"></span>
+      <a href="../index.html" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">View Site</a>
+      <button id="change-password-btn" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">Change Password</button>
       <button id="logout-btn" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">Log Out</button>
     </div>
   </div>
@@ -2400,6 +2402,45 @@
             Reject Registration
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="change-password-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="change-password-title"
+  >
+    <div class="admin-confirm-backdrop" id="change-password-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-content">
+        <h2 id="change-password-title">Change Password</h2>
+
+        <div id="change-password-alert"></div>
+
+        <form id="change-password-form">
+          <div class="form-group">
+            <label for="change-password-current">Current Password</label>
+            <input type="password" id="change-password-current" autocomplete="current-password" required>
+          </div>
+          <div class="form-group">
+            <label for="change-password-new">New Password</label>
+            <input type="password" id="change-password-new" autocomplete="new-password" minlength="8" required>
+          </div>
+          <div class="form-group">
+            <label for="change-password-confirm">Confirm New Password</label>
+            <input type="password" id="change-password-confirm" autocomplete="new-password" minlength="8" required>
+          </div>
+
+          <div class="admin-confirm-actions">
+            <button type="button" class="btn btn-outline" id="change-password-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="change-password-submit">Update Password</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
