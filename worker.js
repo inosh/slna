@@ -15,14 +15,39 @@
 const API_BASE = 'https://slna-backend-production.up.railway.app/api';
 const BACKEND_ORIGIN = 'https://slna-backend-production.up.railway.app';
 const FALLBACK_IMAGE = '/images/slna-logo-footer.png';
+const SITE_ORIGIN = 'https://slna.lk';
 
 const CRAWLER_UA_PATTERN =
   /facebookexternalhit|facebookcatalog|whatsapp|twitterbot|linkedinbot|telegrambot|slackbot|discordbot|pinterest|vkshare|redditbot|skypeuripreview|embedly|quora link preview|w3c_validator|google-inspectiontool/i;
+
+// Every page that's actually reachable from the live site navigation (see
+// partials/header.html and partials/footer.html) -- i.e. excludes the two
+// admin/staff pages (already noindex'd directly) and the handful of page
+// files that exist on disk but aren't linked from any current menu
+// (commented out in header.html pending launch). Kept in sync by hand since
+// it's a short, slow-moving list; news/event/album detail URLs below are
+// generated live from the backend instead, since those change constantly.
+const STATIC_PAGES = [
+  '/', '/pages/about-slna.html', '/pages/history.html', '/pages/vision-mission.html',
+  '/pages/executive-committee.html', '/pages/committees.html', '/pages/past-presidents.html',
+  '/pages/membership.html', '/pages/membership-categories.html', '/pages/join-slna.html',
+  '/pages/membership-benefits.html', '/pages/member-login.html', '/pages/cpd-programmes.html',
+  '/pages/training-workshops.html', '/pages/e-learning.html', '/pages/cpd-resources.html',
+  '/pages/nursing-research.html', '/pages/research-publications.html', '/pages/slna-journal.html',
+  '/pages/newsletters.html', '/pages/annual-reports.html', '/pages/events-calendar.html',
+  '/pages/annual-conference.html', '/pages/international-nurses-day.html', '/pages/past-events.html',
+  '/pages/news.html', '/pages/gallery.html', '/pages/contact-slna.html',
+  '/pages/contact-secretariat.html', '/pages/location-directions.html',
+];
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const userAgent = request.headers.get('user-agent') || '';
+
+    if (url.pathname === '/sitemap.xml') {
+      return buildSitemap();
+    }
 
     const isCrawler = CRAWLER_UA_PATTERN.test(userAgent);
     const id = url.searchParams.get('id');
@@ -48,6 +73,72 @@ export default {
     return env.ASSETS.fetch(request);
   },
 };
+
+async function fetchJsonSafe(path) {
+  try {
+    const res = await fetch(API_BASE + path);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    return [];
+  }
+}
+
+async function buildSitemap() {
+  const [news, cpdEvents, otherEvents, albums] = await Promise.all([
+    fetchJsonSafe('/news'),
+    fetchJsonSafe('/events/cpd'),
+    fetchJsonSafe('/events/other'),
+    fetchJsonSafe('/albums'),
+  ]);
+
+  const urls = STATIC_PAGES.map((loc) => ({ loc: SITE_ORIGIN + loc.replace(/\.html$/, '') }));
+
+  for (const item of news) {
+    urls.push({
+      loc: SITE_ORIGIN + '/pages/news-detail?id=' + item.id,
+      lastmod: item.updated_at || item.event_date,
+    });
+  }
+
+  for (const event of cpdEvents) {
+    urls.push({
+      loc: SITE_ORIGIN + '/pages/event-detail?category=cpd&id=' + event.id,
+      lastmod: event.updated_at || event.event_date,
+    });
+  }
+
+  for (const event of otherEvents) {
+    urls.push({
+      loc: SITE_ORIGIN + '/pages/event-detail?category=other&id=' + event.id,
+      lastmod: event.updated_at || event.event_date,
+    });
+  }
+
+  for (const album of albums) {
+    urls.push({
+      loc: SITE_ORIGIN + '/pages/album?id=' + album.id,
+      lastmod: album.created_at || album.event_date,
+    });
+  }
+
+  const body = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    urls.map((entry) => {
+      const lastmodTag = entry.lastmod
+        ? '<lastmod>' + escapeHtml(String(entry.lastmod).slice(0, 10)) + '</lastmod>'
+        : '';
+      return '<url><loc>' + escapeHtml(entry.loc) + '</loc>' + lastmodTag + '</url>';
+    }).join('\n') +
+    '\n</urlset>\n';
+
+  return new Response(body, {
+    headers: {
+      'content-type': 'application/xml; charset=UTF-8',
+      'cache-control': 'public, max-age=3600',
+    },
+  });
+}
 
 async function buildNewsPreview(pageUrl, id) {
   try {

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /pages/admin-dashboard
+Disallow: /pages/admin-dashboard.html
+Disallow: /pages/admin-login
+Disallow: /pages/admin-login.html
+
+Sitemap: https://slna.lk/sitemap.xml
