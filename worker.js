@@ -215,7 +215,7 @@ function previewResponse(canonicalUrl, pageUrl, { title, description, imagePath 
 <title>${escapeHtml(title)} | SLNA</title>
 <meta name="description" content="${escapeHtml(trimmedDescription)}">
 <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
-<meta property="og:site_name" content="Sri Lanka Nurses' Association">
+<meta property="og:site_name" content="Sri Lanka Nurses Association">
 <meta property="og:type" content="article">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(trimmedDescription)}">
