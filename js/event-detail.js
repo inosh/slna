@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } : undefined,
             organizer: {
                 '@type': 'Organization',
-                name: "Sri Lanka Nurses' Association",
+                name: "Sri Lanka Nurses Association",
                 url: 'https://slna.lk/'
             }
         });

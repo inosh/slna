@@ -225,7 +225,7 @@ async function renderNewsDetail() {
       image: item.photo_url ? [fullUrl(item.photo_url)] : undefined,
       publisher: {
         '@type': 'Organization',
-        name: "Sri Lanka Nurses' Association",
+        name: "Sri Lanka Nurses Association",
         logo: { '@type': 'ImageObject', url: 'https://slna.lk/images/slna-logo-footer.png' }
       },
       mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl }
