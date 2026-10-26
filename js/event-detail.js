@@ -316,7 +316,10 @@ document.addEventListener('DOMContentLoaded', function () {
       ${slnaShareButtonsHtml(title)}
     `;
 
-        slnaSetCanonicalAndSchema({
+        const canonicalUrl = window.location.origin + window.location.pathname +
+            '?category=' + encodeURIComponent(category) + '&id=' + encodeURIComponent(id);
+
+        slnaSetCanonicalAndSchema(canonicalUrl, {
             '@context': 'https://schema.org',
             '@type': 'Event',
             name: title,
@@ -332,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 availability: status === 'Registration Open'
                     ? 'https://schema.org/InStock'
                     : 'https://schema.org/SoldOut',
-                url: window.location.href
+                url: canonicalUrl
             } : undefined,
             organizer: {
                 '@type': 'Organization',

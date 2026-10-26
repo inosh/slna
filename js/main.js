@@ -6,8 +6,13 @@
 // matter to crawlers that render JS (Googlebot does; the social-preview
 // bots in worker.js don't, which is why that file sets its own canonical
 // and skips schema.org entirely).
-function slnaSetCanonicalAndSchema(jsonLd) {
-  var canonicalUrl = window.location.href;
+//
+// canonicalUrl is built by the caller from just the id (and category, for
+// events) rather than taken from window.location.href, because a visitor
+// arriving from Facebook/WhatsApp/an ad brings along extra params
+// (?fbclid=..., ?utm_source=...) that would otherwise turn every shared
+// link into its own "distinct" canonical URL.
+function slnaSetCanonicalAndSchema(canonicalUrl, jsonLd) {
   var link = document.querySelector('link[rel="canonical"]');
   if (!link) {
     link = document.createElement('link');

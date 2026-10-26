@@ -147,7 +147,13 @@ async function buildNewsPreview(pageUrl, id) {
 
     const item = await apiRes.json();
 
-    return previewResponse(pageUrl, {
+    // Built from the path + id alone, not pageUrl's full query string --
+    // a visitor arriving via Facebook/WhatsApp/an ad carries extra params
+    // (?fbclid=..., ?utm_source=...) that would otherwise turn every shared
+    // link into its own "distinct" canonical URL for the same article.
+    const canonicalUrl = pageUrl.origin + pageUrl.pathname + '?id=' + encodeURIComponent(id);
+
+    return previewResponse(canonicalUrl, pageUrl, {
       title: item.title || 'News Update',
       description: item.summary || stripHtml(item.body),
       imagePath: item.photo_url,
@@ -164,7 +170,10 @@ async function buildEventPreview(pageUrl, id, category) {
 
     const event = await apiRes.json();
 
-    return previewResponse(pageUrl, {
+    const canonicalUrl = pageUrl.origin + pageUrl.pathname +
+      '?category=' + encodeURIComponent(category) + '&id=' + encodeURIComponent(id);
+
+    return previewResponse(canonicalUrl, pageUrl, {
       title: event.title || 'Event Details',
       description: event.summary || '',
       imagePath: event.photo_url || event.photoUrl,
@@ -174,10 +183,9 @@ async function buildEventPreview(pageUrl, id, category) {
   }
 }
 
-function previewResponse(pageUrl, { title, description, imagePath }) {
+function previewResponse(canonicalUrl, pageUrl, { title, description, imagePath }) {
   const imageUrl = resolveImageUrl(pageUrl, imagePath);
   const trimmedDescription = truncate(description, 200);
-  const canonicalUrl = pageUrl.toString();
 
   const html = `<!DOCTYPE html>
 <html lang="en">
