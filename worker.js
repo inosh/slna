@@ -40,6 +40,17 @@ const STATIC_PAGES = [
   '/pages/contact-secretariat.html', '/pages/location-directions.html',
 ];
 
+// Old link-hub pages (no unique content of their own) that 301 to the page
+// which replaced them. Key is the page's bare name (no extension); value is
+// the bare name of its replacement, also under /pages/.
+const RETIRED_PAGE_REDIRECTS = {
+  'events': 'events-calendar',
+  'contact': 'contact-slna',
+  'about': 'about-slna',
+  'cpd-events': 'training-workshops',
+  'professional-development': 'cpd-programmes',
+};
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -47,6 +58,16 @@ export default {
 
     if (url.pathname === '/sitemap.xml') {
       return buildSitemap();
+    }
+
+    // Leftover "hub" pages from an older nav design -- each is just a grid
+    // of links to the pages that now live directly in the header dropdowns.
+    // Nothing on the current site links to them, so a visitor or crawler
+    // landing here is sent straight to the page that replaced them instead
+    // of leaving duplicate thin content indexable at two URLs.
+    const bareName = url.pathname.replace(/^\/pages\//, '').replace(/\.html$/, '');
+    if (/^\/pages\//.test(url.pathname) && RETIRED_PAGE_REDIRECTS[bareName]) {
+      return Response.redirect(SITE_ORIGIN + '/pages/' + RETIRED_PAGE_REDIRECTS[bareName], 301);
     }
 
     const isCrawler = CRAWLER_UA_PATTERN.test(userAgent);
