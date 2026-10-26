@@ -17,7 +17,7 @@ const SITE_ORIGIN = 'https://slna.lk';
 const COPY_DIRS = ['css', 'js', 'images'];
 
 // Plain files copied into dist/ root as-is.
-const COPY_FILES = ['robots.txt'];
+const COPY_FILES = ['robots.txt', 'favicon.ico'];
 
 // news-detail.html / event-detail.html are templates -- the real canonical
 // URL depends on the ?id= of the article/event being viewed, which isn't
