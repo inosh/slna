@@ -214,7 +214,8 @@ async function renderNewsDetail() {
 
     const bodyText = container.querySelector('.detail-body');
     const description = item.summary || (bodyText ? bodyText.textContent.trim().slice(0, 300) : '');
-    slnaSetCanonicalAndSchema({
+    const canonicalUrl = window.location.origin + window.location.pathname + '?id=' + encodeURIComponent(params.get('id'));
+    slnaSetCanonicalAndSchema(canonicalUrl, {
       '@context': 'https://schema.org',
       '@type': 'NewsArticle',
       headline: item.title || 'News Update',
@@ -227,7 +228,7 @@ async function renderNewsDetail() {
         name: "Sri Lanka Nurses' Association",
         logo: { '@type': 'ImageObject', url: 'https://slna.lk/images/slna-logo-footer.png' }
       },
-      mainEntityOfPage: { '@type': 'WebPage', '@id': window.location.href }
+      mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl }
     });
   } catch (err) { container.innerHTML = '<div class="news-empty">News item not found.</div>'; console.error(err); }
 }
