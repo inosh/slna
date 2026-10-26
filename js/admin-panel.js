@@ -293,11 +293,88 @@ function initRichTextExpandToggle(shellId, buttonId) {
   });
 }
 
+// Lets the logged-in staff user change their own password from the admin
+// header (top bar, not tied to any content-management tab).
+function initChangePassword() {
+  const openBtn = document.getElementById('change-password-btn');
+  const modal = document.getElementById('change-password-modal');
+  const backdrop = document.getElementById('change-password-backdrop');
+  const cancelBtn = document.getElementById('change-password-cancel');
+  const form = document.getElementById('change-password-form');
+  const alertBox = document.getElementById('change-password-alert');
+  const currentInput = document.getElementById('change-password-current');
+  const newInput = document.getElementById('change-password-new');
+  const confirmInput = document.getElementById('change-password-confirm');
+  const submitBtn = document.getElementById('change-password-submit');
+
+  if (!openBtn || !modal) return;
+
+  function openModal() {
+    form.reset();
+    alertBox.innerHTML = '';
+    modal.hidden = false;
+    currentInput.focus();
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+  }
+
+  openBtn.addEventListener('click', openModal);
+  cancelBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    alertBox.innerHTML = '';
+
+    if (newInput.value !== confirmInput.value) {
+      alertBox.innerHTML = '<div class="alert alert-error">New password and confirmation do not match.</div>';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Updating...';
+
+    try {
+      const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + getToken()
+        },
+        body: JSON.stringify({
+          currentPassword: currentInput.value,
+          newPassword: newInput.value
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alertBox.innerHTML = '<div class="alert alert-error">' + (data.error || 'Could not update password.') + '</div>';
+        return;
+      }
+
+      alertBox.innerHTML = '<div class="alert alert-success">Password updated.</div>';
+      form.reset();
+      setTimeout(closeModal, 1200);
+    } catch (err) {
+      console.error('Change password request failed:', err);
+      alertBox.innerHTML = '<div class="alert alert-error">Could not reach the server. Please try again.</div>';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Update Password';
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const session = requireAuth();
   if (!session) return;
   document.getElementById('welcome-user').textContent = session.username + ' (' + session.role + ')';
   document.getElementById('logout-btn').addEventListener('click', logout);
+  initChangePassword();
 
   let cpdEventAdminConfig = null;
   let otherEventAdminConfig = null;
