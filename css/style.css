@@ -119,7 +119,14 @@ ul { list-style:none; }
 .home-events-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:22px; }
 .home-events-grid .card { flex:1 1 300px; max-width:360px; min-width:0; display:flex; flex-direction:column; }
 .home-events-grid .card-body { display:flex; flex-direction:column; flex:1; }
-.home-events-grid .card-body p { flex:1; }
+.home-events-grid .card-body p {
+  flex:1;
+  display:-webkit-box;
+  -webkit-line-clamp:5;
+  line-clamp:5;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
 .home-events-grid .event-card-topline { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
 .home-events-grid .empty-events-state,
 .home-events-grid .events-loading-state { flex:1 1 100%; }
@@ -272,6 +279,34 @@ ul { list-style:none; }
   .time-range-row { grid-template-columns:1fr; }
   .time-range-row .time-range-sep { padding-bottom:0; }
   .time-select-group { flex-wrap:wrap; }
+}
+.duration-fields-row { display:flex; gap:12px; }
+.duration-fields-row .duration-field label { display:block; font-size:12px; font-weight:600; color:#5a6b7d; margin-bottom:5px; }
+.duration-fields-row select {
+  width:140px;
+  padding:9px 6px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  font-size:14px;
+  font-family:inherit;
+  background:#fff;
+  color:var(--primary-dark);
+  cursor:pointer;
+}
+.duration-fields-row select:focus { outline:2px solid var(--primary-light); border-color:var(--primary); }
+.duration-fields-row input[type="date"] {
+  width:160px;
+  padding:9px 6px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  font-size:14px;
+  font-family:inherit;
+  background:#fff;
+  color:var(--primary-dark);
+}
+.duration-fields-row input[type="date"]:focus { outline:2px solid var(--primary-light); border-color:var(--primary); }
+@media (max-width: 480px) {
+  .duration-fields-row { flex-wrap:wrap; }
 }
 .fee-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .fee-row .fee-field label { font-size:12px; font-weight:600; color:#5a6b7d; margin-bottom:5px; }
@@ -3355,6 +3390,16 @@ tr.registration-row-non-member {
   background: #e8eef4;
 }
 
+/* Multi-day/month/year CPD programme that has started but not yet
+   finished. A teal-green, deliberately a different shade from
+   "status-open"'s forest green so the two don't get confused when both
+   badges appear on the same card (an ongoing programme with open
+   registration, say). */
+.event-status-badge.status-ongoing {
+  color: #0f766e;
+  background: #d7f6f2;
+}
+
 /* =========================================================
    Events Calendar (combined CPD + Other overview)
    Used by: events-calendar.html / events-calendar.js
@@ -3600,6 +3645,13 @@ tr.registration-row-non-member {
   font-weight: 600;
   color: #fff;
   line-height: 1.5;
+}
+
+/* Second dt/dd pair stacked inside the same fact cell (e.g. Non-Member Fee
+   under Member Fee) -- needs its own top spacing since it isn't a new
+   grid/list item. */
+.event-detail-info-card dt.event-detail-fact-subdt {
+  margin-top: 10px;
 }
 
 /* Wide variant used at the top of the registration page: a responsive

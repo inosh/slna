@@ -19,6 +19,15 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/'/g, '&#039;');
     }
 
+    // Defaults to "1 Day" -- the common case for events saved before this
+    // field existed, and for most CPD events today.
+    function formatDuration(number, unit) {
+        const count = Number(number) > 0 ? Number(number) : 1;
+        const unitLabel = { day: 'Day', month: 'Month', year: 'Year' }[unit] || 'Day';
+
+        return count + ' ' + unitLabel + (count === 1 ? '' : 's');
+    }
+
     function parseEventDate(value) {
         if (!value) {
             return null;
@@ -129,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const time = escapeHtml(event.time);
         const location = escapeHtml(event.location);
         const summary = escapeHtml(event.summary);
+        const duration = escapeHtml(formatDuration(event.duration_number, event.duration_unit));
 
         const photoUrl = resolvePhotoUrl(
             event.photo_url || event.photoUrl
@@ -191,6 +201,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
           <p class="event-meta">
             <span>${time}</span>
+            <span aria-hidden="true">•</span>
+            <span>${duration}</span>
             <span aria-hidden="true">•</span>
             <span>${location}</span>
           </p>

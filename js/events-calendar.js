@@ -35,6 +35,51 @@ document.addEventListener('DOMContentLoaded', function () {
         return Number.isNaN(date.getTime()) ? null : date;
     }
 
+    // Multi-day/month/year CPD programmes (duration_number/duration_unit)
+    // are still "in progress" well after their start date -- this computes
+    // the actual end date so a 3-month certificate programme, say, doesn't
+    // fall out of "upcoming" the moment its first session passes. Absent
+    // (or default 1 "day") on any event, this just returns the start date
+    // itself, identical to the old single-date behaviour.
+    function computeEventEndDate(event) {
+        const start = parseEventDate(event.event_date);
+
+        if (!start) {
+            return null;
+        }
+
+        // Admin-entered override (CPD event's optional End Date field) takes
+        // priority over the calculated date.
+        const explicitEnd = parseEventDate(event.end_date);
+
+        if (explicitEnd) {
+            return explicitEnd;
+        }
+
+        const number = Number(event.duration_number) > 0 ? Number(event.duration_number) : 1;
+        const unit = event.duration_unit || 'day';
+        const end = new Date(start);
+
+        if (unit === 'month') {
+            end.setMonth(end.getMonth() + number);
+        } else if (unit === 'year') {
+            end.setFullYear(end.getFullYear() + number);
+        } else {
+            end.setDate(end.getDate() + number);
+        }
+
+        end.setDate(end.getDate() - 1);
+
+        return end;
+    }
+
+    function isEventOngoing(event, today) {
+        const start = parseEventDate(event.event_date);
+        const end = computeEventEndDate(event);
+
+        return !!(start && end && end.getTime() > start.getTime() && today >= start && today <= end);
+    }
+
     function formatDatePart(value, options) {
         const date = parseEventDate(value);
 
@@ -116,6 +161,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const metaParts = [time, location].filter(Boolean);
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const ongoingBadge = isEventOngoing(event, today)
+            ? '<span class="event-status-badge status-ongoing">Ongoing</span>'
+            : '';
+
         const detailUrl = 'event-detail.html?category=' +
             encodeURIComponent(event.category) +
             '&id=' + encodeURIComponent(event.id);
@@ -132,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
           ${categoryBadgeMarkup(event)}
           <span class="event-type-badge">${type}</span>
           <span class="event-status-badge ${statusClass(event.status)}">${status}</span>
+          ${ongoingBadge}
         </div>
 
         <h4 class="event-row-title">${title}</h4>
@@ -251,8 +303,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             allEvents = events
                 .filter(function (event) {
-                    const date = parseEventDate(event.event_date);
-                    return date && date >= today;
+                    const endDate = computeEventEndDate(event);
+                    return endDate && endDate >= today;
                 })
                 .sort(function (a, b) {
                     return new Date(a.event_date) - new Date(b.event_date);

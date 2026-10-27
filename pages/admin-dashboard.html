@@ -83,7 +83,7 @@
               </select>
             </div>
             <div class="form-group"><label>Date</label><input type="date" id="type-date" required></div>
-            <div class="form-group"><label>Short Summary</label><input type="text" id="type-summary"></div>
+            <div class="form-group"><label>Short Summary</label><textarea id="type-summary" rows="3"></textarea></div>
             <div class="form-group">
               <label>Full Content</label>
               <div class="rte-shell" id="type-body-shell">
@@ -125,7 +125,7 @@
               <input type="file" id="file-upload-input" accept=".txt,.docx,.pdf" style="display:none;">
               <div id="file-name-display" style="margin-top:8px; font-size:13px; color:var(--primary-dark); font-weight:600;"></div>
             </div>
-            <div class="form-group"><label>Short Summary</label><input type="text" id="file-summary"></div>
+            <div class="form-group"><label>Short Summary</label><textarea id="file-summary" rows="3"></textarea></div>
             <div class="form-group"><label>Content Preview</label><textarea id="file-body-preview" rows="5"></textarea></div>
             <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="file-photo-input" accept="image/*"><div id="file-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
@@ -173,7 +173,7 @@
             </select>
           </div>
           <div class="form-group"><label>Date</label><input type="date" id="edit-news-date" required></div>
-          <div class="form-group"><label>Short Summary</label><input type="text" id="edit-news-summary"></div>
+          <div class="form-group"><label>Short Summary</label><textarea id="edit-news-summary" rows="3"></textarea></div>
           <div class="form-group">
             <label>Full Content</label>
             <div class="rte-shell" id="edit-news-body-shell">
@@ -212,7 +212,10 @@
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <div class="admin-edit-actions">
+            <button type="button" class="btn btn-outline" id="edit-news-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
         </form>
       </div>
     </div>
@@ -281,6 +284,7 @@
               <option value="Study Day">Study Day</option>
               <option value="Conference">Conference</option>
               <option value="Educational Program">Educational Program</option>
+              <option value="Certificate Program">Certificate Program</option>
               <option value="Other">Other</option>
             </select>
           </div>
@@ -327,6 +331,35 @@
               </div>
             </div>
             <p class="time-range-preview" id="cpd-event-time-preview"></p>
+          </fieldset>
+
+          <fieldset class="form-group">
+            <legend>Programme Duration</legend>
+            <div class="duration-fields-row">
+              <div class="duration-field">
+                <label for="cpd-event-duration-number">Length</label>
+                <select id="cpd-event-duration-number" aria-label="Programme duration length"></select>
+              </div>
+              <div class="duration-field">
+                <label for="cpd-event-duration-unit">Unit</label>
+                <select id="cpd-event-duration-unit" aria-label="Programme duration unit">
+                  <option value="day">Day(s)</option>
+                  <option value="month">Month(s)</option>
+                  <option value="year">Year(s)</option>
+                </select>
+              </div>
+              <div class="duration-field">
+                <label for="cpd-event-end-date">End Date (optional)</label>
+                <input type="date" id="cpd-event-end-date">
+              </div>
+            </div>
+            <p class="admin-muted">
+              Defaults to 1 Day -- most CPD events run on a single day.
+              Set Length/Unit for multi-session programmes (e.g. a 3-month
+              certificate programme). If you know the exact finish date,
+              enter it as End Date and it'll be used instead of the
+              calculated one.
+            </p>
           </fieldset>
 
           <div class="form-group">
@@ -379,11 +412,11 @@
 
           <div class="form-group">
             <label for="cpd-event-summary">
-              Short Description
+              Description
             </label>
             <textarea
                     id="cpd-event-summary"
-                    rows="3"
+                    rows="8"
                     required
             ></textarea>
           </div>
@@ -565,11 +598,11 @@
 
           <div class="form-group">
             <label for="other-event-summary">
-              Short Description
+              Description
             </label>
             <textarea
                     id="other-event-summary"
-                    rows="3"
+                    rows="8"
                     required
             ></textarea>
           </div>
@@ -1867,6 +1900,28 @@
           <p class="time-range-preview" id="event-edit-time-preview"></p>
         </fieldset>
 
+        <fieldset class="form-group" id="event-edit-duration-group">
+          <legend>Programme Duration</legend>
+          <div class="duration-fields-row">
+            <div class="duration-field">
+              <label for="event-edit-duration-number">Length</label>
+              <select id="event-edit-duration-number" aria-label="Programme duration length"></select>
+            </div>
+            <div class="duration-field">
+              <label for="event-edit-duration-unit">Unit</label>
+              <select id="event-edit-duration-unit" aria-label="Programme duration unit">
+                <option value="day">Day(s)</option>
+                <option value="month">Month(s)</option>
+                <option value="year">Year(s)</option>
+              </select>
+            </div>
+            <div class="duration-field">
+              <label for="event-edit-end-date">End Date (optional)</label>
+              <input type="date" id="event-edit-end-date">
+            </div>
+          </div>
+        </fieldset>
+
         <div class="form-group">
           <label for="event-edit-location">Location / Format</label>
           <input type="text" id="event-edit-location" required>
@@ -1895,8 +1950,8 @@
         </fieldset>
 
         <div class="form-group">
-          <label for="event-edit-summary">Short Description</label>
-          <textarea id="event-edit-summary" rows="3" required></textarea>
+          <label for="event-edit-summary">Description</label>
+          <textarea id="event-edit-summary" rows="8" required></textarea>
         </div>
 
         <div class="form-group">
