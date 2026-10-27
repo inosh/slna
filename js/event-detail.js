@@ -23,6 +23,15 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/'/g, '&#039;');
     }
 
+    // Defaults to "1 Day" -- the common case for events saved before this
+    // field existed, and for most CPD events today.
+    function formatDuration(number, unit) {
+        const count = Number(number) > 0 ? Number(number) : 1;
+        const unitLabel = { day: 'Day', month: 'Month', year: 'Year' }[unit] || 'Day';
+
+        return count + ' ' + unitLabel + (count === 1 ? '' : 's');
+    }
+
     function parseEventDate(value) {
         if (!value) {
             return null;
@@ -174,6 +183,14 @@ document.addEventListener('DOMContentLoaded', function () {
             '<div><dt>Date</dt><dd>' + escapeHtml(readableDate(event.event_date)) + '</dd></div>'
         );
 
+        if (category === 'cpd') {
+            factsRows.push(
+                '<div><dt>Duration</dt><dd>' +
+                escapeHtml(formatDuration(event.duration_number, event.duration_unit)) +
+                '</dd></div>'
+            );
+        }
+
         if (time) {
             factsRows.push('<div><dt>Time</dt><dd>' + escapeHtml(time) + '</dd></div>');
         }
@@ -203,8 +220,22 @@ document.addEventListener('DOMContentLoaded', function () {
             if (membersOnly) {
                 factsRows.push('<div><dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
             } else if (hasPayableFee) {
-                factsRows.push('<div><dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
-                factsRows.push('<div><dt>Non-Member Fee</dt><dd>' + escapeHtml(formatCurrency(nonMemberFee)) + '</dd></div>');
+                if (Number(memberFee) === Number(nonMemberFee)) {
+                    // Same price either way -- one "Event Fee" line reads better
+                    // than two identical-looking Member/Non-Member lines.
+                    factsRows.push('<div><dt>Event Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd></div>');
+                } else {
+                    // Both dt/dd pairs live in the SAME grid cell (one <div>) so
+                    // the responsive fact grid can never split them apart onto
+                    // different rows/columns -- Non-Member Fee always sits
+                    // directly under Member Fee.
+                    factsRows.push(
+                        '<div>' +
+                        '<dt>Member Fee</dt><dd>' + escapeHtml(formatCurrency(memberFee)) + '</dd>' +
+                        '<dt class="event-detail-fact-subdt">Non-Member Fee</dt><dd>' + escapeHtml(formatCurrency(nonMemberFee)) + '</dd>' +
+                        '</div>'
+                    );
+                }
             } else {
                 factsRows.push('<div><dt>Event Fee</dt><dd>Free</dd></div>');
             }

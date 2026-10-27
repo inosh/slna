@@ -257,6 +257,29 @@ function createRichTextEditor(editorId, textareaId) {
     }
   });
 
+  // Facebook (and similar sites) render emoji as small <img> sprites whose
+  // alt text IS the real Unicode emoji -- pasted as-is, Quill embeds a
+  // broken/placeholder image instead of the emoji character, and because
+  // each sprite sits inside Quill's block-level image embed rather than
+  // flowing inline with the surrounding text, the paste also picks up
+  // stray extra line breaks around every emoji. Swapping each sprite for
+  // its plain-text alt (a short, space-free value is the signature of a
+  // single emoji/emoji sequence, as opposed to a real content image, whose
+  // alt is normally empty or a longer description) makes rich-text paste
+  // match how the plain "Description" textarea already pastes Facebook
+  // content correctly.
+  const Delta = Quill.import('delta');
+
+  quill.clipboard.addMatcher('IMG', function (node, delta) {
+    const alt = (node.getAttribute('alt') || '').trim();
+
+    if (alt && alt.length <= 8 && !/\s/.test(alt)) {
+      return new Delta().insert(alt);
+    }
+
+    return delta;
+  });
+
   function syncTextarea() {
     textarea.value = quill.getText().trim().length ? quill.root.innerHTML : '';
   }
@@ -484,6 +507,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // 1-36 covers every realistic CPD programme length regardless of unit
+  // (days, months, or years), defaulting to "1" -- the common one-day case.
+  function populateDurationNumberSelect(selectId) {
+    const select = document.getElementById(selectId);
+
+    if (!select) {
+      return;
+    }
+
+    for (let number = 1; number <= 36; number++) {
+      const value = String(number);
+      select.appendChild(new Option(value, value, number === 1, number === 1));
+    }
+  }
+
   function getTimeGroupValue(group) {
     if (!group) {
       return '';
@@ -629,7 +667,7 @@ document.addEventListener('DOMContentLoaded', function () {
       endpoint: '/events/cpd',
       successMessage: 'CPD event published.',
       submitLabel: 'Publish CPD Event',
-      typeOptions: ['Workshop', 'Training', 'Webinar', 'Seminar', 'Study Day', 'Conference', 'Educational Program', 'Other'],
+      typeOptions: ['Workshop', 'Training', 'Webinar', 'Seminar', 'Study Day', 'Conference', 'Educational Program', 'Certificate Program', 'Other'],
       statusOptions: ['Registration Open', 'Registration Opening Soon', 'Programme Announced Soon', 'Closed'],
       fields: {
         title: 'cpd-event-title',
@@ -648,6 +686,9 @@ document.addEventListener('DOMContentLoaded', function () {
             period: 'cpd-event-end-period'
           }
         },
+        duration_number: 'cpd-event-duration-number',
+        duration_unit: 'cpd-event-duration-unit',
+        end_date: 'cpd-event-end-date',
         location: 'cpd-event-location',
         fee_type: 'cpd-event-fee-type',
         member_fee: 'cpd-event-member-fee',
@@ -655,9 +696,11 @@ document.addEventListener('DOMContentLoaded', function () {
         summary: 'cpd-event-summary',
         status: 'cpd-event-status'
       },
+      optionalFields: ['end_date'],
       timePreviewId: 'cpd-event-time-preview'
     };
 
+    populateDurationNumberSelect('cpd-event-duration-number');
     setupEventAdminForm(cpdEventAdminConfig);
   }
 
@@ -800,6 +843,25 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeGroupValue(EVENT_EDIT_TIME_FIELDS.end, parsedTime ? parsedTime.end : defaultTime);
     updateEventEditTimePreview();
 
+    const durationGroup = document.getElementById('event-edit-duration-group');
+
+    if (isCpd) {
+      durationGroup.hidden = false;
+
+      const durationNumber = Number.isInteger(Number(item.duration_number)) && Number(item.duration_number) > 0
+          ? String(Number(item.duration_number))
+          : '1';
+      const durationUnit = ['day', 'month', 'year'].includes(item.duration_unit)
+          ? item.duration_unit
+          : 'day';
+
+      document.getElementById('event-edit-duration-number').value = durationNumber;
+      document.getElementById('event-edit-duration-unit').value = durationUnit;
+      document.getElementById('event-edit-end-date').value = String(item.end_date || '').slice(0, 10);
+    } else {
+      durationGroup.hidden = true;
+    }
+
     document.getElementById('event-edit-location').value = item.location || '';
 
     const feesGroup = document.getElementById('event-edit-fees-group');
@@ -916,6 +978,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     populateTimeSelectGroup(EVENT_EDIT_TIME_FIELDS.start);
     populateTimeSelectGroup(EVENT_EDIT_TIME_FIELDS.end);
+    populateDurationNumberSelect('event-edit-duration-number');
 
     [EVENT_EDIT_TIME_FIELDS.start, EVENT_EDIT_TIME_FIELDS.end].forEach(function (group) {
       [group.hour, group.minute, group.period].forEach(function (id) {
@@ -1082,8 +1145,12 @@ document.addEventListener('DOMContentLoaded', function () {
         editFields.fee_type = 'event-edit-fee-type';
         editFields.member_fee = 'event-edit-member-fee';
         editFields.non_member_fee = 'event-edit-non-member-fee';
+        editFields.duration_number = 'event-edit-duration-number';
+        editFields.duration_unit = 'event-edit-duration-unit';
+        editFields.end_date = 'event-edit-end-date';
       }
 
+      const optionalEditFields = ['end_date'];
       const formData = new FormData();
       let hasMissingField = false;
 
@@ -1097,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', function () {
           value = input ? input.value.trim() : '';
         }
 
-        if (!value) {
+        if (!value && optionalEditFields.indexOf(fieldName) === -1) {
           hasMissingField = true;
         }
 
@@ -2362,11 +2429,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const formData = new FormData();
       let hasMissingField = false;
+      const optionalFields = config.optionalFields || [];
 
       Object.keys(config.fields).forEach(function (fieldName) {
         const value = getValue(fieldName);
 
-        if (!value) {
+        if (!value && optionalFields.indexOf(fieldName) === -1) {
           hasMissingField = true;
         }
 
@@ -5093,12 +5161,14 @@ function initEditNewsForm() {
   editNewsQuill = createRichTextEditor('edit-news-body-editor', 'edit-news-body');
   initRichTextExpandToggle('edit-news-body-shell', 'edit-news-body-expand');
   const closeButton = document.getElementById('close-edit-news');
+  const cancelButton = document.getElementById('edit-news-cancel');
   const photoInput = document.getElementById('edit-news-photo-input');
   const overrideCheckbox = document.getElementById('edit-news-override-album');
   const gallerySection = document.getElementById('edit-news-gallery-section');
   const galleryInput = document.getElementById('edit-news-gallery-input');
 
   closeButton.addEventListener('click', closeEditNewsCard);
+  if (cancelButton) cancelButton.addEventListener('click', closeEditNewsCard);
 
   photoInput.addEventListener('change', async function (e) {
     if (e.target.files.length) {
