@@ -1486,6 +1486,30 @@ label.file-input-trigger { display:inline-block; margin-bottom:0; }
 
 /* Lifetime membership application */
 
+.payment-amount-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 14px;
+  margin: 16px 0 20px;
+  padding: 18px 22px;
+  background: #173f73;
+  border-radius: 6px;
+}
+
+.payment-amount-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e4ecf8;
+}
+
+.payment-amount-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
 .payment-details-box {
   margin: 20px 0 26px;
   padding: 22px;

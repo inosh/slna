@@ -1,7 +1,8 @@
 // js/membership-fees-display.js
 // Fills in the admin-configurable fee amounts on the Membership Categories
-// & Fees page. If the API is unreachable, the static placeholder text
-// already in the HTML is left as-is.
+// & Fees page and the Join SLNA payment section. If the API is
+// unreachable, the static placeholder text already in the HTML is left
+// as-is.
 
 (function () {
   function formatFeeAmount(amount) {
