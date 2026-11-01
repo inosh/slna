@@ -3055,6 +3055,10 @@ document.addEventListener('DOMContentLoaded', function () {
         'membership-number'
     );
 
+    const fetchNextMembershipNumberButton = document.getElementById(
+        'fetch-next-membership-number'
+    );
+
     const statusNoteInput = document.getElementById(
         'membership-status-note'
     );
@@ -4923,6 +4927,30 @@ document.addEventListener('DOMContentLoaded', function () {
       clearMembershipMessage();
     });
 
+    if (fetchNextMembershipNumberButton) {
+      fetchNextMembershipNumberButton.addEventListener(
+          'click',
+          async function () {
+            clearMembershipNumberError();
+            clearMembershipMessage();
+
+            fetchNextMembershipNumberButton.disabled = true;
+
+            try {
+              membershipNumberInput.value =
+                  await fetchNextMembershipNumber();
+            } catch (error) {
+              showMembershipNumberError(
+                  error.message ||
+                  'Could not fetch the next membership number.'
+              );
+            } finally {
+              fetchNextMembershipNumberButton.disabled = false;
+            }
+          }
+      );
+    }
+
     function clearMembershipNumberError() {
       if (membershipNumberError) {
         membershipNumberError.textContent = '';
@@ -5015,6 +5043,34 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 });
+
+// Shared by the Pending Review decision panel and the Member Directory
+// "Add New Member" form -- both fill a membership number field from the
+// same suggested-next-number lookup, then leave it editable so the admin
+// can override it.
+async function fetchNextMembershipNumber() {
+  const response = await fetch(
+      SLNA_CONFIG.API_BASE_URL + '/membership/admin/next-membership-number',
+      {
+        headers: {
+          Authorization: 'Bearer ' + getToken()
+        }
+      }
+  );
+
+  const data = await response.json().catch(function () {
+    return null;
+  });
+
+  if (!response.ok) {
+    throw new Error(
+        (data && data.message) ||
+        'Could not fetch the next membership number.'
+    );
+  }
+
+  return data.membershipNumber;
+}
 
 function showAlert(elId, message, type) {
   const el = document.getElementById(elId);
@@ -5406,7 +5462,7 @@ async function handleDeleteAlbum(id) {
 
 // ---- User Queries (Contact SLNA form submissions) ----
 
-let activeQueryStatus = 'all';
+let activeQueryStatus = 'new';
 let contactQueriesCache = [];
 
 const CONTACT_QUERY_SUBJECT_LABELS = {
@@ -5462,16 +5518,30 @@ function renderContactQueriesTable() {
     const statusLabel = isNew ? 'New' : 'Read';
     const subjectLabel = CONTACT_QUERY_SUBJECT_LABELS[item.subject] || item.subject;
 
+    const isReplied = Boolean(item.replied_at);
+    const replyBadgeClass = isReplied ? 'badge-typed' : 'badge-file';
+    const replyLabel = isReplied ? 'Replied' : 'Not Replied';
+    const replyButtonLabel = isReplied ? 'Reply Again' : 'Reply';
+
     return '<tr>' +
         '<td>' + escapeHtml(item.full_name) + '</td>' +
         '<td>' + escapeHtml(item.email) + '<br><span class="admin-muted">' + escapeHtml(item.mobile_number) + '</span></td>' +
         '<td>' + escapeHtml(subjectLabel) + '</td>' +
-        '<td style="max-width:280px; white-space:pre-wrap;">' + escapeHtml(item.message) + '</td>' +
+        '<td style="white-space:pre-wrap;">' + escapeHtml(item.message) + '</td>' +
         '<td>' + escapeHtml(formatQueryDate(item.created_at)) + '</td>' +
-        '<td><span class="badge-source ' + statusBadgeClass + '">' + statusLabel + '</span></td>' +
         '<td>' +
-        '<button class="btn btn-outline btn-sm" onclick="handleToggleQueryStatus(' + item.id + ', \'' + toggleStatus + '\')">' + toggleLabel + '</button> ' +
-        '<button class="btn btn-danger btn-sm" onclick="handleDeleteQuery(' + item.id + ')">Delete</button>' +
+        '<div class="status-badge-stack">' +
+        '<span class="badge-source ' + statusBadgeClass + '">' + statusLabel + '</span>' +
+        '<span class="badge-source ' + replyBadgeClass + '">' + replyLabel + '</span>' +
+        '</div>' +
+        (isReplied ? '<span class="admin-muted" style="display:block; margin-top:4px;">' + escapeHtml(formatQueryDate(item.replied_at)) + '</span>' : '') +
+        '</td>' +
+        '<td>' +
+        '<div class="row-actions">' +
+        '<button class="btn btn-outline btn-sm" onclick="openQueryReplyModal(\'' + item.id + '\')">' + replyButtonLabel + '</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="handleToggleQueryStatus(\'' + item.id + '\', \'' + toggleStatus + '\')">' + toggleLabel + '</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="handleDeleteQuery(\'' + item.id + '\')">Delete</button>' +
+        '</div>' +
         '</td>' +
         '</tr>';
   }).join('');
@@ -5541,6 +5611,126 @@ async function handleDeleteQuery(id) {
   }
 }
 
+let activeReplyQueryId = null;
+
+function openQueryReplyModal(id) {
+  const modal = document.getElementById('contact-query-reply-modal');
+  // contact_queries.id is a Postgres bigint, which node-pg returns as a
+  // string (to avoid precision loss) -- compare as strings so this still
+  // matches regardless of whether the caller passed a string or number.
+  const query = contactQueriesCache.find(function (q) { return String(q.id) === String(id); });
+  if (!modal || !query) return;
+
+  activeReplyQueryId = id;
+
+  document.getElementById('contact-query-reply-original').textContent = query.message;
+
+  const previousReplyEl = document.getElementById('contact-query-reply-previous');
+  if (query.replied_at) {
+    previousReplyEl.textContent =
+        'Previously replied on ' + formatQueryDate(query.replied_at) + ':\n' + query.admin_reply;
+    previousReplyEl.style.display = '';
+  } else {
+    previousReplyEl.textContent = '';
+    previousReplyEl.style.display = 'none';
+  }
+
+  const replyInput = document.getElementById('contact-query-reply-text');
+  const replyError = document.getElementById('contact-query-reply-error');
+  replyInput.value = '';
+  replyError.textContent = '';
+  replyError.classList.remove('is-visible');
+  replyInput.classList.remove('input-error');
+
+  modal.hidden = false;
+  replyInput.focus();
+}
+
+function closeQueryReplyModal() {
+  const modal = document.getElementById('contact-query-reply-modal');
+  if (modal) modal.hidden = true;
+  activeReplyQueryId = null;
+}
+
+async function handleSendQueryReply() {
+  const replyInput = document.getElementById('contact-query-reply-text');
+  const replyError = document.getElementById('contact-query-reply-error');
+  const sendButton = document.getElementById('confirm-contact-query-reply');
+
+  const reply = replyInput.value.trim();
+
+  if (!reply) {
+    replyError.textContent = 'A reply message is required.';
+    replyError.classList.add('is-visible');
+    replyInput.classList.add('input-error');
+    replyInput.focus();
+    return;
+  }
+
+  if (!activeReplyQueryId) return;
+
+  sendButton.disabled = true;
+
+  try {
+    const res = await fetch(
+        SLNA_CONFIG.API_BASE_URL + '/contact-queries/' + activeReplyQueryId + '/reply',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ reply: reply })
+        }
+    );
+
+    const data = await res.json().catch(function () { return null; });
+
+    if (!res.ok) {
+      replyError.textContent = (data && data.error) || 'Could not send the reply. Please try again.';
+      replyError.classList.add('is-visible');
+      return;
+    }
+
+    closeQueryReplyModal();
+    showAlert('contact-queries-alert', 'Reply sent.', 'success');
+    await loadContactQueries();
+  } catch (err) {
+    console.error(err);
+    replyError.textContent = 'Could not reach the server. Please check that the backend is running and try again.';
+    replyError.classList.add('is-visible');
+  } finally {
+    sendButton.disabled = false;
+  }
+}
+
+function initContactQueryReplyModal() {
+  const modal = document.getElementById('contact-query-reply-modal');
+  if (!modal) return;
+
+  const cancelButton = document.getElementById('cancel-contact-query-reply');
+  const confirmButton = document.getElementById('confirm-contact-query-reply');
+  const backdrop = modal.querySelector('.admin-confirm-backdrop');
+  const replyInput = document.getElementById('contact-query-reply-text');
+
+  if (cancelButton) cancelButton.addEventListener('click', closeQueryReplyModal);
+  if (backdrop) backdrop.addEventListener('click', closeQueryReplyModal);
+  if (confirmButton) confirmButton.addEventListener('click', handleSendQueryReply);
+
+  if (replyInput) {
+    replyInput.addEventListener('input', function () {
+      const replyError = document.getElementById('contact-query-reply-error');
+      replyError.textContent = '';
+      replyError.classList.remove('is-visible');
+      replyInput.classList.remove('input-error');
+    });
+  }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !modal.hidden) closeQueryReplyModal();
+  });
+}
+
 function initContactQueries() {
   document.querySelectorAll('[data-query-status]').forEach(function (button) {
     button.addEventListener('click', function () {
@@ -5559,6 +5749,8 @@ function initContactQueries() {
   if (refreshButton) {
     refreshButton.addEventListener('click', loadContactQueries);
   }
+
+  initContactQueryReplyModal();
 
   loadContactQueries();
 }
@@ -5756,10 +5948,67 @@ function initMemberDirectoryAdmin() {
   const cancelButton = document.getElementById('member-edit-cancel');
   const backdrop = modal ? modal.querySelector('.admin-confirm-backdrop') : null;
   const membershipNumberDisplay = document.getElementById('member-edit-membership-number');
+  const fetchNextMemberMembershipNumberButton = document.getElementById('member-edit-fetch-next-membership-number');
 
   let legacyMembers = [];
   let newMembers = [];
   let activeEdit = null; // { source: 'legacy'|'new'|'legacy-create', id, referenceNumber, fullName }
+
+  // Per-tab sort state for the "Membership #" / "Name" sortable column
+  // headers -- { key: 'membershipNumber'|'fullName'|null, dir: 1|-1 }.
+  const newSortState = { key: null, dir: 1 };
+  const legacySortState = { key: null, dir: 1 };
+  const deactivatedSortState = { key: null, dir: 1 };
+  const allSortState = { key: null, dir: 1 };
+
+  function sortByKey(list, sortState, getMember) {
+    if (!sortState.key) return list;
+
+    return list.slice().sort(function (a, b) {
+      const av = String((getMember(a) || {})[sortState.key] || '').trim();
+      const bv = String((getMember(b) || {})[sortState.key] || '').trim();
+      return av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' }) * sortState.dir;
+    });
+  }
+
+  function setupSortableHeaders(tableEl, sortState, onChange) {
+    if (!tableEl) return;
+
+    const headers = tableEl.querySelectorAll('th.sortable-th[data-sort-key]');
+
+    function updateIndicators() {
+      headers.forEach(function (th) {
+        const arrow = th.querySelector('.sort-arrow');
+        if (!arrow) return;
+        if (th.dataset.sortKey === sortState.key) {
+          arrow.textContent = sortState.dir === 1 ? '▲' : '▼';
+          arrow.classList.add('sort-arrow-active');
+        } else {
+          // Neutral up/down icon shown at all times on every sortable
+          // header, not just on hover -- otherwise there's no visual cue
+          // that the column is sortable at all.
+          arrow.textContent = '⇕';
+          arrow.classList.remove('sort-arrow-active');
+        }
+      });
+    }
+
+    updateIndicators();
+
+    headers.forEach(function (th) {
+      th.addEventListener('click', function () {
+        const key = th.dataset.sortKey;
+        if (sortState.key === key) {
+          sortState.dir = sortState.dir * -1;
+        } else {
+          sortState.key = key;
+          sortState.dir = 1;
+        }
+        updateIndicators();
+        onChange();
+      });
+    });
+  }
 
   async function loadMemberDirectory() {
     newTbody.innerHTML = '<tr><td colspan="6" class="empty-table-state">Loading&hellip;</td></tr>';
@@ -5809,23 +6058,17 @@ function initMemberDirectoryAdmin() {
     return member.isActive !== false;
   }
 
-  // The tab badge and the non-bracketed heading number are both the
-  // ACTIVE count -- that's the number that actually matters day to day.
-  // The bracketed "(X total)" keeps the grand total (active + deactivated)
-  // visible too, just secondary.
+  // The tab badge and the heading badge are both the ACTIVE count --
+  // that's the number that actually matters day to day.
   function updateTotalMemberCount() {
     const activeTotal = legacyMembers.filter(isActiveMember).length +
         newMembers.filter(isActiveMember).length;
-    const grandTotal = legacyMembers.length + newMembers.length;
 
     const tabBadge = document.getElementById('member-directory-total-count');
     if (tabBadge) tabBadge.textContent = String(activeTotal);
 
     const activeCountEl = document.getElementById('member-directory-panel-active-count');
     if (activeCountEl) activeCountEl.textContent = activeTotal + ' Active';
-
-    const panelCount = document.getElementById('member-directory-panel-total-count');
-    if (panelCount) panelCount.textContent = '(' + grandTotal + ' total)';
   }
 
   function matchesSearch(record, searchTerm) {
@@ -5878,9 +6121,10 @@ function initMemberDirectoryAdmin() {
 
   function renderNewMembers() {
     const searchTerm = (newSearchInput && newSearchInput.value || '').toLowerCase().trim();
-    const filtered = newMembers
+    let filtered = newMembers
         .filter(isActiveMember)
         .filter(function (m) { return matchesSearch(m, searchTerm); });
+    filtered = sortByKey(filtered, newSortState, function (m) { return m; });
 
     newTbody.innerHTML = filtered.length
         ? filtered.map(function (m) { return editableRow(m, 'new'); }).join('')
@@ -5889,9 +6133,10 @@ function initMemberDirectoryAdmin() {
 
   function renderLegacyMembers() {
     const searchTerm = (legacySearchInput && legacySearchInput.value || '').toLowerCase().trim();
-    const filtered = legacyMembers
+    let filtered = legacyMembers
         .filter(isActiveMember)
         .filter(function (m) { return matchesSearch(m, searchTerm); });
+    filtered = sortByKey(filtered, legacySortState, function (m) { return m; });
 
     legacyTbody.innerHTML = filtered.length
         ? filtered.map(function (m) { return editableRow(m, 'legacy'); }).join('')
@@ -5913,8 +6158,9 @@ function initMemberDirectoryAdmin() {
 
   function renderDeactivatedMembers() {
     const searchTerm = (deactivatedSearchInput && deactivatedSearchInput.value || '').toLowerCase().trim();
-    const combined = combinedEntries(function (m) { return !isActiveMember(m); })
+    let combined = combinedEntries(function (m) { return !isActiveMember(m); })
         .filter(function (entry) { return matchesSearch(entry.member, searchTerm); });
+    combined = sortByKey(combined, deactivatedSortState, function (entry) { return entry.member; });
 
     deactivatedTbody.innerHTML = combined.length
         ? combined.map(function (entry) {
@@ -5925,8 +6171,9 @@ function initMemberDirectoryAdmin() {
 
   function renderAllMembers() {
     const searchTerm = (allSearchInput && allSearchInput.value || '').toLowerCase().trim();
-    const combined = combinedEntries(isActiveMember)
+    let combined = combinedEntries(isActiveMember)
         .filter(function (entry) { return matchesSearch(entry.member, searchTerm); });
+    combined = sortByKey(combined, allSortState, function (entry) { return entry.member; });
 
     allTbody.innerHTML = combined.length
         ? combined.map(function (entry) {
@@ -6022,6 +6269,15 @@ function initMemberDirectoryAdmin() {
       membershipNumberDisplay.required = isCreate;
     }
 
+    // Legacy members use the old pre-digital numbering (several formats,
+    // none of them "LT <n>"), so the suggested-next-number lookup --
+    // which only follows the current "LT <n>" scheme -- is only offered
+    // on the Add New Member form, not Add Legacy Member.
+    if (fetchNextMemberMembershipNumberButton) {
+      fetchNextMemberMembershipNumberButton.style.display =
+          mode === 'new-create' ? '' : 'none';
+    }
+
     const nameWithInitialsInput = document.getElementById('member-edit-name-with-initials');
     if (nameWithInitialsInput) nameWithInitialsInput.required = isCreate;
 
@@ -6042,6 +6298,29 @@ function initMemberDirectoryAdmin() {
 
     clearFieldError('member-edit-membership-number', 'member-edit-membership-number-error');
     clearFieldError('member-edit-name-with-initials', 'member-edit-name-with-initials-error');
+  }
+
+  if (fetchNextMemberMembershipNumberButton) {
+    fetchNextMemberMembershipNumberButton.addEventListener(
+        'click',
+        async function () {
+          clearFieldError('member-edit-membership-number', 'member-edit-membership-number-error');
+
+          fetchNextMemberMembershipNumberButton.disabled = true;
+
+          try {
+            membershipNumberDisplay.value = await fetchNextMembershipNumber();
+          } catch (error) {
+            showFieldError(
+                'member-edit-membership-number',
+                'member-edit-membership-number-error',
+                error.message || 'Could not fetch the next membership number.'
+            );
+          } finally {
+            fetchNextMemberMembershipNumberButton.disabled = false;
+          }
+        }
+    );
   }
 
   function openMemberEditModal(source, member) {
@@ -6397,6 +6676,11 @@ function initMemberDirectoryAdmin() {
       }
     });
   }
+
+  setupSortableHeaders(newTbody.closest('table'), newSortState, renderNewMembers);
+  setupSortableHeaders(legacyTbody.closest('table'), legacySortState, renderLegacyMembers);
+  setupSortableHeaders(deactivatedTbody.closest('table'), deactivatedSortState, renderDeactivatedMembers);
+  setupSortableHeaders(allTbody.closest('table'), allSortState, renderAllMembers);
 
   loadMemberDirectory();
 }
