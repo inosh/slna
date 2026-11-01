@@ -1060,12 +1060,22 @@
                 Membership Number
               </label>
 
-              <input
-                      type="text"
-                      id="membership-number"
-                      placeholder="Required only when approving an application."
-                      aria-describedby="membership-number-error"
-              >
+              <div class="membership-number-input-row">
+                <input
+                        type="text"
+                        id="membership-number"
+                        placeholder="Required only when approving an application."
+                        aria-describedby="membership-number-error"
+                >
+
+                <button
+                        type="button"
+                        id="fetch-next-membership-number"
+                        class="btn btn-outline btn-sm"
+                >
+                  Fetch Next
+                </button>
+              </div>
 
               <p
                       class="membership-field-error"
@@ -1259,8 +1269,7 @@
           <div>
             <h2>
               Member Directory
-              <span id="member-directory-panel-active-count" style="font-size:0.95rem; font-weight:700; color:var(--primary, #0b3d63);"></span>
-              <span class="admin-muted" style="font-size:0.85rem; font-weight:600;" id="member-directory-panel-total-count"></span>
+              <span id="member-directory-panel-active-count" class="member-count-badge"></span>
             </h2>
             <p class="admin-muted">
               Everyone who is currently a lifetime member: the pre-digital roll and
@@ -1327,8 +1336,8 @@
             <table class="news-table">
               <thead>
               <tr>
-                <th>Membership #</th>
-                <th>Name</th>
+                <th class="sortable-th" data-sort-key="membershipNumber">Membership #<span class="sort-arrow"></span></th>
+                <th class="sortable-th" data-sort-key="fullName">Name<span class="sort-arrow"></span></th>
                 <th>Working Place</th>
                 <th>NIC</th>
                 <th>Mobile</th>
@@ -1373,8 +1382,8 @@
             <table class="news-table">
               <thead>
               <tr>
-                <th>Membership #</th>
-                <th>Name</th>
+                <th class="sortable-th" data-sort-key="membershipNumber">Membership #<span class="sort-arrow"></span></th>
+                <th class="sortable-th" data-sort-key="fullName">Name<span class="sort-arrow"></span></th>
                 <th>Working Place</th>
                 <th>NIC</th>
                 <th>Mobile</th>
@@ -1406,19 +1415,19 @@
           <div class="table-scroll">
             <table class="news-table member-directory-combined-table">
               <colgroup>
-                <col style="width:12%;">
+                <col style="width:17%;">
                 <col style="width:8%;">
                 <col style="width:18%;">
                 <col style="width:18%;">
                 <col style="width:14%;">
                 <col style="width:14%;">
-                <col style="width:16%;">
+                <col style="width:11%;">
               </colgroup>
               <thead>
               <tr>
-                <th>Membership #</th>
+                <th class="sortable-th" data-sort-key="membershipNumber">Membership #<span class="sort-arrow"></span></th>
                 <th>Source</th>
-                <th>Name</th>
+                <th class="sortable-th" data-sort-key="fullName">Name<span class="sort-arrow"></span></th>
                 <th>Working Place</th>
                 <th>NIC</th>
                 <th>Mobile</th>
@@ -1461,19 +1470,19 @@
           <div class="table-scroll">
             <table class="news-table member-directory-combined-table">
               <colgroup>
-                <col style="width:12%;">
+                <col style="width:17%;">
                 <col style="width:8%;">
                 <col style="width:18%;">
                 <col style="width:18%;">
                 <col style="width:14%;">
                 <col style="width:14%;">
-                <col style="width:16%;">
+                <col style="width:11%;">
               </colgroup>
               <thead>
               <tr>
-                <th>Membership #</th>
+                <th class="sortable-th" data-sort-key="membershipNumber">Membership #<span class="sort-arrow"></span></th>
                 <th>Source</th>
-                <th>Name</th>
+                <th class="sortable-th" data-sort-key="fullName">Name<span class="sort-arrow"></span></th>
                 <th>Working Place</th>
                 <th>NIC</th>
                 <th>Mobile</th>
@@ -1515,13 +1524,22 @@
                 role="tablist"
                 aria-label="Filter queries by status"
         >
-          <button class="tab-btn active" data-query-status="all" type="button">All</button>
-          <button class="tab-btn" data-query-status="new" type="button">New</button>
+          <button class="tab-btn active" data-query-status="new" type="button">New</button>
           <button class="tab-btn" data-query-status="read" type="button">Read</button>
+          <button class="tab-btn" data-query-status="all" type="button">All</button>
         </div>
 
         <div class="table-scroll">
-          <table class="news-table">
+          <table class="news-table contact-queries-table">
+            <colgroup>
+              <col style="width:12%">
+              <col style="width:15%">
+              <col style="width:9%">
+              <col style="width:23%">
+              <col style="width:10%">
+              <col style="width:13%">
+              <col style="width:18%">
+            </colgroup>
             <thead>
             <tr>
               <th>Name</th>
@@ -2210,7 +2228,17 @@
               Membership Number
               <span id="member-edit-membership-number-asterisk" aria-hidden="true" style="display:none;">*</span>
             </label>
-            <input type="text" id="member-edit-membership-number" disabled aria-describedby="member-edit-membership-number-error">
+            <div class="membership-number-input-row">
+              <input type="text" id="member-edit-membership-number" disabled aria-describedby="member-edit-membership-number-error">
+              <button
+                      type="button"
+                      id="member-edit-fetch-next-membership-number"
+                      class="btn btn-outline btn-sm"
+                      style="display:none;"
+              >
+                Fetch Next
+              </button>
+            </div>
             <p class="form-help" id="member-edit-membership-number-help">Not editable here.</p>
             <p class="membership-field-error" id="member-edit-membership-number-error" aria-live="polite"></p>
           </div>
@@ -2496,6 +2524,59 @@
             <button type="submit" class="btn btn-primary" id="change-password-submit">Update Password</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div
+          class="admin-confirm-modal"
+          id="contact-query-reply-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-query-reply-modal-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-content">
+        <h2 id="contact-query-reply-modal-title">Reply to Query</h2>
+
+        <p class="admin-muted" style="text-align:left; margin-bottom:4px;">Original message</p>
+        <p
+                id="contact-query-reply-original"
+                class="contact-query-quote-box"
+        ></p>
+
+        <p
+                id="contact-query-reply-previous"
+                class="admin-muted"
+                style="display:none; text-align:left; white-space:pre-wrap;"
+        ></p>
+
+        <div class="form-group">
+          <label for="contact-query-reply-text">
+            Your Reply
+          </label>
+
+          <textarea
+                  id="contact-query-reply-text"
+                  rows="6"
+                  placeholder="Type your reply to the sender. It will be emailed to them along with their original message."
+                  aria-describedby="contact-query-reply-error"
+          ></textarea>
+
+          <p
+                  id="contact-query-reply-error"
+                  class="membership-field-error"
+                  aria-live="polite"
+          ></p>
+        </div>
+
+        <div class="admin-confirm-actions">
+          <button type="button" class="btn btn-outline" id="cancel-contact-query-reply">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirm-contact-query-reply">Send Reply</button>
+        </div>
       </div>
     </div>
   </div>

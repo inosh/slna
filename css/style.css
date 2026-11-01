@@ -451,6 +451,10 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 .news-table { width:100%; min-width:640px; border-collapse:collapse; margin-top:0; }
 .news-table th, .news-table td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13px; }
 .news-table th { background:var(--bg-light); color:var(--primary-dark); font-weight:700; white-space:nowrap; }
+.news-table th.sortable-th { cursor:pointer; user-select:none; }
+.news-table th.sortable-th:hover { background:var(--border); }
+.news-table th.sortable-th .sort-arrow { display:inline-block; width:14px; margin-left:3px; font-size:15px; opacity:0.6; }
+.news-table th.sortable-th .sort-arrow.sort-arrow-active { opacity:1; color:var(--primary, #0b3d63); }
 .news-table .admin-muted { font-size:12px; color:var(--muted); }
 /* Member Directory's combined (legacy + new) read-only tables -- Deactivated
    Members and All Active Members. table-layout:fixed makes the <colgroup>
@@ -462,6 +466,15 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 .member-directory-combined-table th { white-space:normal; }
 .member-directory-combined-table td { white-space:normal; word-break:break-word; }
 .member-directory-combined-table td:last-child { white-space:nowrap; word-break:normal; }
+
+/* User Queries table -- same table-layout:fixed + <colgroup> approach as
+   .member-directory-combined-table above, so Name/Contact/Message (the
+   columns with unpredictable length) wrap within their column instead of
+   pushing Reply/Actions off the edge of .table-scroll and forcing a
+   horizontal scroll just to see the action buttons. */
+.contact-queries-table { table-layout:fixed; }
+.contact-queries-table th { white-space:normal; }
+.contact-queries-table td { white-space:normal; word-break:break-word; }
 .pagination-bar { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:14px; }
 .pagination-bar .pagination-status { font-size:12.5px; color:var(--muted); }
 .pagination-bar .btn[disabled] { opacity:0.45; cursor:default; pointer-events:none; }
@@ -474,6 +487,17 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 .badge-typed { background:#dbeafe; color:#1d4ed8; }
 .badge-file { background:#fef3c7; color:#b45309; }
 .badge-manual { background:#ede9fe; color:#6d28d9; }
+.member-count-badge {
+  display:inline-block;
+  vertical-align:middle;
+  margin-left:8px;
+  padding:4px 13px;
+  border-radius:999px;
+  background:#dbeafe;
+  color:#1d4ed8;
+  font-size:1.05rem;
+  font-weight:800;
+}
 .alert {
   display:flex;
   align-items:flex-start;
@@ -2646,6 +2670,8 @@ fieldset.sex-field .radio-option input[type="radio"] {
 
 .row-actions { display:flex; flex-wrap:wrap; gap:6px; }
 
+.status-badge-stack { display:flex; flex-wrap:wrap; gap:5px; }
+
 .admin-edit-dialog {
   display: block;
   width: min(680px, 100%);
@@ -2793,9 +2819,47 @@ tr.registration-row-non-member {
   box-sizing: border-box;
 }
 
+.membership-number-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.membership-number-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.membership-number-input-row .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .membership-number-input-row {
+    flex-direction: column;
+  }
+
+  .membership-number-input-row .btn {
+    width: 100%;
+  }
+}
+
 .membership-number-group input::placeholder {
   color: #708396;
   opacity: 1;
+}
+
+.contact-query-quote-box {
+  text-align: left;
+  white-space: pre-wrap;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: 1px solid #cbddec;
+  border-radius: 6px;
+  background: #f3f8fd;
+  color: var(--primary-dark, #073f73);
 }
 
 .membership-field-error {
