@@ -20,6 +20,16 @@ function fullUrl(relativePath) {
   const apiOrigin = SLNA_CONFIG.API_BASE_URL.replace('/api', '');
   return apiOrigin + relativePath;
 }
+// A news cover may be a photo or a video; the stored URL keeps the file's extension.
+function isVideoUrl(url) {
+  return /\.(mp4|m4v|webm|mov|ogg|ogv|avi)$/i.test(String(url || ''));
+}
+// Cover for cards and lists: the photo, or the video's first frame with a play mark.
+function coverMediaHtml(url, alt) {
+  return isVideoUrl(url)
+    ? '<video src="' + fullUrl(url) + '" muted playsinline preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
+    : '<img src="' + fullUrl(url) + '" alt="' + (alt || '') + '">';
+}
 function escapeHtml(value) {
   return String(value || '')
       .replace(/&/g, '&amp;')
@@ -71,7 +81,7 @@ async function renderPublicNewsList() {
       );
 
       const imageHtml = item.photo_url
-          ? '<img src="' + fullUrl(item.photo_url) + '" alt="' + title + '">'
+          ? coverMediaHtml(item.photo_url, title)
           : '<div class="news-grid-placeholder" aria-hidden="true">SLNA</div>';
 
       return (
@@ -142,7 +152,7 @@ async function renderHomeNewsPreview() {
     if (items.length === 0) { container.innerHTML = '<div class="news-empty">No news items published yet.</div>'; return; }
     container.innerHTML = '<div class="grid grid-3">' + items.map(item => {
       const title = escapeHtml(item.title || 'News Update');
-      const imgHtml = item.photo_url ? '<img src="' + fullUrl(item.photo_url) + '" alt="">' : title.charAt(0);
+      const imgHtml = item.photo_url ? coverMediaHtml(item.photo_url, '') : title.charAt(0);
       const preview = escapeHtml(item.summary || stripHtml(item.body).substring(0, 120));
       return '<a href="pages/news-detail.html?id=' + item.id + '" class="card"><div class="card-img">' + imgHtml + '</div><div class="card-body"><div class="date">' + formatDateLong(item.event_date) + '</div><h3>' + title + '</h3><p>' + preview + '</p></div></a>';
     }).join('') + '</div>';
@@ -203,7 +213,10 @@ async function renderNewsDetail() {
     const item = await apiGet('/news/' + params.get('id'));
     const title = escapeHtml(item.title || 'News Update');
     document.title = (item.title || 'News Update') + ' | SLNA';
-    const photoHtml = item.photo_url ? '<div class="detail-photo"><img src="' + fullUrl(item.photo_url) + '" alt=""></div>' : '';
+    const photoHtml = !item.photo_url ? ''
+      : isVideoUrl(item.photo_url)
+        ? '<div class="detail-photo"><video src="' + fullUrl(item.photo_url) + '" controls playsinline preload="metadata"></video></div>'
+        : '<div class="detail-photo"><img src="' + fullUrl(item.photo_url) + '" alt=""></div>';
     const attachmentHtml = item.file_name ? '<div class="detail-attachment">Attachment: ' + escapeHtml(item.file_name) + '</div>' : '';
     const galleryHtml = renderNewsGallery(item.photos);
     const bcEl = document.getElementById('news-detail-breadcrumb');
@@ -222,7 +235,7 @@ async function renderNewsDetail() {
       description: description,
       datePublished: item.event_date,
       dateModified: item.updated_at || item.event_date,
-      image: item.photo_url ? [fullUrl(item.photo_url)] : undefined,
+      image: item.photo_url && !isVideoUrl(item.photo_url) ? [fullUrl(item.photo_url)] : undefined,
       publisher: {
         '@type': 'Organization',
         name: "Sri Lanka Nurses Association",
@@ -245,7 +258,7 @@ async function renderNewsSidebar() {
     }
     container.innerHTML = others.map(item => {
       const thumb = item.photo_url
-          ? '<img src="' + fullUrl(item.photo_url) + '" alt="">'
+          ? coverMediaHtml(item.photo_url, '')
           : '<div class="news-sidebar-thumb-fallback">' + escapeHtml((item.title || '?').charAt(0)) + '</div>';
       return '<a class="news-sidebar-item" href="news-detail.html?id=' + item.id + '">' +
           '<div class="news-sidebar-thumb">' + thumb + '</div>' +
@@ -257,21 +270,98 @@ async function renderNewsSidebar() {
     console.error(err);
   }
 }
+// Gallery page, two views:
+//   All    - every photo and video from every album (newest album first)
+//   Albums - one card per album, opening the album page
+// ?view=albums opens the album cards; the address follows the chosen view.
+// Any photo/video opens the shared lightbox over the items shown.
 async function renderAlbumGrid() {
-  const container = document.getElementById('album-grid-container');
-  if (!container) return;
-  try {
-    const albums = await apiGet('/albums');
-    if (albums.length === 0) { container.innerHTML = '<div class="news-empty">No photo albums published yet.</div>'; return; }
-    container.innerHTML = albums.map(album => {
+  const albumsEl = document.getElementById('album-grid-container');
+  const allEl = document.getElementById('gallery-all-container');
+  if (!albumsEl) return;
+  const countEl = document.getElementById('gallery-count');
+  const radios = document.querySelectorAll('[name="gallery-view"]');
+  const ALL_BATCH = 24;
+  let albums = [];
+
+  // "12 photos and 1 video"
+  function countText(items) {
+    const videos = items.filter(p => (p.media_type || 'image') === 'video').length;
+    const photos = items.length - videos;
+    const part = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+    return [photos && part(photos, 'photo'), videos && part(videos, 'video')].filter(Boolean).join(' and ');
+  }
+
+  function setUrl(view) {
+    const url = new URL(window.location.href);
+    if (view === 'albums') url.searchParams.set('view', 'albums'); else url.searchParams.delete('view');
+    history.replaceState(null, '', url);
+  }
+
+  function showAlbums() {
+    if (allEl) allEl.hidden = true;
+    albumsEl.hidden = false;
+    if (countEl) countEl.textContent = albums.length + ' album' + (albums.length === 1 ? '' : 's');
+    if (albums.length === 0) { albumsEl.innerHTML = '<div class="news-empty">No photo albums published yet.</div>'; setUrl('albums'); return; }
+    albumsEl.innerHTML = albums.map(album => {
       const cover = !album.cover_photo
         ? '<div class="no-cover">No Photos</div>'
         : album.cover_media_type === 'video'
           ? '<video src="' + fullUrl(album.cover_photo) + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
-          : '<img src="' + fullUrl(album.cover_photo) + '" alt="">';
+          : '<img src="' + fullUrl(album.cover_photo) + '" alt="" loading="lazy">';
       return '<a href="album.html?id=' + album.id + '" class="album-tile"><div class="album-cover">' + cover + '<span class="album-count-badge">' + album.photo_count + ' item(s)</span></div><div class="album-info"><h3>' + escapeHtml(album.title) + '</h3><div class="album-date">' + formatDateLong(album.event_date) + '</div></div></a>';
     }).join('');
-  } catch (err) { container.innerHTML = '<div class="news-empty">Could not load albums. Is the backend server running?</div>'; console.error(err); }
+    setUrl('albums');
+  }
+
+  function showAll() {
+    albumsEl.hidden = true;
+    if (!allEl) return;
+    allEl.hidden = false;
+    const items = albums.flatMap(album => (album.photos || []).map(p => ({ url: fullUrl(p.photo_url), media_type: p.media_type || 'image', title: album.title })));
+    _currentAlbumPhotos = items.map(p => p.url);
+    _currentAlbumMediaTypes = items.map(p => p.media_type);
+    if (countEl) countEl.textContent = countText(items);
+    setUrl('all');
+    if (items.length === 0) { allEl.innerHTML = '<div class="news-empty">No photos or videos published yet.</div>'; return; }
+
+    // Tiles are added a batch at a time ("Show more"), so a large gallery
+    // doesn't load every photo and video at once.
+    let shown = 0;
+    allEl.innerHTML = '<div class="photo-grid"></div><div class="gallery-more" hidden><button type="button" class="btn btn-outline">Show more</button></div>';
+    const grid = allEl.querySelector('.photo-grid');
+    const more = allEl.querySelector('.gallery-more');
+    function addBatch() {
+      const next = items.slice(shown, shown + ALL_BATCH);
+      grid.insertAdjacentHTML('beforeend', next.map((p, k) => {
+        const idx = shown + k;
+        const media = p.media_type === 'video'
+          ? '<video src="' + p.url + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
+          : '<img src="' + p.url + '" alt="' + escapeHtml(p.title) + '" loading="lazy">';
+        return '<div class="photo-tile" title="' + escapeHtml(p.title) + '" onclick="openLightbox(' + idx + ')">' + media + '</div>';
+      }).join(''));
+      shown += next.length;
+      more.hidden = shown >= items.length;
+    }
+    more.querySelector('button').addEventListener('click', addBatch);
+    addBatch();
+  }
+
+  radios.forEach(r => r.addEventListener('change', () => (r.value === 'albums' ? showAlbums() : showAll())));
+
+  try {
+    albums = await apiGet('/albums?include=photos');
+    if (new URLSearchParams(window.location.search).get('view') === 'albums' || !allEl) {
+      const albumsRadio = document.querySelector('[name="gallery-view"][value="albums"]');
+      if (albumsRadio) albumsRadio.checked = true;
+      showAlbums();
+    } else {
+      showAll();
+    }
+  } catch (err) {
+    (allEl || albumsEl).innerHTML = '<div class="news-empty">Could not load the gallery. Please try again later.</div>';
+    console.error(err);
+  }
 }
 let _currentAlbumPhotos = []; let _currentAlbumMediaTypes = []; let _currentLightboxIndex = 0;
 async function renderAlbumDetail() {

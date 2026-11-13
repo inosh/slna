@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/'/g, '&#039;');
     }
 
+    // Event descriptions may be rich text; cards show them as plain text.
+    function plainText(value) {
+        const text = String(value || '');
+        if (!/<[a-z][\s\S]*>/i.test(text)) return text;
+        const spaced = text.replace(/<\/(p|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '$& ');
+        return (new DOMParser().parseFromString(spaced, 'text/html').body.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
     // Defaults to "1 Day" -- the common case for events saved before this
     // field existed, and for most CPD events today.
     function formatDuration(number, unit) {
@@ -137,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const eventDate = event.event_date || event.eventDate;
         const time = escapeHtml(event.time);
         const location = escapeHtml(event.location);
-        const summary = escapeHtml(event.summary);
+        const summary = escapeHtml(plainText(event.summary));
         const duration = escapeHtml(formatDuration(event.duration_number, event.duration_unit));
 
         const photoUrl = resolvePhotoUrl(

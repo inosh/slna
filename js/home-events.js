@@ -25,6 +25,14 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/'/g, '&#039;');
     }
 
+    // Event descriptions may be rich text; cards show them as plain text.
+    function plainText(value) {
+        const text = String(value || '');
+        if (!/<[a-z][\s\S]*>/i.test(text)) return text;
+        const spaced = text.replace(/<\/(p|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '$& ');
+        return (new DOMParser().parseFromString(spaced, 'text/html').body.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
     function parseEventDate(value) {
         if (!value) {
             return null;
@@ -159,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const title = escapeHtml(event.title);
         const type = escapeHtml(event.type || event.event_type || 'Event');
         const status = escapeHtml(statusLabel(event.status));
-        const summary = escapeHtml(event.summary || '');
+        const summary = escapeHtml(plainText(event.summary || ''));
         const photoUrl = resolvePhotoUrl(event.photo_url || event.photoUrl);
 
         const today = new Date();
