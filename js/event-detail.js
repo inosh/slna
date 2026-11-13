@@ -170,6 +170,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const location = event.location || '';
         const audience = event.audience || '';
         const summary = event.summary || '';
+        // Descriptions are rich text (links, bold, lists) from the admin
+        // editor; older ones are plain text and keep their line breaks.
+        const summaryIsHtml = /<(p|br|ul|ol|li|a|strong|em|b|i|u|h[1-6]|blockquote)\b/i.test(summary);
+        const summaryText = summaryIsHtml
+            ? (new DOMParser().parseFromString(summary.replace(/<\/(p|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '$& '), 'text/html').body.textContent || '').replace(/\s+/g, ' ').trim()
+            : summary;
+        const summaryHtml = !summary
+            ? ''
+            : summaryIsHtml && typeof DOMPurify !== 'undefined'
+                ? '<div class="event-detail-description ql-editor">' + DOMPurify.sanitize(summary) + '</div>'
+                : '<p>' + escapeHtml(summaryText) + '</p>';
         const memberFee = event.member_fee;
         const nonMemberFee = event.non_member_fee;
         const photoUrl = resolvePhotoUrl(event.photo_url || event.photoUrl);
@@ -306,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const summaryMarkup = (summary || attachmentDownloadUrl) ? `
       <div class="event-detail-summary">
         <h2>About This Event</h2>
-        ${summary ? `<p>${escapeHtml(summary)}</p>` : ''}
+        ${summaryHtml}
         ${attachmentDownloadUrl ? `<p class="event-detail-attachment">Read more about the event &mdash; <a href="${attachmentDownloadUrl}">Refer the Attachment</a></p>` : ''}
       </div>
     ` : '';
@@ -357,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function () {
             startDate: event.event_date,
             eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
             location: location ? { '@type': 'Place', name: location } : undefined,
-            description: summary || undefined,
+            description: summaryText || undefined,
             image: photoUrl ? [photoUrl] : undefined,
             offers: hasFeeData ? {
                 '@type': 'Offer',

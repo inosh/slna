@@ -238,16 +238,17 @@ function showEventRegistrationRejectPrompt() {
 // Wires a Quill rich-text editor to a hidden textarea so the rest of the
 // code (reads, validation, form.reset()) keeps working against a plain
 // textarea value, unaware the field is backed by a WYSIWYG editor.
-function createRichTextEditor(editorId, textareaId) {
+function createRichTextEditor(editorId, textareaId, options) {
+  options = options || {};
   const editorEl = document.getElementById(editorId);
   const textarea = document.getElementById(textareaId);
   if (!editorEl || !textarea || typeof Quill === 'undefined') return null;
 
   const quill = new Quill(editorEl, {
     theme: 'snow',
-    placeholder: 'Write the full news content here...',
+    placeholder: options.placeholder || 'Write the full news content here...',
     modules: {
-      toolbar: [
+      toolbar: options.toolbar || [
         [{ header: [2, 3, false] }],
         ['bold', 'italic', 'underline'],
         [{ list: 'ordered' }, { list: 'bullet' }],
@@ -292,6 +293,65 @@ function createRichTextEditor(editorId, textareaId) {
   };
 
   return quill;
+}
+
+// Event descriptions use the same editor as news content, minus pictures
+// (an event already has its own photo and PDF attachment).
+const EVENT_DESCRIPTION_EDITOR = {
+  placeholder: 'Describe the event. You can add links, bold text and lists.',
+  toolbar: [
+    [{ header: [2, 3, false] }],
+    ['bold', 'italic', 'underline'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean']
+  ]
+};
+
+// Descriptions saved before the editor existed are plain text: turn their
+// lines into paragraphs so they open in the editor as they looked.
+function eventSummaryToEditorHtml(summary) {
+  const text = String(summary || '');
+  if (!text.trim()) return '';
+  if (/<(p|br|ul|ol|li|a|strong|em|b|i|u|h[1-6]|blockquote)\b/i.test(text)) return text;
+  const escape = function (value) {
+    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  return text.split(/\r?\n/).map(function (line) {
+    return '<p>' + (line.trim() ? escape(line) : '<br>') + '</p>';
+  }).join('');
+}
+
+let eventEditSummaryQuill = null;
+
+// News cover: a photo (compressed, up to 15MB) or a video (up to 100MB).
+// Shows a preview in previewEl and returns the file to upload, or null
+// (with an error in alertId) when it's too large.
+async function prepareNewsCoverFile(file, alertId, previewEl) {
+  const isVideo = file.type.startsWith('video/');
+  const limit = isVideo ? 100 : 15;
+
+  if (file.size > limit * 1024 * 1024) {
+    showAlert(alertId, 'That ' + (isVideo ? 'video' : 'photo') + ' is ' + (file.size / (1024 * 1024)).toFixed(1) +
+        'MB, which is over the ' + limit + 'MB limit. Please choose a smaller ' + (isVideo ? 'video' : 'photo') + '.', 'error');
+    return null;
+  }
+
+  const prepared = isVideo ? file : await compressImageFile(file);
+
+  if (previewEl) {
+    const url = URL.createObjectURL(prepared);
+    previewEl.innerHTML = isVideo
+        ? '<video src="' + url + '" class="thumb-preview" muted controls preload="metadata" style="max-width:220px;"></video>'
+        : '<img src="' + url + '" class="thumb-preview">';
+  }
+
+  return prepared;
+}
+
+// A stored cover URL ends in the uploaded file's extension.
+function isVideoUrl(url) {
+  return /\.(mp4|m4v|webm|mov|ogg|ogv|avi)$/i.test(String(url || ''));
 }
 
 // Gmail-style "pop out to a larger window" toggle for a rich-text editor shell.
@@ -516,6 +576,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initContactQueries();
   initEditNewsForm();
   initAlbumTitleEditModal();
+  initAlbumPhotosManager();
   initMembershipFees();
   initExecCommitteeAdmin();
   initSubCommitteesAdmin();
@@ -942,7 +1003,11 @@ document.addEventListener('DOMContentLoaded', function () {
       feesGroup.hidden = true;
     }
 
-    document.getElementById('event-edit-summary').value = item.summary || '';
+    if (eventEditSummaryQuill) {
+      eventEditSummaryQuill.setHtml(eventSummaryToEditorHtml(item.summary));
+    } else {
+      document.getElementById('event-edit-summary').value = item.summary || '';
+    }
 
     const statusSelect = document.getElementById('event-edit-status');
 
@@ -1023,6 +1088,13 @@ document.addEventListener('DOMContentLoaded', function () {
     populateTimeSelectGroup(EVENT_EDIT_TIME_FIELDS.start);
     populateTimeSelectGroup(EVENT_EDIT_TIME_FIELDS.end);
     populateDurationNumberSelect('event-edit-duration-number');
+
+    eventEditSummaryQuill = createRichTextEditor(
+        'event-edit-summary-editor',
+        'event-edit-summary',
+        EVENT_DESCRIPTION_EDITOR
+    );
+    initRichTextExpandToggle('event-edit-summary-shell', 'event-edit-summary-expand');
 
     [EVENT_EDIT_TIME_FIELDS.start, EVENT_EDIT_TIME_FIELDS.end].forEach(function (group) {
       [group.hour, group.minute, group.period].forEach(function (id) {
@@ -2083,6 +2155,13 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedAttachment = null;
     let currentItems = [];
 
+    const summaryQuill = createRichTextEditor(
+        config.fields.summary + '-editor',
+        config.fields.summary,
+        EVENT_DESCRIPTION_EDITOR
+    );
+    initRichTextExpandToggle(config.fields.summary + '-shell', config.fields.summary + '-expand');
+
     if (config.fields.time && typeof config.fields.time === 'object') {
       populateTimeSelectGroup(config.fields.time.start);
       populateTimeSelectGroup(config.fields.time.end);
@@ -2352,6 +2431,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     config.resetForm = function () {
       form.reset();
+      if (summaryQuill) summaryQuill.setHtml('');
       selectedPhoto = null;
       selectedAttachment = null;
 
@@ -2536,6 +2616,7 @@ document.addEventListener('DOMContentLoaded', function () {
         );
 
         form.reset();
+        if (summaryQuill) summaryQuill.setHtml('');
         selectedPhoto = null;
         selectedAttachment = null;
 
@@ -2693,16 +2774,9 @@ document.addEventListener('DOMContentLoaded', function () {
   let typePhotoFile = null;
   document.getElementById('type-photo-input').addEventListener('change', async function (e) {
     if (e.target.files.length) {
-      const file = e.target.files[0];
-      if (file.size > 15 * 1024 * 1024) {
-        showAlert('type-alert', 'That photo is ' + (file.size / (1024*1024)).toFixed(1) + 'MB, which is over the 25MB limit. Please choose a smaller photo.', 'error');
-        e.target.value = '';
-        return;
-      }
-      typePhotoFile = await compressImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (evt) => { document.getElementById('type-photo-preview').innerHTML = '<img src="' + evt.target.result + '" class="thumb-preview">'; };
-      reader.readAsDataURL(typePhotoFile);
+      const prepared = await prepareNewsCoverFile(e.target.files[0], 'type-alert', document.getElementById('type-photo-preview'));
+      if (!prepared) { e.target.value = ''; return; }
+      typePhotoFile = prepared;
     }
   });
 
@@ -2816,16 +2890,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('file-photo-input').addEventListener('change', async function (e) {
     if (e.target.files.length) {
-      const file = e.target.files[0];
-      if (file.size > 15 * 1024 * 1024) {
-        showAlert('file-alert', 'That photo is ' + (file.size / (1024*1024)).toFixed(1) + 'MB, which is over the 25MB limit. Please choose a smaller photo.', 'error');
-        e.target.value = '';
-        return;
-      }
-      filePhotoFile = await compressImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (evt) => { document.getElementById('file-photo-preview').innerHTML = '<img src="' + evt.target.result + '" class="thumb-preview">'; };
-      reader.readAsDataURL(filePhotoFile);
+      const prepared = await prepareNewsCoverFile(e.target.files[0], 'file-alert', document.getElementById('file-photo-preview'));
+      if (!prepared) { e.target.value = ''; return; }
+      filePhotoFile = prepared;
     }
   });
   fileDrop.addEventListener('click', () => fileInput.click());
@@ -5495,7 +5562,10 @@ async function loadAdminNewsTable() {
     tbody.innerHTML = items.map(item => {
       const badgeClass = item.source === 'file' ? 'badge-file' : 'badge-typed';
       const badgeLabel = item.source === 'file' ? 'FILE UPLOAD' : 'TYPED';
-      const thumb = item.photo_url ? '<img src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:40px;height:40px;">' : '-';
+      const thumb = !item.photo_url ? '-'
+          : isVideoUrl(item.photo_url)
+              ? '<video src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:40px;height:40px;object-fit:cover;" muted preload="metadata"></video>'
+              : '<img src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:40px;height:40px;">';
       const gallery = item.album_id
           ? '<a href="album.html?id=' + item.album_id + '" target="_blank" rel="noopener">View Album</a>'
           : '-';
@@ -5556,9 +5626,11 @@ async function handleEditNews(id) {
     if (editNewsQuill) editNewsQuill.setHtml(item.body || '');
     else document.getElementById('edit-news-body').value = item.body || '';
 
-    document.getElementById('edit-news-current-photo').innerHTML = item.photo_url
-        ? '<img src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:80px;height:80px;">'
-        : 'No cover photo set.';
+    document.getElementById('edit-news-current-photo').innerHTML = !item.photo_url
+        ? 'No cover photo or video set.'
+        : isVideoUrl(item.photo_url)
+            ? '<video src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:140px;height:80px;object-fit:cover;" muted controls preload="metadata"></video>'
+            : '<img src="' + apiOrigin + item.photo_url + '" class="thumb-preview" style="width:80px;height:80px;">';
     document.getElementById('edit-news-photo-preview').innerHTML = '';
     document.getElementById('edit-news-photo-input').value = '';
 
@@ -5623,16 +5695,9 @@ function initEditNewsForm() {
 
   photoInput.addEventListener('change', async function (e) {
     if (e.target.files.length) {
-      const file = e.target.files[0];
-      if (file.size > 15 * 1024 * 1024) {
-        showAlert('edit-news-alert', 'That photo is ' + (file.size / (1024 * 1024)).toFixed(1) + 'MB, which is over the 15MB limit. Please choose a smaller photo.', 'error');
-        e.target.value = '';
-        return;
-      }
-      editNewsPhotoFile = await compressImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (evt) => { document.getElementById('edit-news-photo-preview').innerHTML = '<img src="' + evt.target.result + '" class="thumb-preview">'; };
-      reader.readAsDataURL(editNewsPhotoFile);
+      const prepared = await prepareNewsCoverFile(e.target.files[0], 'edit-news-alert', document.getElementById('edit-news-photo-preview'));
+      if (!prepared) { e.target.value = ''; return; }
+      editNewsPhotoFile = prepared;
     }
   });
 
@@ -5740,7 +5805,7 @@ async function loadAdminAlbumTable() {
         : album.cover_media_type === 'video'
           ? '<video src="' + apiOrigin + album.cover_photo + '" class="thumb-preview" style="width:40px;height:40px;" muted preload="metadata"></video>'
           : '<img src="' + apiOrigin + album.cover_photo + '" class="thumb-preview" style="width:40px;height:40px;">';
-      return '<tr><td>' + thumb + '</td><td>' + escapeHtml(album.title) + '</td><td>' + formatAlbumDate(album.event_date) + '</td><td>' + album.photo_count + ' item(s)</td><td><button class="btn btn-outline btn-sm" onclick="handleEditAlbumTitle(' + album.id + ')">Edit Title</button> <button class="btn btn-danger btn-sm" onclick="handleDeleteAlbum(' + album.id + ')">Delete</button></td></tr>';
+      return '<tr><td>' + thumb + '</td><td>' + escapeHtml(album.title) + '</td><td>' + formatAlbumDate(album.event_date) + '</td><td>' + album.photo_count + ' item(s)</td><td><button class="btn btn-outline btn-sm" onclick="openAlbumPhotos(' + album.id + ')">Photos</button> <button class="btn btn-outline btn-sm" onclick="handleEditAlbumTitle(' + album.id + ')">Edit Title</button> <button class="btn btn-danger btn-sm" onclick="handleDeleteAlbum(' + album.id + ')">Delete</button></td></tr>';
     }).join('');
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#c0392b;">Could not load albums. Is the backend server running?</td></tr>';
@@ -5847,12 +5912,190 @@ async function handleDeleteAlbum(id) {
       showAlert('album-table-alert', 'Could not delete this album. It may have already been removed.', 'error');
       return;
     }
+    if (Number(albumPhotosAlbumId) === Number(id)) closeAlbumPhotos();
     showAlert('album-table-alert', 'Album deleted.', 'success');
     loadAdminAlbumTable();
   } catch (err) {
     console.error(err);
     showAlert('album-table-alert', 'Could not reach the server. Please check that the backend is running (npm start in the slna-backend folder) and try again.', 'error');
   }
+}
+
+// ---- Album photos: add more items to an album, or delete single ones ----
+
+let albumPhotosAlbumId = null;
+let albumPhotosNewFiles = [];
+
+function albumPhotosApiOrigin() {
+  return SLNA_CONFIG.API_BASE_URL.replace('/api', '');
+}
+
+async function openAlbumPhotos(id) {
+  const card = document.getElementById('album-photos-card');
+  if (!card) return;
+
+  albumPhotosAlbumId = id;
+  albumPhotosNewFiles = [];
+  document.getElementById('album-photos-add-input').value = '';
+  updateAlbumPhotosUploadState();
+  document.getElementById('album-photos-alert').innerHTML = '';
+  card.hidden = false;
+
+  await renderAlbumPhotos();
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeAlbumPhotos() {
+  document.getElementById('album-photos-card').hidden = true;
+  albumPhotosAlbumId = null;
+  albumPhotosNewFiles = [];
+}
+
+async function renderAlbumPhotos() {
+  const grid = document.getElementById('album-photos-grid');
+  const titleEl = document.getElementById('album-photos-title');
+  if (!albumPhotosAlbumId) return;
+
+  grid.innerHTML = '<p class="admin-muted">Loading...</p>';
+
+  try {
+    const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/albums/' + albumPhotosAlbumId);
+    if (!res.ok) throw new Error('bad status');
+    const album = await res.json();
+    const photos = album.photos || [];
+
+    titleEl.textContent = 'Photos & Videos in: ' + album.title;
+
+    if (!photos.length) {
+      grid.innerHTML = '<p class="admin-muted">No photos or videos yet. Upload some above.</p>';
+      return;
+    }
+
+    const origin = albumPhotosApiOrigin();
+    grid.innerHTML = photos.map(function (photo, index) {
+      const isVideo = (photo.media_type || 'image') === 'video';
+      const media = isVideo
+          ? '<video src="' + origin + photo.photo_url + '" muted preload="metadata"></video><span class="media-play-icon">&#9658;</span>'
+          : '<img src="' + origin + photo.photo_url + '" alt="" loading="lazy">';
+      return '<div class="admin-album-photo">' +
+          '<div class="admin-album-photo-media">' + media + (index === 0 ? '<span class="admin-album-cover-tag">Cover</span>' : '') + '</div>' +
+          '<button type="button" class="btn btn-danger btn-sm" data-delete-album-photo="' + photo.id + '" data-kind="' + (isVideo ? 'video' : 'photo') + '">Delete</button>' +
+          '</div>';
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    grid.innerHTML = '<p class="admin-muted">Could not load this album. Please try again.</p>';
+  }
+}
+
+function updateAlbumPhotosUploadState() {
+  const count = albumPhotosNewFiles.length;
+  const videos = albumPhotosNewFiles.filter(function (f) { return f.type.startsWith('video/'); }).length;
+  const photos = count - videos;
+  const parts = [];
+  if (photos) parts.push(photos + ' photo' + (photos === 1 ? '' : 's'));
+  if (videos) parts.push(videos + ' video' + (videos === 1 ? '' : 's'));
+
+  document.getElementById('album-photos-add-count').textContent = count ? parts.join(' and ') + ' chosen' : 'No files chosen';
+  const button = document.getElementById('album-photos-upload');
+  button.disabled = !count;
+  button.textContent = count ? 'Upload ' + parts.join(' and ') : 'Upload';
+}
+
+function initAlbumPhotosManager() {
+  const card = document.getElementById('album-photos-card');
+  if (!card) return;
+
+  const input = document.getElementById('album-photos-add-input');
+  const uploadButton = document.getElementById('album-photos-upload');
+
+  document.getElementById('close-album-photos').addEventListener('click', closeAlbumPhotos);
+
+  input.addEventListener('change', async function (e) {
+    const files = Array.from(e.target.files);
+    const maxSize = function (f) { return f.type.startsWith('video/') ? 100 * 1024 * 1024 : 15 * 1024 * 1024; };
+    const oversized = files.filter(function (f) { return f.size > maxSize(f); });
+
+    if (oversized.length) {
+      showAlert('album-photos-alert', oversized.length + ' file(s) are over the size limit (15MB for photos, 100MB for videos) and were not added: ' +
+          oversized.map(function (f) { return f.name; }).join(', '), 'error');
+    }
+
+    albumPhotosNewFiles = await compressImageFiles(files.filter(function (f) { return f.size <= maxSize(f); }));
+    updateAlbumPhotosUploadState();
+  });
+
+  uploadButton.addEventListener('click', async function () {
+    if (!albumPhotosAlbumId || !albumPhotosNewFiles.length) return;
+
+    const what = document.getElementById('album-photos-add-count').textContent.replace(/ chosen$/, '');
+    const confirmed = await showSimpleConfirm({
+      title: 'Upload ' + what + '?',
+      message: 'They will be added to this album and appear in the gallery straight away.',
+      confirmText: 'Upload',
+      danger: false
+    });
+    if (!confirmed) return;
+
+    const formData = new FormData();
+    albumPhotosNewFiles.forEach(function (file) { formData.append('photos', file); });
+
+    uploadButton.disabled = true;
+    uploadButton.textContent = 'Uploading...';
+
+    try {
+      const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/albums/' + albumPhotosAlbumId + '/photos', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + getToken() },
+        body: formData
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || 'Could not upload to this album.');
+
+      albumPhotosNewFiles = [];
+      input.value = '';
+      updateAlbumPhotosUploadState();
+      showAlert('album-photos-alert', what.charAt(0).toUpperCase() + what.slice(1) + ' added.', 'success');
+      renderAlbumPhotos();
+      loadAdminAlbumTable();
+    } catch (err) {
+      console.error(err);
+      showAlert('album-photos-alert', err.message || 'Could not upload to this album.', 'error');
+      updateAlbumPhotosUploadState();
+    }
+  });
+
+  document.getElementById('album-photos-grid').addEventListener('click', async function (e) {
+    const button = e.target.closest('[data-delete-album-photo]');
+    if (!button) return;
+
+    const kind = button.getAttribute('data-kind');
+    const confirmed = await showSimpleConfirm({
+      title: 'Delete ' + kind + '?',
+      message: 'This ' + kind + ' will be removed from the album and the gallery. This cannot be undone.',
+      confirmText: 'Delete ' + kind.charAt(0).toUpperCase() + kind.slice(1)
+    });
+    if (!confirmed) return;
+
+    button.disabled = true;
+
+    try {
+      const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/albums/photos/' + button.getAttribute('data-delete-album-photo'), {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || 'Could not delete this ' + kind + '.');
+
+      showAlert('album-photos-alert', kind.charAt(0).toUpperCase() + kind.slice(1) + ' deleted.', 'success');
+      renderAlbumPhotos();
+      loadAdminAlbumTable();
+    } catch (err) {
+      console.error(err);
+      button.disabled = false;
+      showAlert('album-photos-alert', err.message || 'Could not delete this ' + kind + '.', 'error');
+    }
+  });
 }
 
 // ---- User Queries (Contact SLNA form submissions) ----

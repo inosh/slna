@@ -37,8 +37,12 @@
     </button>
 
     <div class="main-tab-buttons" id="admin-main-tabs" role="tablist" aria-label="Admin dashboard sections">
-      <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">News</button>
-      <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Gallery</button>
+      <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
+
+      <button class="main-tab-btn" data-maintab="maintab-member-directory" role="tab" aria-selected="false">Member Directory <span class="application-count-badge" id="member-directory-total-count">0</span></button>
+
+      <button class="main-tab-btn" data-maintab="maintab-fees" role="tab" aria-selected="false">Membership Fees</button>
+
       <button
               class="main-tab-btn"
               data-maintab="maintab-cpd-events"
@@ -65,11 +69,9 @@
         Event Registrations
       </button>
 
-      <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
+      <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">News</button>
 
-      <button class="main-tab-btn" data-maintab="maintab-member-directory" role="tab" aria-selected="false">Member Directory <span class="application-count-badge" id="member-directory-total-count">0</span></button>
-
-      <button class="main-tab-btn" data-maintab="maintab-fees" role="tab" aria-selected="false">Membership Fees</button>
+      <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Gallery</button>
 
       <button class="main-tab-btn" data-maintab="maintab-committees" role="tab" aria-selected="false">Committees</button>
 
@@ -107,7 +109,7 @@
               </div>
               <textarea id="type-body" style="display:none;"></textarea>
             </div>
-            <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="type-photo-input" accept="image/*"><div id="type-photo-preview" style="margin-top:8px;"></div></div>
+            <div class="form-group"><label>Cover Photo or Video (optional)</label><input type="file" id="type-photo-input" accept="image/*,video/*"><div style="font-size:12px; color:var(--muted); margin-top:4px;">A photo (up to 15MB) or a short video (up to 100MB: MP4, WEBM, MOV).</div><div id="type-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
               <label>Photo &amp; Video Gallery (optional &mdash; select multiple, or add more separately)</label>
               <label class="btn btn-outline btn-sm file-input-trigger" for="type-gallery-input">Choose Photos/Videos</label>
@@ -142,7 +144,7 @@
             </div>
             <div class="form-group"><label>Short Summary</label><textarea id="file-summary" rows="3"></textarea></div>
             <div class="form-group"><label>Content Preview</label><textarea id="file-body-preview" rows="5"></textarea></div>
-            <div class="form-group"><label>Cover Photo (optional)</label><input type="file" id="file-photo-input" accept="image/*"><div id="file-photo-preview" style="margin-top:8px;"></div></div>
+            <div class="form-group"><label>Cover Photo or Video (optional)</label><input type="file" id="file-photo-input" accept="image/*,video/*"><div style="font-size:12px; color:var(--muted); margin-top:4px;">A photo (up to 15MB) or a short video (up to 100MB: MP4, WEBM, MOV).</div><div id="file-photo-preview" style="margin-top:8px;"></div></div>
             <div class="form-group">
               <label>Photo &amp; Video Gallery (optional &mdash; select multiple, or add more separately)</label>
               <label class="btn btn-outline btn-sm file-input-trigger" for="file-gallery-input">Choose Photos/Videos</label>
@@ -199,10 +201,10 @@
           </div>
 
           <div class="form-group">
-            <label>Cover Photo</label>
+            <label>Cover Photo or Video</label>
             <div id="edit-news-current-photo" style="margin-bottom:8px;"></div>
-            <input type="file" id="edit-news-photo-input" accept="image/*">
-            <div style="font-size:12px; color:var(--muted); margin-top:4px;">Leave blank to keep the current cover photo.</div>
+            <input type="file" id="edit-news-photo-input" accept="image/*,video/*">
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">A photo (up to 15MB) or a short video (up to 100MB). Leave blank to keep the current cover.</div>
             <div id="edit-news-photo-preview" style="margin-top:8px;"></div>
           </div>
 
@@ -260,6 +262,23 @@
         <div class="table-scroll">
           <table class="news-table"><thead><tr><th>Cover</th><th>Title</th><th>Date</th><th>Items</th><th>Actions</th></tr></thead><tbody id="album-table-body"></tbody></table>
         </div>
+      </div>
+
+      <!-- Opened by an album's "Photos" button: add more items or delete single ones. -->
+      <div class="admin-card" id="album-photos-card" hidden>
+        <div class="album-photos-head">
+          <h2 id="album-photos-title">Photos &amp; Videos</h2>
+          <button type="button" class="btn btn-outline btn-sm" id="close-album-photos">Close</button>
+        </div>
+        <p class="admin-muted">Add photos (up to 15MB each) or videos (up to 100MB each: MP4, WEBM, MOV, AVI, OGG). New items go after the existing ones. The first item is the album cover.</p>
+        <div id="album-photos-alert" aria-live="polite" tabindex="-1"></div>
+        <div class="album-photos-upload">
+          <label class="btn btn-outline btn-sm file-input-trigger" for="album-photos-add-input">Choose Photos/Videos</label>
+          <input type="file" id="album-photos-add-input" accept="image/*,video/*" multiple class="file-input-hidden">
+          <span class="admin-muted" id="album-photos-add-count">No files chosen</span>
+          <button type="button" class="btn btn-primary btn-sm" id="album-photos-upload" disabled>Upload</button>
+        </div>
+        <div class="admin-album-photo-grid" id="album-photos-grid"></div>
       </div>
     </div>
 
@@ -429,11 +448,11 @@
             <label for="cpd-event-summary">
               Description
             </label>
-            <textarea
-                    id="cpd-event-summary"
-                    rows="8"
-                    required
-            ></textarea>
+            <div class="rte-shell" id="cpd-event-summary-shell">
+              <button type="button" class="rte-expand-btn" id="cpd-event-summary-expand" title="Expand editor" aria-label="Expand editor">&#10530;</button>
+              <div id="cpd-event-summary-editor"></div>
+            </div>
+            <textarea id="cpd-event-summary" style="display:none;"></textarea>
           </div>
 
           <div class="form-group">
@@ -615,11 +634,11 @@
             <label for="other-event-summary">
               Description
             </label>
-            <textarea
-                    id="other-event-summary"
-                    rows="8"
-                    required
-            ></textarea>
+            <div class="rte-shell" id="other-event-summary-shell">
+              <button type="button" class="rte-expand-btn" id="other-event-summary-expand" title="Expand editor" aria-label="Expand editor">&#10530;</button>
+              <div id="other-event-summary-editor"></div>
+            </div>
+            <textarea id="other-event-summary" style="display:none;"></textarea>
           </div>
 
           <div class="form-group">
@@ -2012,7 +2031,11 @@
 
         <div class="form-group">
           <label for="event-edit-summary">Description</label>
-          <textarea id="event-edit-summary" rows="8" required></textarea>
+          <div class="rte-shell" id="event-edit-summary-shell">
+            <button type="button" class="rte-expand-btn" id="event-edit-summary-expand" title="Expand editor" aria-label="Expand editor">&#10530;</button>
+            <div id="event-edit-summary-editor"></div>
+          </div>
+          <textarea id="event-edit-summary" style="display:none;"></textarea>
         </div>
 
         <div class="form-group">

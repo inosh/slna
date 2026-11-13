@@ -6,7 +6,25 @@
 <body>
 <div id="site-header"></div>
 
-<div class="page-hero page-hero-compact"><div class="container"><div class="breadcrumb"><a href="../index.html">Home</a> / <span>Photo Gallery</span></div></div></div><div class="container" style="padding:44px 20px;"><h1 class="page-title">Photo Gallery</h1><div class="album-grid" id="album-grid-container"><div class="news-empty">Loading albums...</div></div></div>
+<div class="page-hero page-hero-compact"><div class="container"><div class="breadcrumb"><a href="../index.html">Home</a> / <span>Photo Gallery</span></div></div></div><div class="container" style="padding:44px 20px;"><h1 class="page-title">Photo Gallery</h1>
+<!-- All: every photo and video from every album. Albums: one card per album. -->
+<div class="gallery-bar">
+  <div class="gallery-views" role="radiogroup" aria-label="Gallery view">
+    <label><input type="radio" name="gallery-view" value="all" checked> All</label>
+    <label><input type="radio" name="gallery-view" value="albums"> Albums</label>
+  </div>
+  <p class="gallery-count" id="gallery-count" aria-live="polite"></p>
+</div>
+<div id="gallery-all-container"><div class="news-empty">Loading gallery...</div></div>
+<div class="album-grid" id="album-grid-container" hidden></div>
+</div>
+<div class="lightbox-overlay" id="lightbox-overlay">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <span class="lightbox-counter" id="lightbox-counter"></span>
+  <button class="lightbox-nav lightbox-prev" onclick="lightboxPrev()">&#8249;</button>
+  <div class="lightbox-content"><img id="lightbox-img" src="" alt=""><video id="lightbox-video" controls style="display:none;"></video></div>
+  <button class="lightbox-nav lightbox-next" onclick="lightboxNext()">&#8250;</button>
+</div>
 
 <div id="site-footer"></div>
 
