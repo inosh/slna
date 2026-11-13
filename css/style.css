@@ -425,7 +425,39 @@ ul { list-style:none; }
 .lightbox-prev { left:19px; } .lightbox-next { right:19px; }
 .lightbox-counter { position:absolute; top:21px; left:28px; color:#fff; font-size:13px; background:rgba(255,255,255,0.15); padding:6px 12px; border-radius:12px; }
 .admin-body { background:var(--bg-light); min-height:100vh; }
-.admin-header { background:var(--primary-dark); color:#fff; padding:15px 22px; display:flex; justify-content:space-between; align-items:center; }
+.admin-header { background:var(--primary-dark); color:#fff; padding:15px 22px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px 16px; }
+.admin-header-brand { display:flex; align-items:baseline; gap:4px 14px; flex-wrap:wrap; min-width:0; }
+.admin-header-title { font-size:16px; margin:0; }
+.admin-header-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.admin-header-user { font-size:12.5px; color:rgba(255,255,255,.75); white-space:nowrap; }
+.admin-header .admin-header-btn { border-color:#fff; color:#fff; padding:4px 12px; font-size:12.5px; }
+.admin-section-toggle { display:none; }
+@media (max-width: 640px) {
+  .admin-header { padding:10px 16px; gap:8px; }
+  /* First row: title and "Signed in as ..."; second row: small buttons. */
+  .admin-header-brand { flex:1 1 100%; justify-content:space-between; }
+  .admin-header-title { font-size:15px; }
+  .admin-header-actions { flex:1 1 100%; gap:6px; }
+  .admin-header .admin-header-btn { flex:1 1 0; min-width:0; padding:4px 6px; font-size:12px; text-align:center; white-space:nowrap; }
+}
+/* Phones and small tablets: smaller side gaps so the white panels use the width. */
+@media (max-width: 768px) {
+  .admin-body .admin-wrap { margin:14px auto; padding:0 8px; }
+  .admin-wrap .admin-card { padding:18px 14px; }
+}
+/* Phones and tablets: the section buttons fold behind one toggle that shows the current section. */
+@media (max-width: 992px) {
+  .admin-section-toggle {
+    display:flex; align-items:center; gap:10px; width:100%; margin-bottom:10px; padding:11px 14px;
+    border:1px solid var(--primary-dark); border-radius:8px; background:var(--primary-dark); color:#fff;
+    font:inherit; font-size:15px; text-align:left; cursor:pointer;
+  }
+  .admin-section-toggle-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.7); }
+  .admin-section-toggle strong { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .admin-section-toggle-icon { width:9px; height:9px; border-right:2px solid #fff; border-bottom:2px solid #fff; transform:rotate(45deg); margin:-4px 4px 0 0; transition:transform .15s; }
+  .admin-section-toggle[aria-expanded="true"] .admin-section-toggle-icon { transform:rotate(-135deg); margin-top:4px; }
+  .admin-wrap .main-tab-buttons:not(.is-open) { display:none; }
+}
 .admin-wrap { max-width:890px; margin:28px auto; padding:0 20px; }
 .admin-card { background:#fff; border:1px solid var(--border); border-radius:8px; padding:26px; margin-bottom:22px; box-shadow:0 1px 6px rgba(0,0,0,0.05); }
 .admin-card h2 { color:var(--primary-dark); font-size:18px; margin-bottom:17px; font-weight:700; }
@@ -548,6 +580,8 @@ body.is-busy, body.is-busy * { cursor: wait !important; }
 .photo-picker-count { font-size:12px; color:var(--muted); margin-top:7px; }
 label.file-input-trigger { display:inline-block; margin-bottom:0; }
 .file-input-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+/* Beat ".form-group input { width:100% }" -- otherwise the hidden input stretches and the page scrolls sideways on phones. */
+.form-group .file-input-hidden { width:1px; height:1px; padding:0; border:0; }
 .exec-member-row { display:flex; align-items:center; gap:16px; padding:18px 0; border-bottom:1px solid var(--border); }
 .exec-member-row:last-child { border-bottom:none; }
 .exec-member-photo-col { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; }
@@ -2174,6 +2208,69 @@ fieldset.sex-field .radio-option input[type="radio"] {
   margin-left: auto;
 }
 
+.membership-review-actions .btn[hidden] {
+  display: none;
+}
+
+/* Delete sits apart from the decision buttons so it isn't hit by mistake. */
+.membership-delete-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #f1c7c7;
+  border-radius: 6px;
+  background: #fff7f7;
+}
+
+.membership-delete-action[hidden] {
+  display: none;
+}
+
+/* Approve / Request More Information / Reject form for More Information and Rejected cards */
+.membership-followup-modal .admin-confirm-dialog {
+  width: min(600px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.membership-followup-modal .admin-confirm-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.membership-followup-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.membership-followup-modal .form-group[hidden] {
+  display: none;
+}
+
+.membership-followup-modal textarea {
+  resize: vertical;
+}
+
+.membership-followup-modal .form-help {
+  margin: 6px 0 0;
+  color: #68798a;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.membership-followup-modal .form-help:empty {
+  display: none;
+}
+
+.membership-delete-action p {
+  margin: 0;
+  flex: 1 1 240px;
+  font-size: 0.85rem;
+}
+
 /* Status badge improvements */
 
 .application-status {
@@ -2500,9 +2597,12 @@ fieldset.sex-field .radio-option input[type="radio"] {
 /* JavaScript adds .workflow-visible only when the section is allowed. */
 #membership-decision-fields.workflow-visible,
 #membership-admin-note-group.workflow-visible,
-#membership-review-actions.workflow-visible,
 #id-application-admin-panel.workflow-visible {
   display: block;
+}
+
+#membership-review-actions.workflow-visible {
+  display: flex;
 }
 
 /* Align document cards with equal-height content */
@@ -2934,9 +3034,10 @@ tr.registration-row-non-member {
   width: 100%;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
-  flex-wrap: nowrap;
+  /* Wrap so four buttons (More Information / Rejected cards) never spill out of the card. */
+  flex-wrap: wrap;
 }
 
 .membership-review-actions-left {
@@ -3102,6 +3203,16 @@ tr.registration-row-non-member {
   background: #fff8e6;
   border-left: 5px solid #e5a900;
   border-radius: 4px;
+}
+
+.status-result-message .status-result-follow-up {
+  margin-top: 12px;
+  white-space: normal;
+}
+
+.status-result-follow-up a {
+  color: inherit;
+  font-weight: 700;
 }
 
 .status-result-message h4 {
