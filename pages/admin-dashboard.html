@@ -11,17 +11,32 @@
 </head>
 <body class="admin-body">
   <div class="admin-header">
-    <h1 style="font-size:16px;">SLNA Content Management</h1>
-    <div style="display:flex; align-items:center; gap:14px;">
-      <span id="welcome-user" style="font-size:13px;"></span>
-      <a href="../index.html" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">View Site</a>
-      <button id="change-password-btn" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">Change Password</button>
-      <button id="logout-btn" class="btn btn-outline btn-sm" style="border-color:#fff; color:#fff;">Log Out</button>
+    <div class="admin-header-brand">
+      <h1 class="admin-header-title">SLNA Content Management</h1>
+      <span id="welcome-user" class="admin-header-user"></span>
+    </div>
+    <div class="admin-header-actions">
+      <a href="../index.html" target="_blank" rel="noopener" class="btn btn-outline btn-sm admin-header-btn">View Site</a>
+      <button id="change-password-btn" class="btn btn-outline btn-sm admin-header-btn">Change Password</button>
+      <button id="logout-btn" class="btn btn-outline btn-sm admin-header-btn">Log Out</button>
     </div>
   </div>
 
   <div class="admin-wrap">
-    <div class="main-tab-buttons" role="tablist" aria-label="Admin dashboard sections">
+    <!-- Phones and tablets: one button showing the current section; tap to pick another. -->
+    <button
+            type="button"
+            class="admin-section-toggle"
+            id="admin-section-toggle"
+            aria-expanded="false"
+            aria-controls="admin-main-tabs"
+    >
+      <span class="admin-section-toggle-label">Sections</span>
+      <strong id="admin-section-current">News</strong>
+      <span class="admin-section-toggle-icon" aria-hidden="true"></span>
+    </button>
+
+    <div class="main-tab-buttons" id="admin-main-tabs" role="tablist" aria-label="Admin dashboard sections">
       <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">News</button>
       <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Gallery</button>
       <button
@@ -1150,6 +1165,15 @@
             <button
                     type="button"
                     class="btn btn-outline"
+                    id="membership-information-received"
+                    hidden
+            >
+              Information Received
+            </button>
+
+            <button
+                    type="button"
+                    class="btn btn-outline"
                     id="request-membership-information"
             >
               Request More Information
@@ -1169,6 +1193,25 @@
                     id="approve-membership-application"
             >
               Approve &amp; Assign Membership Number
+            </button>
+          </div>
+
+          <div
+                  class="membership-delete-action"
+                  id="membership-delete-action"
+                  hidden
+          >
+            <p class="admin-muted">
+              Permanently delete this application, its payment receipt and
+              ID photo. This cannot be undone.
+            </p>
+
+            <button
+                    type="button"
+                    class="btn btn-danger btn-sm"
+                    id="delete-membership-application"
+            >
+              Delete Application
             </button>
           </div>
 
@@ -2483,6 +2526,102 @@
                   id="confirm-event-registration-reject"
           >
             Reject Registration
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- More Information / Rejected review cards: Approve, Request More
+       Information and Reject open this form, then the usual confirmation. -->
+  <div
+          class="admin-confirm-modal membership-followup-modal"
+          id="membership-followup-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="membership-followup-title"
+  >
+    <div class="admin-confirm-backdrop"></div>
+
+    <div class="admin-confirm-dialog">
+      <div class="admin-confirm-content">
+        <h2 id="membership-followup-title">Approve Application</h2>
+
+        <p id="membership-followup-intro"></p>
+
+        <div class="form-group" id="membership-followup-number-group">
+          <label for="membership-followup-number">Membership Number</label>
+
+          <div class="membership-number-input-row">
+            <input
+                    type="text"
+                    id="membership-followup-number"
+                    autocomplete="off"
+                    aria-describedby="membership-followup-number-error"
+            >
+
+            <button
+                    type="button"
+                    class="btn btn-outline btn-sm"
+                    id="membership-followup-fetch-next"
+            >
+              Fetch Next
+            </button>
+          </div>
+
+          <p
+                  class="membership-field-error"
+                  id="membership-followup-number-error"
+                  aria-live="polite"
+          ></p>
+        </div>
+
+        <div class="form-group">
+          <label for="membership-followup-status-note" id="membership-followup-status-note-label">
+            Applicant Status Note
+          </label>
+
+          <textarea
+                  id="membership-followup-status-note"
+                  rows="4"
+                  aria-describedby="membership-followup-status-note-hint membership-followup-status-note-error"
+          ></textarea>
+
+          <p class="form-help" id="membership-followup-status-note-hint"></p>
+
+          <p
+                  class="membership-field-error"
+                  id="membership-followup-status-note-error"
+                  aria-live="polite"
+          ></p>
+        </div>
+
+        <div class="form-group">
+          <label for="membership-followup-admin-note">Internal Admin Note</label>
+
+          <textarea
+                  id="membership-followup-admin-note"
+                  rows="3"
+                  placeholder="Optional. Only visible to SLNA administrators."
+          ></textarea>
+        </div>
+
+        <div class="admin-confirm-actions">
+          <button
+                  type="button"
+                  class="btn btn-outline"
+                  id="cancel-membership-followup"
+          >
+            Cancel
+          </button>
+
+          <button
+                  type="button"
+                  class="btn btn-primary"
+                  id="continue-membership-followup"
+          >
+            Continue
           </button>
         </div>
       </div>

@@ -667,14 +667,15 @@
         <h3>Check Your Application Status</h3>
 
         <p>
-          Enter your SLNA application reference number to view its current
-          status.
+          Enter your SLNA application reference number or your NIC number
+          to view the current status of your application. Either one is
+          enough.
         </p>
 
         <form id="status-check-form">
           <div class="form-group">
             <label for="status-reference-number">
-              SLNA Application Reference Number
+              Reference Number or NIC
               <span aria-hidden="true">*</span>
             </label>
 
@@ -682,8 +683,9 @@
                     type="text"
                     id="status-reference-number"
                     name="referenceNumber"
-                    placeholder="Example: SLNA-LT-20260921-AB12CD34"
+                    placeholder="e.g. SLNA-LT-20260921-AB12CD34 or 199554200159"
                     autocomplete="off"
+                    maxlength="40"
                     required
             >
           </div>
@@ -744,6 +746,7 @@
           >
             <h4 id="status-result-message-title">Message from SLNA</h4>
             <p id="status-result-message-text">—</p>
+            <p id="status-result-follow-up" class="status-result-follow-up" hidden></p>
           </div>
         </div>
       </div>
@@ -759,7 +762,7 @@
         <h3>Find My Membership Number</h3>
 
         <p>
-          Lost your application reference number? Confirm your identity below
+          Lost your application reference number? Enter your NIC number below
           to retrieve your SLNA membership number.
         </p>
 
@@ -779,25 +782,6 @@
                     title="Enter a valid Sri Lankan NIC: 9 digits followed by V or X (old format), or 12 digits (new format)"
                     maxlength="12"
                     autocomplete="off"
-                    required
-            >
-          </div>
-
-          <div class="form-group">
-            <label for="find-membership-mobile">
-              Registered Mobile Number
-              <span aria-hidden="true">*</span>
-            </label>
-
-            <input
-                    type="tel"
-                    id="find-membership-mobile"
-                    name="mobileNumber"
-                    autocomplete="tel"
-                    placeholder="07XXXXXXXX or +947XXXXXXXX"
-                    pattern="^(?:\+94|0)7[0-8][0-9]{7}$"
-                    title="Enter a valid Sri Lankan mobile number, e.g. 0771234567 or +94771234567"
-                    maxlength="13"
                     required
             >
           </div>

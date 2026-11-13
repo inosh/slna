@@ -730,6 +730,57 @@
             'status-result-message-text'
         );
 
+        var followUpText = document.getElementById(
+            'status-result-follow-up'
+        );
+
+        function escapeHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Same sentence as in the email; the office email and the
+        // secretary's phone number become links.
+        function renderFollowUp(application) {
+            var followUp = application.followUp;
+
+            if (!followUpText) {
+                return;
+            }
+
+            if (!followUp || !followUp.message) {
+                followUpText.hidden = true;
+                followUpText.innerHTML = '';
+                return;
+            }
+
+            var html = escapeHtml(followUp.message);
+
+            if (followUp.email) {
+                html = html.replace(
+                    escapeHtml(followUp.email),
+                    '<a href="mailto:' + escapeHtml(followUp.email) +
+                    '?subject=' + encodeURIComponent('Membership application ' + application.referenceNumber) +
+                    '">' + escapeHtml(followUp.email) + '</a>'
+                );
+            }
+
+            if (followUp.phoneDisplay) {
+                html = html.replace(
+                    escapeHtml(followUp.phoneDisplay),
+                    '<a href="tel:' + escapeHtml(followUp.phone) + '">' +
+                    escapeHtml(followUp.phoneDisplay) + '</a>'
+                );
+            }
+
+            followUpText.innerHTML = html;
+            followUpText.hidden = false;
+        }
+
         function showAlert(type, message) {
             alertBox.className = 'alert alert-' + type;
             alertBox.textContent = message;
@@ -780,6 +831,11 @@
             messageBox.hidden = true;
             messageTitle.textContent = 'Message from SLNA';
             messageText.textContent = '—';
+
+            if (followUpText) {
+                followUpText.hidden = true;
+                followUpText.innerHTML = '';
+            }
         }
 
         function resetStatusCheckView() {
@@ -832,12 +888,14 @@
                 messageTitle.textContent = 'Further Information Required';
 
                 messageText.textContent =
-                    (application.statusNote
-                        ? application.statusNote + '\n\n'
-                        : '') +
-                    'Please submit a new lifetime membership application after addressing the feedback above.';
+                    application.statusNote ||
+                    'SLNA needs more information before your application can be processed.';
             } else {
                 messageBox.hidden = true;
+            }
+
+            if (!messageBox.hidden) {
+                renderFollowUp(application);
             }
 
             resultCard.hidden = false;
@@ -860,7 +918,7 @@
             if (!referenceNumber) {
                 showAlert(
                     'error',
-                    'Please enter your SLNA application reference number.'
+                    'Please enter your application reference number or NIC.'
                 );
                 return;
             }
@@ -884,7 +942,7 @@
                 if (!response.ok) {
                     throw new Error(
                         data.message ||
-                        'No application was found for that reference number.'
+                        'No application matches that reference number or NIC.'
                     );
                 }
 
@@ -901,6 +959,29 @@
             }
         });
         window.SLNA_RESET_STATUS_CHECK = resetStatusCheckView;
+
+        // Opened from the link in an application email
+        // (join-slna.html?ref=SLNA-LT-...): switch to the Check Status tab
+        // and look the application up straight away.
+        var refFromLink = new URLSearchParams(window.location.search).get('ref');
+
+        if (refFromLink) {
+            var statusTabButton = document.querySelector(
+                '[data-join-tab="tab-status"]'
+            );
+
+            if (statusTabButton) {
+                statusTabButton.click();
+            }
+
+            referenceInput.value = refFromLink.trim();
+
+            if (form.requestSubmit) {
+                form.requestSubmit();
+            } else {
+                form.dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        }
     }
 
     function initFindMembershipNumber() {
@@ -913,7 +994,6 @@
         }
 
         var nicInput = document.getElementById('find-membership-nic');
-        var mobileInput = document.getElementById('find-membership-mobile');
 
         var submitButton = document.getElementById(
             'find-membership-submit'
@@ -984,8 +1064,7 @@
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            nic: nicInput.value.trim(),
-                            mobileNumber: mobileInput.value.trim()
+                            nic: nicInput.value.trim()
                         })
                     }
                 );

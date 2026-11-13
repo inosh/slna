@@ -395,7 +395,7 @@ function initChangePassword() {
 document.addEventListener('DOMContentLoaded', function () {
   const session = requireAuth();
   if (!session) return;
-  document.getElementById('welcome-user').textContent = session.username + ' (' + session.role + ')';
+  document.getElementById('welcome-user').textContent = 'Signed in as ' + session.username;
   document.getElementById('logout-btn').addEventListener('click', logout);
   initChangePassword();
 
@@ -433,14 +433,58 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Phones and tablets: the section buttons are folded behind one toggle
+  // showing the current section (CSS hides the toggle on wider screens).
+  const sectionToggle = document.getElementById('admin-section-toggle');
+  const sectionCurrent = document.getElementById('admin-section-current');
+  const mainTabs = document.getElementById('admin-main-tabs');
+
+  function setSectionMenuOpen(open) {
+    if (!sectionToggle || !mainTabs) return;
+    sectionToggle.setAttribute('aria-expanded', String(open));
+    mainTabs.classList.toggle('is-open', open);
+  }
+
+  // The button's own text, without its count badge.
+  function sectionLabel(btn) {
+    return Array.from(btn.childNodes)
+      .filter(node => node.nodeType === Node.TEXT_NODE)
+      .map(node => node.textContent)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  if (sectionToggle) {
+    sectionToggle.addEventListener('click', () => {
+      setSectionMenuOpen(sectionToggle.getAttribute('aria-expanded') !== 'true');
+    });
+    const activeTab = document.querySelector('.main-tab-btn.active');
+    if (activeTab && sectionCurrent) sectionCurrent.textContent = sectionLabel(activeTab);
+  }
+
   document.querySelectorAll('.main-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.main-tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       document.querySelectorAll('.main-tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
       document.getElementById(btn.dataset.maintab).classList.add('active');
       resetAddItemForms();
       clearAllTabAlerts();
+
+      if (sectionToggle && sectionCurrent) {
+        sectionCurrent.textContent = sectionLabel(btn);
+        const wasOpen = sectionToggle.getAttribute('aria-expanded') === 'true';
+        setSectionMenuOpen(false);
+        // On phones the section starts below the menu; bring it into view.
+        if (wasOpen && sectionToggle.offsetParent) {
+          sectionToggle.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
+      }
     });
   });
   // The .tab-btn/.tab-panel classes are reused by several unrelated button
@@ -3091,6 +3135,18 @@ document.addEventListener('DOMContentLoaded', function () {
         'request-membership-information'
     );
 
+    const informationReceivedButton = document.getElementById(
+        'membership-information-received'
+    );
+
+    const membershipDeleteAction = document.getElementById(
+        'membership-delete-action'
+    );
+
+    const deleteApplicationButton = document.getElementById(
+        'delete-membership-application'
+    );
+
     const receiptButton = document.getElementById(
         'view-membership-receipt'
     );
@@ -3635,21 +3691,8 @@ document.addEventListener('DOMContentLoaded', function () {
             '">' +
             'Review' +
             '</button>' +
-            (
-                // Only applications that never became a member can be
-                // deleted here -- approved members are deactivated
-                // instead (Member Directory), never erased.
-                DELETABLE_APPLICATION_STATUSES.includes(application.applicationStatus)
-                    ? ' <button ' +
-                    'type="button" ' +
-                    'class="btn btn-danger btn-sm" ' +
-                    'data-delete-reference="' +
-                    escapeHtml(application.referenceNumber) +
-                    '">' +
-                    'Delete' +
-                    '</button>'
-                    : ''
-            ) +
+            // Delete lives in the review card (with a confirmation), not
+            // here, so an application is always looked at before removal.
             '</td>';
 
         tbody.appendChild(row);
@@ -3751,12 +3794,45 @@ document.addEventListener('DOMContentLoaded', function () {
       const openedFromIdApplicationTab =
           activeStatus === 'id_application';
 
+      // More Information and Rejected applications can still be moved on:
+      // information received (back to Pending), ask again, or approve.
       const canMakeMembershipDecision =
           !openedFromIdApplicationTab &&
           (
               membershipStatus === 'pending' ||
-              membershipStatus === 'under_review'
+              membershipStatus === 'under_review' ||
+              membershipStatus === 'more_information_required' ||
+              membershipStatus === 'rejected'
           );
+
+      const isFollowUpStatus =
+          membershipStatus === 'more_information_required' ||
+          membershipStatus === 'rejected';
+
+      if (informationReceivedButton) {
+        informationReceivedButton.hidden = !isFollowUpStatus;
+      }
+
+      if (rejectButton) {
+        rejectButton.hidden = membershipStatus === 'rejected';
+      }
+
+      // The number is asked for in the Approve popup on these cards, so a
+      // short label keeps the four buttons on one row.
+      if (approveButton) {
+        approveButton.textContent = isFollowUpStatus
+            ? 'Approve'
+            : 'Approve & Assign Membership Number';
+      }
+
+      // Only applications that never became a member can be deleted --
+      // approved members are deactivated instead (Member Directory).
+      if (membershipDeleteAction) {
+        membershipDeleteAction.hidden = !(
+            !openedFromIdApplicationTab &&
+            DELETABLE_APPLICATION_STATUSES.includes(membershipStatus)
+        );
+      }
 
       const showIdApplicationWorkflow =
           openedFromIdApplicationTab &&
@@ -3766,17 +3842,22 @@ document.addEventListener('DOMContentLoaded', function () {
           membershipStatus === 'more_information_required' ||
           membershipStatus === 'rejected';
 
+      // Pending applications are decided with the fields on the card;
+      // More Information / Rejected ones open a popup form per action.
+      const decideOnCard =
+          canMakeMembershipDecision && !isFollowUpStatus;
+
       if (membershipDecisionFields) {
         membershipDecisionFields.classList.toggle(
             'workflow-visible',
-            canMakeMembershipDecision
+            decideOnCard
         );
       }
 
       if (membershipAdminNoteGroup) {
         membershipAdminNoteGroup.classList.toggle(
             'workflow-visible',
-            canMakeMembershipDecision
+            decideOnCard
         );
       }
 
@@ -3850,6 +3931,10 @@ document.addEventListener('DOMContentLoaded', function () {
         );
       }
 
+      if (membershipDeleteAction) {
+        membershipDeleteAction.hidden = true;
+      }
+
       reviewCard.hidden = false;
 
       reviewReference.textContent =
@@ -3867,8 +3952,13 @@ document.addEventListener('DOMContentLoaded', function () {
       membershipNumberInput.value =
           application.membershipNumber || '';
 
+      // For More Information / Rejected the earlier note is shown under
+      // Decision History; the next decision starts with a fresh note.
       statusNoteInput.value =
-          application.statusNote || '';
+          application.applicationStatus === 'more_information_required' ||
+          application.applicationStatus === 'rejected'
+              ? ''
+              : application.statusNote || '';
 
       adminNoteInput.value =
           application.adminNote || '';
@@ -3960,6 +4050,21 @@ document.addEventListener('DOMContentLoaded', function () {
       pendingMembershipDecision = null;
     }
 
+    // Cancel on the confirmation: a decision started from the More
+    // Information / Rejected popup goes back to that popup, as typed.
+    function cancelMembershipDecision() {
+      const fromForm =
+          pendingMembershipDecision &&
+          pendingMembershipDecision.fromFollowUpForm;
+      const status = fromForm ? pendingMembershipDecision.status : null;
+
+      clearMembershipDecisionModal();
+
+      if (fromForm) {
+        openFollowUpForm(status, { keepValues: true });
+      }
+    }
+
     function decisionLabel(status) {
       const labels = {
         approved: 'Approve Application',
@@ -3987,7 +4092,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (
           activeStatus === 'id_application' ||
           selectedApplication.applicationStatus === 'approved' ||
-          selectedApplication.applicationStatus === 'rejected'
+          (
+              status === 'rejected' &&
+              selectedApplication.applicationStatus === 'rejected'
+          )
       ) {
         setMembershipMessage(
             'error',
@@ -4163,6 +4271,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const adminNote =
           pendingMembershipDecision.adminNote;
 
+      const fromFollowUpForm =
+          !!pendingMembershipDecision.fromFollowUpForm;
+
       confirmMembershipDecisionButton.disabled = true;
       confirmMembershipDecisionButton.textContent =
           'Saving Decision...';
@@ -4194,6 +4305,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         clearMembershipDecisionModal();
+        closeFollowUpForm();
 
         reviewCard.hidden = true;
         selectedApplication = null;
@@ -4217,6 +4329,12 @@ document.addEventListener('DOMContentLoaded', function () {
             error.field === 'membershipNumber'
         ) {
           clearMembershipDecisionModal();
+
+          if (fromFollowUpForm) {
+            openFollowUpForm(status, { keepValues: true, keepErrors: true });
+            setFollowUpError(followUpNumberError, followUpNumberInput, error.message);
+            return;
+          }
 
           showMembershipNumberError(error.message);
 
@@ -4387,7 +4505,11 @@ document.addEventListener('DOMContentLoaded', function () {
         updateCounts();
         renderApplications();
 
-        setMembershipMessage('success', 'Membership application deleted.');
+        setMembershipMessage(
+            'success',
+            'Membership application ' + referenceNumber + ' deleted.',
+            { focus: true }
+        );
       } catch (error) {
         setMembershipMessage(
             'error',
@@ -4397,18 +4519,92 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    tbody.addEventListener('click', function (event) {
-      const deleteButton = event.target.closest(
-          '[data-delete-reference]'
-      );
+    // More Information / Rejected -> the applicant has sent what was asked
+    // for: move the application back to Pending so it can be decided again.
+    // The earlier message is cleared from the applicant's status check.
+    async function handleInformationReceived() {
+      if (!selectedApplication) return;
 
-      if (deleteButton) {
-        handleDeleteApplication(
-            deleteButton.getAttribute('data-delete-reference')
+      const application = selectedApplication;
+      const earlier = application.applicationStatus === 'rejected'
+          ? 'The rejection reason'
+          : 'The earlier information request';
+
+      const confirmed = await showSimpleConfirm({
+        title: 'Information Received?',
+        message:
+            application.referenceNumber + ' (' +
+            (application.fullName || 'this applicant') +
+            ') moves back to Pending so it can be approved or rejected. ' +
+            earlier + ' will be cleared from the applicant\'s status check. ' +
+            'No email is sent.',
+        confirmText: 'Move to Pending',
+        danger: false
+      });
+
+      if (!confirmed) return;
+
+      informationReceivedButton.disabled = true;
+
+      try {
+        const response = await fetch(
+            membershipUrl(
+                '/membership/admin/applications/' +
+                encodeURIComponent(application.referenceNumber) +
+                '/status'
+            ),
+            {
+              method: 'PATCH',
+              headers: {
+                Authorization: 'Bearer ' + getToken(),
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                status: 'pending',
+                statusNote: null,
+                adminNote: adminNoteInput.value.trim() || null
+              })
+            }
         );
-        return;
-      }
 
+        if (!response.ok) {
+          throw await parseMembershipError(response);
+        }
+
+        reviewCard.hidden = true;
+        selectedApplication = null;
+
+        await loadApplications();
+
+        setMembershipMessage(
+            'success',
+            application.referenceNumber + ' has been moved back to Pending.',
+            { focus: true }
+        );
+      } catch (error) {
+        setMembershipMessage(
+            'error',
+            error.message || 'Could not update the membership application.',
+            { focus: true }
+        );
+      } finally {
+        informationReceivedButton.disabled = false;
+      }
+    }
+
+    if (informationReceivedButton) {
+      informationReceivedButton.addEventListener('click', handleInformationReceived);
+    }
+
+    if (deleteApplicationButton) {
+      deleteApplicationButton.addEventListener('click', function () {
+        if (selectedApplication) {
+          handleDeleteApplication(selectedApplication.referenceNumber);
+        }
+      });
+    }
+
+    tbody.addEventListener('click', function (event) {
       const reviewButton = event.target.closest(
           '[data-review-reference]'
       );
@@ -4455,6 +4651,10 @@ document.addEventListener('DOMContentLoaded', function () {
         membershipDecisionHistory.hidden = true;
       }
 
+      if (membershipDeleteAction) {
+        membershipDeleteAction.hidden = true;
+      }
+
       [
         membershipDecisionFields,
         membershipAdminNoteGroup,
@@ -4467,18 +4667,213 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
 
+    // ---- Popup form for More Information / Rejected review cards ----
+    const followUpModal = document.getElementById('membership-followup-modal');
+    const followUpTitle = document.getElementById('membership-followup-title');
+    const followUpIntro = document.getElementById('membership-followup-intro');
+    const followUpNumberGroup = document.getElementById('membership-followup-number-group');
+    const followUpNumberInput = document.getElementById('membership-followup-number');
+    const followUpNumberError = document.getElementById('membership-followup-number-error');
+    const followUpFetchNextButton = document.getElementById('membership-followup-fetch-next');
+    const followUpNoteLabel = document.getElementById('membership-followup-status-note-label');
+    const followUpNoteInput = document.getElementById('membership-followup-status-note');
+    const followUpNoteHint = document.getElementById('membership-followup-status-note-hint');
+    const followUpNoteError = document.getElementById('membership-followup-status-note-error');
+    const followUpAdminNoteInput = document.getElementById('membership-followup-admin-note');
+    const followUpContinueButton = document.getElementById('continue-membership-followup');
+    const followUpCancelButton = document.getElementById('cancel-membership-followup');
+
+    let followUpStatus = null;
+
+    function isFollowUpApplication(application) {
+      return !!application && (
+          application.applicationStatus === 'more_information_required' ||
+          application.applicationStatus === 'rejected'
+      );
+    }
+
+    function setFollowUpError(errorEl, inputEl, message) {
+      errorEl.textContent = message || '';
+      errorEl.classList.toggle('is-visible', !!message);
+      inputEl.classList.toggle('input-error', !!message);
+
+      if (message) {
+        inputEl.setAttribute('aria-invalid', 'true');
+        inputEl.focus();
+      } else {
+        inputEl.removeAttribute('aria-invalid');
+      }
+    }
+
+    function closeFollowUpForm() {
+      if (followUpModal) followUpModal.hidden = true;
+      followUpStatus = null;
+    }
+
+    function openFollowUpForm(status, options) {
+      options = options || {};
+
+      if (!followUpModal || !selectedApplication) return;
+
+      const application = selectedApplication;
+      const isApproval = status === 'approved';
+      const isRejection = status === 'rejected';
+      const name = application.fullName || 'the applicant';
+
+      followUpStatus = status;
+
+      followUpTitle.textContent = isApproval
+          ? 'Approve Application'
+          : isRejection
+              ? 'Reject Application'
+              : 'Request More Information';
+
+      followUpIntro.textContent = isApproval
+          ? application.referenceNumber + ' (' + name + ') will be approved and ' +
+            'emailed their membership number.'
+          : isRejection
+              ? application.referenceNumber + ' (' + name + ') will be told the ' +
+                'application was not approved, with your reason, by email.'
+              : application.referenceNumber + ' (' + name + ') will be emailed ' +
+                'your request and asked to reply to the secretary.';
+
+      followUpNumberGroup.hidden = !isApproval;
+
+      if (!options.keepValues) {
+        followUpNumberInput.value = application.membershipNumber || '';
+        followUpNoteInput.value = '';
+        followUpAdminNoteInput.value = application.adminNote || '';
+      }
+
+      followUpNoteLabel.textContent = isApproval
+          ? 'Applicant Status Note (optional)'
+          : isRejection
+              ? 'Reason (shown to the applicant)'
+              : 'What do you need from the applicant?';
+
+      followUpNoteHint.textContent = isApproval
+          ? 'Shown on the applicant\'s status check.'
+          : 'Shown on the applicant\'s status check and included in the email.';
+
+      followUpContinueButton.textContent = isApproval
+          ? 'Approve'
+          : isRejection
+              ? 'Reject Application'
+              : 'Send Request';
+
+      followUpContinueButton.className =
+          'btn ' + (isRejection ? 'btn-danger' : 'btn-primary');
+
+      if (!options.keepErrors) {
+        setFollowUpError(followUpNumberError, followUpNumberInput, '');
+        setFollowUpError(followUpNoteError, followUpNoteInput, '');
+      }
+
+      followUpModal.hidden = false;
+
+      if (!options.keepErrors) {
+        window.setTimeout(function () {
+          (isApproval ? followUpNumberInput : followUpNoteInput).focus();
+        }, 0);
+      }
+    }
+
+    function continueFollowUpForm() {
+      if (!followUpStatus || !selectedApplication) return;
+
+      const status = followUpStatus;
+      const membershipNumber = followUpNumberInput.value.trim();
+      const statusNote = followUpNoteInput.value.trim();
+      const adminNote = followUpAdminNoteInput.value.trim();
+
+      setFollowUpError(followUpNumberError, followUpNumberInput, '');
+      setFollowUpError(followUpNoteError, followUpNoteInput, '');
+
+      if (status === 'approved' && !membershipNumber) {
+        setFollowUpError(
+            followUpNumberError,
+            followUpNumberInput,
+            'Enter a membership number, or use Fetch Next.'
+        );
+        return;
+      }
+
+      if (status !== 'approved' && !statusNote) {
+        setFollowUpError(
+            followUpNoteError,
+            followUpNoteInput,
+            status === 'rejected'
+                ? 'A reason is required before rejecting this application.'
+                : 'Say what information is needed from the applicant.'
+        );
+        return;
+      }
+
+      // Hide the form (keeping what was typed) and show the usual
+      // confirmation; Confirm there saves and sends the email.
+      followUpModal.hidden = true;
+
+      pendingMembershipDecision = {
+        status: status,
+        membershipNumber: status === 'approved' ? membershipNumber : '',
+        statusNote: statusNote,
+        adminNote: adminNote,
+        fromFollowUpForm: true
+      };
+
+      openMembershipDecisionModal();
+    }
+
+    if (followUpModal) {
+      followUpContinueButton.addEventListener('click', continueFollowUpForm);
+      followUpCancelButton.addEventListener('click', closeFollowUpForm);
+      followUpModal
+          .querySelector('.admin-confirm-backdrop')
+          .addEventListener('click', closeFollowUpForm);
+
+      followUpFetchNextButton.addEventListener('click', async function () {
+        followUpFetchNextButton.disabled = true;
+        setFollowUpError(followUpNumberError, followUpNumberInput, '');
+
+        try {
+          followUpNumberInput.value = await fetchNextMembershipNumber();
+        } catch (error) {
+          setFollowUpError(
+              followUpNumberError,
+              followUpNumberInput,
+              error.message || 'Could not fetch the next membership number.'
+          );
+        } finally {
+          followUpFetchNextButton.disabled = false;
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !followUpModal.hidden) {
+          closeFollowUpForm();
+        }
+      });
+    }
+
+    function decide(status) {
+      if (isFollowUpApplication(selectedApplication) && activeStatus !== 'id_application') {
+        openFollowUpForm(status);
+        return;
+      }
+
+      prepareMembershipDecision(status);
+    }
+
     approveButton.addEventListener('click', function () {
-      prepareMembershipDecision('approved');
+      decide('approved');
     });
 
     rejectButton.addEventListener('click', function () {
-      prepareMembershipDecision('rejected');
+      decide('rejected');
     });
 
     moreInformationButton.addEventListener('click', function () {
-      prepareMembershipDecision(
-          'more_information_required'
-      );
+      decide('more_information_required');
     });
 
     receiptButton.addEventListener('click', function () {
@@ -4527,7 +4922,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (cancelMembershipDecisionButton) {
       cancelMembershipDecisionButton.addEventListener(
           'click',
-          clearMembershipDecisionModal
+          cancelMembershipDecision
       );
     }
 
@@ -4547,7 +4942,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (decisionBackdrop) {
         decisionBackdrop.addEventListener(
             'click',
-            clearMembershipDecisionModal
+            cancelMembershipDecision
         );
       }
     }
@@ -4568,7 +4963,7 @@ document.addEventListener('DOMContentLoaded', function () {
           membershipDecisionModal &&
           !membershipDecisionModal.hidden
       ) {
-        clearMembershipDecisionModal();
+        cancelMembershipDecision();
       }
     });
 
