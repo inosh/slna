@@ -32,12 +32,12 @@
             aria-controls="admin-main-tabs"
     >
       <span class="admin-section-toggle-label">Sections</span>
-      <strong id="admin-section-current">News</strong>
+      <strong id="admin-section-current">Membership Applications</strong>
       <span class="admin-section-toggle-icon" aria-hidden="true"></span>
     </button>
 
     <div class="main-tab-buttons" id="admin-main-tabs" role="tablist" aria-label="Admin dashboard sections">
-      <button class="main-tab-btn" data-maintab="maintab-membership" role="tab" aria-selected="false">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
+      <button class="main-tab-btn active" data-maintab="maintab-membership" role="tab" aria-selected="true">Membership Applications <span class="application-count-badge" id="membership-pending-count">0</span></button>
 
       <button class="main-tab-btn" data-maintab="maintab-member-directory" role="tab" aria-selected="false">Member Directory <span class="application-count-badge" id="member-directory-total-count">0</span></button>
 
@@ -69,7 +69,7 @@
         Event Registrations
       </button>
 
-      <button class="main-tab-btn active" data-maintab="maintab-news" role="tab" aria-selected="true">News</button>
+      <button class="main-tab-btn" data-maintab="maintab-news" role="tab" aria-selected="false">News</button>
 
       <button class="main-tab-btn" data-maintab="maintab-photos" role="tab" aria-selected="false">Gallery</button>
 
@@ -78,7 +78,7 @@
       <button class="main-tab-btn" data-maintab="maintab-queries" role="tab" aria-selected="false">User Queries <span class="application-count-badge" id="queries-new-count">0</span></button>
     </div>
 
-    <div class="main-tab-panel active" id="maintab-news" role="tabpanel">
+    <div class="main-tab-panel" id="maintab-news" role="tabpanel">
       <div class="admin-card">
         <h2>Add News Item</h2>
         <div class="tab-buttons" style="display:none;">
@@ -744,7 +744,7 @@
       </div>
     </div>
 
-    <div class="main-tab-panel" id="maintab-membership" role="tabpanel">
+    <div class="main-tab-panel active" id="maintab-membership" role="tabpanel">
       <div class="admin-card">
         <div class="membership-admin-heading">
           <div>
@@ -2438,6 +2438,8 @@
         </div>
 
         <div class="admin-edit-actions">
+          <!-- Only when editing an existing Newly Accepted / Legacy member. -->
+          <button type="button" class="btn btn-danger member-edit-deactivate" id="member-edit-deactivate" hidden>Deactivate Member</button>
           <button type="button" class="btn btn-outline" id="member-edit-cancel">Cancel</button>
           <button type="submit" class="btn btn-primary" id="member-edit-submit">Save Changes</button>
         </div>

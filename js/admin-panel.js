@@ -6594,10 +6594,19 @@ function initMemberDirectoryAdmin() {
 
   // Per-tab sort state for the "Membership #" / "Name" sortable column
   // headers -- { key: 'membershipNumber'|'fullName'|null, dir: 1|-1 }.
-  const newSortState = { key: null, dir: 1 };
-  const legacySortState = { key: null, dir: 1 };
-  const deactivatedSortState = { key: null, dir: 1 };
-  const allSortState = { key: null, dir: 1 };
+  // Every tab starts sorted by membership number, highest first.
+  const newSortState = { key: 'membershipNumber', dir: -1 };
+  const legacySortState = { key: 'membershipNumber', dir: -1 };
+  const deactivatedSortState = { key: 'membershipNumber', dir: -1 };
+  const allSortState = { key: 'membershipNumber', dir: -1 };
+
+  // Membership numbers come in several formats ("2085", "LT 2199",
+  // "W 266", "K 293/1994"): compare by the number in them first, so a
+  // letter prefix doesn't push a number out of order.
+  function membershipNumberValue(value) {
+    const match = /\d+/.exec(value);
+    return match ? Number(match[0]) : -1;
+  }
 
   function sortByKey(list, sortState, getMember) {
     if (!sortState.key) return list;
@@ -6605,6 +6614,12 @@ function initMemberDirectoryAdmin() {
     return list.slice().sort(function (a, b) {
       const av = String((getMember(a) || {})[sortState.key] || '').trim();
       const bv = String((getMember(b) || {})[sortState.key] || '').trim();
+
+      if (sortState.key === 'membershipNumber') {
+        const diff = membershipNumberValue(av) - membershipNumberValue(bv);
+        if (diff !== 0) return diff * sortState.dir;
+      }
+
       return av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' }) * sortState.dir;
     });
   }
@@ -6640,7 +6655,8 @@ function initMemberDirectoryAdmin() {
           sortState.dir = sortState.dir * -1;
         } else {
           sortState.key = key;
-          sortState.dir = 1;
+          // Membership numbers read best highest first; text columns A-Z.
+          sortState.dir = key === 'membershipNumber' ? -1 : 1;
         }
         updateIndicators();
         onChange();
@@ -6733,9 +6749,8 @@ function initMemberDirectoryAdmin() {
         '<td>' + escapeHtml(member.mobileNumber || '') + '</td>' +
         '<td>' +
         '<button type="button" class="btn btn-outline btn-sm" data-edit-source="' + source +
-        '" data-edit-key="' + escapeHtml(String(key)) + '">Edit</button> ' +
-        '<button type="button" class="btn btn-danger btn-sm" data-deactivate-source="' + source +
-        '" data-deactivate-key="' + escapeHtml(String(key)) + '">Deactivate</button>' +
+        '" data-edit-key="' + escapeHtml(String(key)) + '">Edit</button>' +
+        // Deactivate is inside the Edit popup, not on the table row.
         '</td>' +
         '</tr>';
   }
@@ -6899,6 +6914,9 @@ function initMemberDirectoryAdmin() {
 
     const submitButton = document.getElementById('member-edit-submit');
     if (submitButton) submitButton.style.display = isView ? 'none' : '';
+
+    const deactivateButton = document.getElementById('member-edit-deactivate');
+    if (deactivateButton) deactivateButton.hidden = mode !== 'edit';
 
     if (cancelButton) cancelButton.textContent = isView ? 'Close' : 'Cancel';
 
@@ -7114,21 +7132,26 @@ function initMemberDirectoryAdmin() {
 
       if (!response.ok) throw new Error(await memberDirectoryParseApiError(response));
 
+      closeMemberEditModal();
       showAlert('member-directory-alert', 'Member deactivated.', 'success');
       await loadMemberDirectory();
     } catch (error) {
-      showAlert('member-directory-alert', error.message || 'Could not deactivate this member.', 'error');
+      // Shown in the Edit popup, which is still open.
+      showAlert('member-edit-alert', error.message || 'Could not deactivate this member.', 'error');
     }
   }
 
-  function handleDeactivateClick(event) {
-    const button = event.target.closest('[data-deactivate-source]');
-    if (!button) return;
+  const memberEditDeactivateButton = document.getElementById('member-edit-deactivate');
 
-    handleDeactivate(
-        button.getAttribute('data-deactivate-source'),
-        button.getAttribute('data-deactivate-key')
-    );
+  if (memberEditDeactivateButton) {
+    memberEditDeactivateButton.addEventListener('click', function () {
+      if (!activeEdit || (activeEdit.source !== 'new' && activeEdit.source !== 'legacy')) return;
+
+      handleDeactivate(
+          activeEdit.source,
+          String(activeEdit.source === 'legacy' ? activeEdit.id : activeEdit.referenceNumber)
+      );
+    });
   }
 
   function handleViewClick(event) {
@@ -7147,9 +7170,7 @@ function initMemberDirectoryAdmin() {
   }
 
   newTbody.addEventListener('click', handleNewMemberEditClick);
-  newTbody.addEventListener('click', handleDeactivateClick);
   legacyTbody.addEventListener('click', handleLegacyMemberEditClick);
-  legacyTbody.addEventListener('click', handleDeactivateClick);
   deactivatedTbody.addEventListener('click', handleViewClick);
   allTbody.addEventListener('click', handleViewClick);
 
