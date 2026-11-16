@@ -2920,9 +2920,14 @@ tr.registration-row-non-member {
 #event-edit-fees-group[hidden],
 #event-edit-attachment-group[hidden] { display: none; }
 
+/* Deactivate sits on the left, away from Save. */
+.admin-edit-actions .member-edit-deactivate { margin-right: auto; }
+.admin-edit-actions .member-edit-deactivate[hidden] { display: none; }
+
 @media (max-width: 600px) {
   .admin-edit-actions { flex-direction: column-reverse; }
   .admin-edit-actions .btn { width: 100%; }
+  .admin-edit-actions .member-edit-deactivate { margin-right: 0; margin-top: 8px; }
 }
 
 .membership-number-group {
