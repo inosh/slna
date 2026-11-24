@@ -2,7 +2,7 @@
 // Renew Membership page. Opened from a personal renewal link (?t=token, in
 // reminder emails or sent by the office), or after a lookup with the
 // membership number. Shows the member's status and, where relevant, a form
-// to renew for 12 months or upgrade (General / Lifetime) with a payment
+// to renew for 12 months or upgrade (Ordinary / Lifetime) with a payment
 // slip. After a lookup by number the contact details on record are only
 // hinted at, since anyone could type a number.
 
@@ -75,8 +75,8 @@
       return 'Pay once, never renew. You get a new Lifetime (LT) membership number.' +
         (u.discount > 0 ? ' Includes a ' + money(u.discount) + ' discount for ' + u.years + ' year' + (u.years === 1 ? '' : 's') + ' of membership.' : '');
     },
-    GM: function (u) {
-      return 'For registered nurses. New General (GM) number, valid until ' + fmt(u.new_valid_until) + '.' +
+    OM: function (u) {
+      return 'For registered nurses. New Ordinary (OM) number, valid until ' + fmt(u.new_valid_until) + '.' +
         (u.discount > 0 ? ' Includes a ' + money(u.discount) + ' discount.' : '');
     }
   };
@@ -174,11 +174,11 @@
         needsWork[o.value] = o.needsWork;
       });
 
-      // Associate -> General / Lifetime: registered nurses only, with the
+      // Associate -> Ordinary / Lifetime: registered nurses only, with the
       // work details the student application didn't ask for.
       var workHtml =
         '<div class="renew-work" id="renew-work" hidden>' +
-        '<div class="info-box"><p><strong>General and Lifetime memberships are for registered nurses.</strong> ' +
+        '<div class="info-box"><p><strong>Ordinary and Lifetime memberships are for registered nurses.</strong> ' +
         'Please give your work details below. Your SLNC registration number is not required at this stage.</p></div>' +
         '<div class="application-grid">' +
         '<div class="form-group application-grid-full"><label for="renew-official-address">Official address <span aria-hidden="true">*</span></label>' +

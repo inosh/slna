@@ -752,7 +752,7 @@
           <div>
             <h2>Membership Applications</h2>
             <p class="admin-muted">
-              Review Lifetime, General and Associate membership applications,
+              Review Lifetime, Ordinary and Associate membership applications,
               verify payment receipts, and approve or reject them.
             </p>
           </div>
@@ -843,7 +843,7 @@
             <select id="membership-category-filter">
               <option value="">All categories</option>
               <option value="LT">Lifetime</option>
-              <option value="GM">General</option>
+              <option value="OM">Ordinary</option>
               <option value="AM">Associate</option>
             </select>
           </div>
@@ -1148,7 +1148,7 @@
             <div class="form-group" id="membership-joined-on-group" hidden>
               <label for="membership-joined-on">Membership Starts On</label>
               <input type="date" id="membership-joined-on">
-              <p class="form-help">General / Associate: valid for 12 months from this date. Defaults to the day the application was submitted.</p>
+              <p class="form-help">Ordinary / Associate: valid for 12 months from this date. Defaults to the day the application was submitted.</p>
             </div>
 
             <div class="form-group">
@@ -1376,8 +1376,8 @@
         </div>
 
         <p class="admin-muted md-intro">
-          Every SLNA member: Lifetime, General and Associate, including the
-          pre-digital lifetime roll. General and Associate memberships run
+          Every SLNA member: Lifetime, Ordinary and Associate, including the
+          pre-digital lifetime roll. Ordinary and Associate memberships run
           for 12 months and are renewed from here or online.
         </p>
 
@@ -1398,7 +1398,7 @@
             <select id="md-category">
               <option value="">All categories</option>
               <option value="LT">Lifetime</option>
-              <option value="GM">General</option>
+              <option value="OM">Ordinary</option>
               <option value="AM">Associate</option>
             </select>
           </div>
@@ -1602,7 +1602,7 @@
       <div class="admin-card">
         <h2>Renewals</h2>
         <p class="admin-muted">
-          General and Associate memberships run for 12 months. A membership shows
+          Ordinary and Associate memberships run for 12 months. A membership shows
           as &ldquo;Renewal Due&rdquo; this many days before it expires, and stays
           usable for the grace period after it expires before it lapses.
         </p>
@@ -1627,7 +1627,7 @@
         <p class="admin-muted">
           An upgrade costs the full fee of the new category. Long-standing members
           can get money off: add a discount for members who have been in their
-          current category for at least the given number of years (e.g. General
+          current category for at least the given number of years (e.g. Ordinary
           members for 3+ years get Rs. 1,000 off the Lifetime fee). The highest
           tier a member qualifies for applies. No tiers means no discount.
         </p>
@@ -2280,11 +2280,11 @@
           <label for="md-payment-reference">Receipt / reference</label>
           <input type="text" id="md-payment-reference" maxlength="100" placeholder="Optional">
         </div>
-        <!-- Associate -> General / Lifetime: work details (saved to the member) -->
+        <!-- Associate -> Ordinary / Lifetime: work details (saved to the member) -->
         <div class="md-payment-work" id="md-payment-work" hidden>
           <div class="info-box">
             <p>
-              General and Lifetime memberships are for <strong>registered nurses</strong>.
+              Ordinary and Lifetime memberships are for <strong>registered nurses</strong>.
               Please enter the member's work details (SLNC registration is not
               required at this stage). They are saved to the member's record.
             </p>
@@ -2407,7 +2407,7 @@
             <label for="member-edit-category">Membership Category</label>
             <select id="member-edit-category">
               <option value="LT">Lifetime Membership</option>
-              <option value="GM">General Membership</option>
+              <option value="OM">Ordinary Membership</option>
               <option value="AM">Associate Membership</option>
             </select>
             <p class="form-help" id="member-edit-category-help">Change a category later with Record Payment (upgrade).</p>
@@ -2458,7 +2458,7 @@
           <div class="form-group" id="member-edit-valid-group" hidden>
             <label for="member-edit-valid-until">Valid Until</label>
             <input type="date" id="member-edit-valid-until">
-            <p class="form-help">General and Associate only. If empty when adding: one year from Member Since.</p>
+            <p class="form-help">Ordinary and Associate only. If empty when adding: one year from Member Since.</p>
           </div>
 
           <div class="form-group" id="member-edit-student-number-group" hidden>

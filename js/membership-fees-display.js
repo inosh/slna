@@ -1,6 +1,6 @@
 // js/membership-fees-display.js
 // Fills in the admin-set membership fees wherever a page has a span for
-// them. For each category key (lifetime, general, associate):
+// them. For each category key (lifetime, ordinary, associate):
 //   #fee-amount-<key>         "Rs. 6,000"
 //   #fee-amount-<key>-table   "Rs. 6,000 (one-time)" / "Rs. 1,200 per year"
 //   #fee-amount-<key>-faq     "Rs. 6,000"
@@ -8,7 +8,7 @@
 // left as-is.
 
 (function () {
-  var KEYS = ['lifetime', 'general', 'associate'];
+  var KEYS = ['lifetime', 'ordinary', 'associate'];
 
   function formatFeeAmount(amount) {
     var isWhole = Number.isInteger(amount);

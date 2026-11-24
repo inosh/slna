@@ -3553,7 +3553,7 @@ document.addEventListener('DOMContentLoaded', function () {
             application.created_at,
 
         category: application.category || 'LT',
-        categoryLabel: ({ LT: 'Lifetime Membership', GM: 'General Membership', AM: 'Associate Membership' })[application.category || 'LT'],
+        categoryLabel: ({ LT: 'Lifetime Membership', OM: 'Ordinary Membership', AM: 'Associate Membership' })[application.category || 'LT'],
         studentNumber: application.studentNumber || application.student_number,
         instituteRegistrationDate: application.instituteRegistrationDate || application.institute_registration_date,
         paymentAmount: application.paymentAmount
@@ -3730,7 +3730,7 @@ document.addEventListener('DOMContentLoaded', function () {
             '</td>' +
 
             '<td>' +
-            escapeHtml(({ LT: 'Lifetime (LT)', GM: 'General (GM)', AM: 'Associate (AM)' })[application.category] || 'Lifetime (LT)') +
+            escapeHtml(({ LT: 'Lifetime (LT)', OM: 'Ordinary (OM)', AM: 'Associate (AM)' })[application.category] || 'Lifetime (LT)') +
             '</td>' +
 
             '<td>' +
@@ -4856,7 +4856,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       followUpNumberGroup.hidden = !isApproval;
 
-      // General / Associate: when the 12 months start (default: submitted date).
+      // Ordinary / Associate: when the 12 months start (default: submitted date).
       const followUpJoinedGroup = document.getElementById('membership-followup-joined-on-group');
       const followUpJoinedInput = document.getElementById('membership-followup-joined-on');
       if (followUpJoinedGroup && followUpJoinedInput) {

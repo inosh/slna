@@ -60,7 +60,7 @@
             return applySlncState;
         }
 
-        // ---- Membership category (Lifetime / General / Associate) ----
+        // ---- Membership category (Lifetime / Ordinary / Associate) ----
         // Associate membership is for students: the job fields
         // (data-hide-for="associate") are hidden AND disabled, so they are
         // neither validated nor sent, and the study fields
@@ -68,7 +68,7 @@
         // data-text-<type> switch wording. ?category= preselects a type.
         var CATEGORY_LABELS = {
             lifetime: 'Lifetime Membership',
-            general: 'General Membership',
+            ordinary: 'Ordinary Membership',
             associate: 'Associate Membership'
         };
         var categoryFees = {};
@@ -132,7 +132,7 @@
             }
 
             var wanted = (new URLSearchParams(window.location.search).get('category') || '').toLowerCase();
-            var aliases = { lt: 'lifetime', gm: 'general', am: 'associate' };
+            var aliases = { lt: 'lifetime', om: 'ordinary', am: 'associate' };
             wanted = aliases[wanted] || wanted;
 
             radios.forEach(function (radio) {
@@ -991,7 +991,7 @@
                 membershipNumberEl.textContent =
                     application.membershipNumber;
 
-                // Annual memberships (General / Associate) show their expiry.
+                // Annual memberships (Ordinary / Associate) show their expiry.
                 var validRow = document.getElementById('status-result-valid-row');
                 if (validRow && application.validUntil) {
                     validRow.hidden = false;

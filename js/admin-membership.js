@@ -11,9 +11,9 @@
 (function () {
   var API = SLNA_CONFIG.API_BASE_URL;
   var ADMIN = API + '/membership-admin';
-  var CATEGORY_LABELS = { LT: 'Lifetime', GM: 'General', AM: 'Associate' };
-  var CATEGORY_FULL = { LT: 'Lifetime Membership', GM: 'General Membership', AM: 'Associate Membership' };
-  var FEE_KEY = { LT: 'lifetime', GM: 'general', AM: 'associate' };
+  var CATEGORY_LABELS = { LT: 'Lifetime', OM: 'Ordinary', AM: 'Associate' };
+  var CATEGORY_FULL = { LT: 'Lifetime Membership', OM: 'Ordinary Membership', AM: 'Associate Membership' };
+  var FEE_KEY = { LT: 'lifetime', OM: 'ordinary', AM: 'associate' };
   var PAGE_SIZE = 50;
 
   var esc = function (v) { return escapeHtml(v == null ? '' : String(v)); };
@@ -65,7 +65,7 @@
   // Buttons on a directory row, depending on the member and the tab:
   //   deactivated              -> Reactivate
   //   renewal waiting          -> Review Renewal
-  //   General / Associate      -> Renew / Upgrade
+  //   Ordinary / Associate      -> Renew / Upgrade
   //     (Lapsed tab: also Renewal Reminder and Deactivate)
   //   Lifetime                 -> View only
   function rowActions(member, tab) {
@@ -527,7 +527,7 @@
       document.getElementById('member-edit-membership-number-help').textContent = isAdd
         ? (mode === 'legacy'
             ? 'As on the old records. Saved as LT + four digits: 85 becomes LT 0085, 2085 becomes LT 2085. Old formats such as G 23 are kept as typed.'
-            : 'e.g. GM 0012, AM 0005 or LT 2200. Use Fetch Next for the next free number.')
+            : 'e.g. OM 0012, AM 0005 or LT 2200. Use Fetch Next for the next free number.')
         : 'Changes only through an upgrade (Record Payment).';
       document.getElementById('member-edit-fetch-next-membership-number').style.display = mode === 'add' ? '' : 'none';
       document.getElementById('member-edit-membership-number-asterisk').style.display = isAdd ? '' : 'none';
@@ -636,9 +636,9 @@
       ['slncRegistrationDate', 'md-work-slnc-date', 'SLNC registration date', false]
     ];
 
-    // An Associate upgrading to General / Lifetime gives their work details.
+    // An Associate upgrading to Ordinary / Lifetime gives their work details.
     function needsWork(member, value) {
-      return member.category === 'AM' && /^upgrade:(GM|LT)$/.test(value);
+      return member.category === 'AM' && /^upgrade:(OM|LT)$/.test(value);
     }
 
     function syncPaymentKind() {
@@ -675,7 +675,7 @@
       } catch (err) { /* type it in */ }
     }
 
-    // mode 'reactivate': for a deactivated General / Associate member, with
+    // mode 'reactivate': for a deactivated Ordinary / Associate member, with
     // "Reactivate only" as the first choice (as in SLICNA).
     async function openPayment(mode) {
       if (!detailMember) return;
@@ -738,7 +738,7 @@
           var input = document.getElementById(w[1]);
           body[w[0]] = input.value.trim();
           if (w[3] && !body[w[0]]) {
-            showAlert('md-payment-alert', w[2] + ' is required for General or Lifetime membership.', 'error');
+            showAlert('md-payment-alert', w[2] + ' is required for Ordinary or Lifetime membership.', 'error');
             input.focus();
             return;
           }
@@ -829,7 +829,7 @@
           showAlert('md-detail-alert', err.message, 'error');
         }
       } else if (action === 'reactivate') {
-        // General / Associate: reactivate only, or renew / upgrade at the
+        // Ordinary / Associate: reactivate only, or renew / upgrade at the
         // same time. Lifetime: a simple confirm.
         if (member.category !== 'LT') {
           openPayment('reactivate');
