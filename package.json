@@ -3,6 +3,7 @@
     "build": "node build-pages.js"
   },
   "devDependencies": {
-    "prettier": "^3.9.8"
+    "prettier": "^3.9.8",
+    "wrangler": "^4.167.0"
   }
 }

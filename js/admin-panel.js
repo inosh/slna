@@ -3550,7 +3550,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         submittedAt:
             application.submittedAt ||
-            application.created_at
+            application.created_at,
+
+        category: application.category || 'LT',
+        categoryLabel: ({ LT: 'Lifetime Membership', OM: 'Ordinary Membership', AM: 'Associate Membership' })[application.category || 'LT'],
+        studentNumber: application.studentNumber || application.student_number,
+        instituteRegistrationDate: application.instituteRegistrationDate || application.institute_registration_date,
+        paymentAmount: application.paymentAmount
       };
     }
 
@@ -3655,6 +3661,13 @@ document.addEventListener('DOMContentLoaded', function () {
             .join(' ')
             .toLowerCase();
 
+        const categoryFilterEl = document.getElementById('membership-category-filter');
+        const categoryFilter = categoryFilterEl ? categoryFilterEl.value : '';
+
+        if (categoryFilter && application.category !== categoryFilter) {
+          return false;
+        }
+
         const matchesActiveTab =
             activeStatus === 'id_application'
                 ? (
@@ -3717,14 +3730,7 @@ document.addEventListener('DOMContentLoaded', function () {
             '</td>' +
 
             '<td>' +
-            escapeHtml(application.nicNumber) +
-            (
-                application.slncRegistrationNumber
-                    ? '<br><span class="admin-muted">' +
-                    escapeHtml(application.slncRegistrationNumber) +
-                    '</span>'
-                    : ''
-            ) +
+            escapeHtml(({ LT: 'Lifetime (LT)', OM: 'Ordinary (OM)', AM: 'Associate (AM)' })[application.category] || 'Lifetime (LT)') +
             '</td>' +
 
             '<td>' +
@@ -4004,7 +4010,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
       reviewCard.hidden = false;
 
+      reviewCard.querySelectorAll('[data-review-only-for]').forEach(function (row) {
+        row.hidden = row.getAttribute('data-review-only-for') !== application.category;
+      });
+
+      const joinedOnGroup = document.getElementById('membership-joined-on-group');
+      const joinedOnInput = document.getElementById('membership-joined-on');
+      if (joinedOnGroup && joinedOnInput) {
+        joinedOnGroup.hidden = application.category === 'LT';
+        joinedOnInput.value = application.submittedAt
+            ? new Date(application.submittedAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Colombo' })
+            : '';
+      }
+
       reviewReference.textContent =
+          application.categoryLabel + ' · ' +
           application.referenceNumber +
           (
               application.membershipNumber
@@ -4206,11 +4226,16 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
+      const joinedOnInput = document.getElementById('membership-joined-on');
+
       pendingMembershipDecision = {
         status: status,
         membershipNumber: membershipNumber,
         statusNote: statusNote,
-        adminNote: adminNote
+        adminNote: adminNote,
+        joinedOn: status === 'approved' && selectedApplication.category !== 'LT' && joinedOnInput
+            ? joinedOnInput.value
+            : null
       };
 
       openMembershipDecisionModal();
@@ -4296,6 +4321,22 @@ document.addEventListener('DOMContentLoaded', function () {
                   ? 'This will mark the application as rejected. The applicant will see the Applicant Status Note.'
                   : 'This will mark the application as requiring more information. The applicant will see the Applicant Status Note.';
 
+      // Say how long the membership will run.
+      if (isApproval) {
+        const fmt = function (d) {
+          return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        };
+        if (selectedApplication.category === 'LT') {
+          membershipDecisionModalWarning.textContent += ' Lifetime membership: valid for life.';
+        } else if (decision.joinedOn || selectedApplication.submittedAt) {
+          const start = decision.joinedOn ||
+              new Date(selectedApplication.submittedAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Colombo' });
+          const end = (Number(start.slice(0, 4)) + 1) + start.slice(4);
+          membershipDecisionModalWarning.textContent += ' ' + selectedApplication.categoryLabel +
+              ' from ' + fmt(start) + ' until ' + fmt(end) + '.';
+        }
+      }
+
       confirmMembershipDecisionButton.textContent =
           isApproval
               ? 'Confirm Approval'
@@ -4362,7 +4403,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 status: status,
                 membershipNumber: membershipNumber || null,
                 statusNote: statusNote || null,
-                adminNote: adminNote || null
+                adminNote: adminNote || null,
+                joinedOn: pendingMembershipDecision.joinedOn || null
               })
             }
         );
@@ -4698,6 +4740,14 @@ document.addEventListener('DOMContentLoaded', function () {
       renderApplications();
     });
 
+    const categoryFilterSelect = document.getElementById('membership-category-filter');
+    if (categoryFilterSelect) {
+      categoryFilterSelect.addEventListener('change', function () {
+        currentPage = 1;
+        renderApplications();
+      });
+    }
+
     refreshButton.addEventListener('click', function () {
       loadApplications();
     });
@@ -4806,6 +4856,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
       followUpNumberGroup.hidden = !isApproval;
 
+      // Ordinary / Associate: when the 12 months start (default: submitted date).
+      const followUpJoinedGroup = document.getElementById('membership-followup-joined-on-group');
+      const followUpJoinedInput = document.getElementById('membership-followup-joined-on');
+      if (followUpJoinedGroup && followUpJoinedInput) {
+        followUpJoinedGroup.hidden = !isApproval || application.category === 'LT';
+        if (!options.keepValues) {
+          followUpJoinedInput.value = application.submittedAt
+              ? new Date(application.submittedAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Colombo' })
+              : '';
+        }
+      }
+
       if (!options.keepValues) {
         followUpNumberInput.value = application.membershipNumber || '';
         followUpNoteInput.value = '';
@@ -4885,6 +4947,9 @@ document.addEventListener('DOMContentLoaded', function () {
         membershipNumber: status === 'approved' ? membershipNumber : '',
         statusNote: statusNote,
         adminNote: adminNote,
+        joinedOn: status === 'approved' && selectedApplication.category !== 'LT'
+            ? (document.getElementById('membership-followup-joined-on') || {}).value || null
+            : null,
         fromFollowUpForm: true
       };
 
@@ -4903,7 +4968,9 @@ document.addEventListener('DOMContentLoaded', function () {
         setFollowUpError(followUpNumberError, followUpNumberInput, '');
 
         try {
-          followUpNumberInput.value = await fetchNextMembershipNumber();
+          followUpNumberInput.value = await fetchNextMembershipNumber(
+              selectedApplication ? selectedApplication.category : null
+          );
         } catch (error) {
           setFollowUpError(
               followUpNumberError,
@@ -5400,7 +5467,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             try {
               membershipNumberInput.value =
-                  await fetchNextMembershipNumber();
+                  await fetchNextMembershipNumber(
+                      selectedApplication ? selectedApplication.category : null
+                  );
             } catch (error) {
               showMembershipNumberError(
                   error.message ||
@@ -5510,9 +5579,10 @@ document.addEventListener('DOMContentLoaded', function () {
 // "Add New Member" form -- both fill a membership number field from the
 // same suggested-next-number lookup, then leave it editable so the admin
 // can override it.
-async function fetchNextMembershipNumber() {
+async function fetchNextMembershipNumber(category) {
   const response = await fetch(
-      SLNA_CONFIG.API_BASE_URL + '/membership/admin/next-membership-number',
+      SLNA_CONFIG.API_BASE_URL + '/membership/admin/next-membership-number' +
+      (category ? '?category=' + encodeURIComponent(category) : ''),
       {
         headers: {
           Authorization: 'Bearer ' + getToken()
@@ -6435,7 +6505,15 @@ async function loadMembershipFees() {
   try {
     const res = await fetch(SLNA_CONFIG.API_BASE_URL + '/membership-fees');
     if (!res.ok) throw new Error('bad status');
-    const fees = await res.json();
+    // The old separate "upgrade" fee is retired: an upgrade now costs the
+    // new category's fee (less any loyalty discount, set below).
+    const fees = (await res.json())
+      .filter(function (fee) { return fee.key !== 'upgrade'; })
+      .map(function (fee) {
+        return Object.assign({}, fee, {
+          label: fee.label + (fee.is_annual ? ' — per year' : ' — one-time')
+        });
+      });
 
     if (!fees.length) {
       container.innerHTML = '<div class="empty-table-state">No fees configured.</div>';
