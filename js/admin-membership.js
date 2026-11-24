@@ -1060,10 +1060,39 @@
         ? (r.newValidUntil ? fmtDate(r.newValidUntil) : 'Lifetime')
         : (r.toCategory === 'LT' ? 'Lifetime' : 'One year more, set when verified');
 
+      // Upgrades: spell out full fee - loyalty discount = amount, and check
+      // it against today's fee and tiers, so nobody has to work it out.
+      var check = r.discountCheck;
+      var fromLabel = CATEGORY_LABELS[r.fromCategory];
+      var yearsText = check
+        ? check.years + ' completed year' + (check.years === 1 ? '' : 's') + ' as ' + fromLabel + ' (since ' + fmtDate(check.categorySince) + ')'
+        : '';
+      var amountRows = r.kind === 'upgrade' && r.discountAmount > 0
+        ? [
+          ['Full fee', money(r.amount + r.discountAmount)],
+          ['Loyalty discount', '− ' + money(r.discountAmount)],
+          ['Amount to verify', money(r.amount)]
+        ]
+        : [['Amount', money(r.amount)]];
+      var discountNote = '';
+      if (r.kind === 'upgrade' && r.discountAmount > 0) {
+        discountNote = '<div class="rn-discount-note rn-discount-applied"><strong>Loyalty discount applied:</strong> ' +
+          esc(money(r.discountAmount)) + ' off the ' + esc(money(r.amount + r.discountAmount)) + ' ' + esc(CATEGORY_LABELS[r.toCategory]) + ' fee' +
+          (yearsText ? ' for ' + esc(yearsText) : '') + '. The slip should show <strong>' + esc(money(r.amount)) + '</strong>.</div>';
+      }
+      if (check && check.expectedAmount !== null && check.expectedAmount !== r.amount) {
+        discountNote += '<div class="rn-discount-note rn-discount-mismatch"><strong>Doesn’t match the current settings:</strong> today’s ' +
+          esc(CATEGORY_LABELS[r.toCategory]) + ' fee and loyalty tiers give ' + esc(money(check.expectedAmount)) +
+          (check.expectedDiscount > 0
+            ? ', with a ' + esc(money(check.expectedDiscount)) + ' discount for ' + check.years + ' completed year' + (check.years === 1 ? '' : 's') + ' as ' + esc(fromLabel)
+            : ', with no discount') +
+          '. The fee or tiers may have changed since this was submitted. Check the slip before verifying.</div>';
+      }
+
       document.getElementById('rn-review-body').innerHTML =
-        '<section class="review-section"><h3>Payment</h3>' + dl([
-          ['Type', kindText(r)],
-          ['Amount', money(r.amount) + (r.discountAmount > 0 ? ' (after ' + money(r.discountAmount) + ' loyalty discount)' : '')],
+        '<section class="review-section"><h3>Payment</h3>' + discountNote + dl([
+          ['Type', kindText(r)]
+        ].concat(amountRows).concat([
           ['Reference', r.paymentReference],
           ['Paid on', fmtDate(r.paymentDate)],
           ['Valid until before', r.previousValidUntil ? fmtDate(r.previousValidUntil) : 'Lifetime'],
@@ -1071,7 +1100,7 @@
           ['Number', r.newMembershipNumber && r.newMembershipNumber !== r.previousMembershipNumber ? r.previousMembershipNumber + ' → ' + r.newMembershipNumber : ''],
           ['Status', r.status + (r.reviewedByName ? ' by ' + r.reviewedByName : '') + (r.reviewedAt ? ' on ' + fmtDateTime(r.reviewedAt) : '')],
           ['Note', r.statusNote]
-        ]) +
+        ])) +
         (r.hasReceipt ? '<button type="button" class="btn btn-outline btn-sm" id="rn-view-slip">View Payment Slip</button>' : '<p class="admin-muted">No slip (recorded by an admin).</p>') +
         '</section>' +
         '<section class="review-section"><h3>Contact details to update</h3>' +

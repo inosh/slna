@@ -4856,3 +4856,8 @@ body.rte-fullscreen-active::after { content:''; position:fixed; inset:0; backgro
 /* Member Directory: Working Place column (Members tab only) */
 .md-table th[hidden] { display:none; }
 .md-table .md-workplace { max-width:200px; font-size:0.88rem; }
+
+/* Renewal review card: loyalty discount breakdown */
+.rn-discount-note { margin:0 0 12px; padding:10px 14px; border-radius:6px; font-size:0.9rem; line-height:1.45; }
+.rn-discount-applied { background:#e8f3ff; border-left:4px solid #1f6fb2; color:#0b3a63; }
+.rn-discount-mismatch { background:#fff4e0; border-left:4px solid #c77700; color:#6b4100; }
