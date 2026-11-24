@@ -56,6 +56,114 @@
             form.addEventListener('reset', applySlncState);
 
             applySlncState();
+
+            return applySlncState;
+        }
+
+        // ---- Membership category (Lifetime / General / Associate) ----
+        // Associate membership is for students: the job fields
+        // (data-hide-for="associate") are hidden AND disabled, so they are
+        // neither validated nor sent, and the study fields
+        // (data-only-for="associate") appear instead. Labels with
+        // data-text-<type> switch wording. ?category= preselects a type.
+        var CATEGORY_LABELS = {
+            lifetime: 'Lifetime Membership',
+            general: 'General Membership',
+            associate: 'Associate Membership'
+        };
+        var categoryFees = {};
+
+        function selectedCategory() {
+            var checked = form.querySelector('input[name="membershipType"]:checked');
+            return checked ? checked.value : 'lifetime';
+        }
+
+        function setGroupVisible(group, visible) {
+            group.hidden = !visible;
+            group.querySelectorAll('input, select, textarea').forEach(function (input) {
+                input.disabled = !visible;
+                if (!visible) {
+                    clearFieldError(input);
+                }
+            });
+        }
+
+        function formatFee(amount) {
+            return amount === null || amount === undefined
+                ? 'To be announced'
+                : 'Rs. ' + Number(amount).toLocaleString('en-LK');
+        }
+
+        function applyCategory(applySlncState) {
+            var type = selectedCategory();
+
+            form.querySelectorAll('[data-hide-for]').forEach(function (group) {
+                setGroupVisible(group, group.getAttribute('data-hide-for').split(' ').indexOf(type) === -1);
+            });
+
+            form.querySelectorAll('[data-only-for]').forEach(function (group) {
+                setGroupVisible(group, group.getAttribute('data-only-for').split(' ').indexOf(type) !== -1);
+            });
+
+            // The SLNC checkbox decides whether its two fields show (for
+            // nurses); re-apply it after the category toggle.
+            if (type !== 'associate' && applySlncState) {
+                applySlncState();
+            }
+
+            form.querySelectorAll('[data-text-default]').forEach(function (el) {
+                el.textContent = el.getAttribute('data-text-' + type) || el.getAttribute('data-text-default');
+            });
+
+            var feeLabel = document.getElementById('selected-fee-label');
+            var feeAmount = document.getElementById('selected-fee-amount');
+            var feePeriod = document.getElementById('selected-fee-period');
+
+            if (feeLabel) feeLabel.textContent = CATEGORY_LABELS[type];
+            if (feeAmount && categoryFees[type] !== undefined) feeAmount.textContent = formatFee(categoryFees[type]);
+            if (feePeriod) feePeriod.textContent = type === 'lifetime' ? 'one-time' : 'per year (12 months from approval)';
+        }
+
+        function initMembershipCategory(applySlncState) {
+            var radios = form.querySelectorAll('input[name="membershipType"]');
+
+            if (!radios.length) {
+                return;
+            }
+
+            var wanted = (new URLSearchParams(window.location.search).get('category') || '').toLowerCase();
+            var aliases = { lt: 'lifetime', gm: 'general', am: 'associate' };
+            wanted = aliases[wanted] || wanted;
+
+            radios.forEach(function (radio) {
+                if (radio.value === wanted) {
+                    radio.checked = true;
+                }
+                radio.addEventListener('change', function () {
+                    applyCategory(applySlncState);
+                });
+            });
+
+            // form.reset() puts the radios back to Lifetime: follow it.
+            form.addEventListener('reset', function () {
+                window.setTimeout(function () {
+                    applyCategory(applySlncState);
+                }, 0);
+            });
+
+            applyCategory(applySlncState);
+
+            fetch(SLNA_CONFIG.API_BASE_URL + '/membership-fees')
+                .then(function (response) { return response.ok ? response.json() : []; })
+                .then(function (fees) {
+                    (Array.isArray(fees) ? fees : []).forEach(function (fee) {
+                        if (CATEGORY_LABELS[fee.key]) {
+                            categoryFees[fee.key] = fee.is_tba ? null : fee.amount;
+                        }
+                    });
+                    applyCategory(applySlncState);
+                })
+                .catch(function () {});
         }
 
         // ---- Reusable inline field-error display ----
@@ -562,6 +670,7 @@
                 }
 
                 var referenceNumber = escapeHtml(data.referenceNumber);
+                var appliedFor = CATEGORY_LABELS[selectedCategory()] || 'membership';
 
                 form.reset();
 
@@ -579,8 +688,9 @@
                     '✓ Application Received' +
                     '</div>' +
                     '<p>' +
-                    'Your lifetime membership application has been received ' +
-                    'and is awaiting review by the SLNA Secretariat.' +
+                    'Your ' + escapeHtml(appliedFor) + ' application has been received ' +
+                    'and is awaiting review by the SLNA Secretariat. ' +
+                    'A confirmation has been emailed to you.' +
                     '</p>' +
                     '<div class="application-reference-box">' +
                     '<span class="application-reference-label">' +
@@ -608,12 +718,13 @@
                 if (submitButton) {
                     submitButton.disabled = false;
                     submitButton.textContent =
-                        'Submit Lifetime Membership Application';
+                        'Submit Membership Application';
                 }
             }
         });
 
-        initSlncToggle();
+        var applySlncState = initSlncToggle();
+        initMembershipCategory(applySlncState);
 
         window.SLNA_CLEAR_JOIN_FORM_MESSAGE = clearJoinFormMessage;
     }
@@ -828,6 +939,11 @@
             membershipRow.hidden = true;
             membershipNumberEl.textContent = '—';
 
+            ['status-result-category-row', 'status-result-valid-row'].forEach(function (id) {
+                var row = document.getElementById(id);
+                if (row) row.hidden = true;
+            });
+
             messageBox.hidden = true;
             messageTitle.textContent = 'Message from SLNA';
             messageText.textContent = '—';
@@ -861,6 +977,12 @@
                 application.submittedAt
             );
 
+            var categoryRow = document.getElementById('status-result-category-row');
+            if (categoryRow && application.categoryLabel) {
+                categoryRow.hidden = false;
+                document.getElementById('status-result-category').textContent = application.categoryLabel;
+            }
+
             if (
                 application.status === 'approved' &&
                 application.membershipNumber
@@ -868,6 +990,14 @@
                 membershipRow.hidden = false;
                 membershipNumberEl.textContent =
                     application.membershipNumber;
+
+                // Annual memberships (General / Associate) show their expiry.
+                var validRow = document.getElementById('status-result-valid-row');
+                if (validRow && application.validUntil) {
+                    validRow.hidden = false;
+                    document.getElementById('status-result-valid-until').textContent =
+                        formatDate(application.validUntil);
+                }
             }
 
             if (application.status === 'rejected') {
@@ -879,7 +1009,7 @@
                     (application.statusNote
                         ? application.statusNote + '\n\n'
                         : '') +
-                    'If you wish to apply again, please submit a new lifetime membership application after addressing the feedback above.';
+                    'If you wish to apply again, please submit a new membership application after addressing the feedback above.';
             } else if (
                 application.status === 'more_information_required'
             ) {

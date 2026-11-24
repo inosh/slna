@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renew Membership | SLNA</title>
+  <meta name="description" content="Renew your SLNA General or Associate membership, or upgrade to General or Lifetime membership, online.">
+  <!-- Renewal links carry a private token: keep them out of search results and referrers. -->
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" type="image/png" sizes="48x48" href="../images/favicon-48.png"><link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16.png"><link rel="apple-touch-icon" href="../images/apple-touch-icon.png"><link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+<div id="site-header"></div>
+
+<div class="page-hero page-hero-compact">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="../index.html">Home</a> /
+      <a href="membership.html">Membership</a> /
+      <span>Renew Membership</span>
+    </div>
+  </div>
+</div>
+
+<div class="container content-layout">
+  <aside class="side-menu">
+    <h3>MEMBERSHIP</h3>
+
+    <ul>
+      <li><a href="membership.html">Membership</a></li>
+      <li><a href="membership-categories.html">Membership Categories & Fees</a></li>
+      <li><a href="join-slna.html">Join SLNA</a></li>
+      <li><a class="active" href="renew-membership.html">Renew Membership</a></li>
+      <li><a href="membership-benefits.html">Membership Benefits</a></li>
+      <li><a href="member-login.html">Member Login</a></li>
+    </ul>
+  </aside>
+
+  <main class="content-main">
+    <h1 class="page-title">Renew or Upgrade Membership</h1>
+
+    <p>
+      General and Associate memberships run for 12 months. Renew here with
+      your membership number (or the personal link in our reminder email),
+      or upgrade to General or Lifetime membership.
+    </p>
+
+    <div class="form-box status-check-box" id="renew-lookup-box">
+      <h3>Find Your Membership</h3>
+
+      <form id="renew-lookup-form" novalidate>
+        <div class="form-group">
+          <label for="renew-lookup-number">
+            Membership Number
+            <span aria-hidden="true">*</span>
+          </label>
+
+          <input
+                  type="text"
+                  id="renew-lookup-number"
+                  name="membershipNumber"
+                  placeholder="e.g. GM 0012 or AM 0005"
+                  autocomplete="off"
+                  maxlength="50"
+                  required
+          >
+
+          <p class="form-help">
+            Lost your membership number? Use "Find My Membership Number" on the
+            <a href="join-slna.html">Join SLNA</a> page.
+          </p>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="renew-lookup-submit">Continue</button>
+      </form>
+
+      <div id="renew-lookup-alert" aria-live="polite"></div>
+    </div>
+
+    <div id="renewal-host" aria-live="polite"></div>
+  </main>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/include-header.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/membership-renew.js"></script>
+</body>
+</html>

@@ -50,6 +50,13 @@ ul { list-style:none; }
 .btn-outline:hover { background:var(--primary); color:#fff; }
 .btn-danger { background:#c0392b; border-color:#c0392b; color:#fff; }
 .btn-sm { padding:5px 10px; font-size:12px; }
+/* Soft accent buttons (admin: Refresh = light blue, Download = light green) */
+.btn-soft-blue { background:#e3f0fd; border-color:#9cc3ea; color:#0b4c8c; white-space:nowrap; }
+.btn-soft-blue:hover { background:#cfe4fa; border-color:#6fa6dc; color:#073f73; }
+.btn-soft-green { background:#e2f5e9; border-color:#9fd4b2; color:#176638; white-space:nowrap; }
+.btn-soft-green:hover { background:#cdeedb; border-color:#6fbf8c; color:#0f4d29; }
+/* Heading buttons keep their text on one line instead of being squeezed by the title. */
+.membership-admin-heading > .btn { flex-shrink:0; white-space:nowrap; }
 .main-nav { background: var(--primary-dark); position:relative; z-index:1500; }
 .main-nav .container { display:flex; align-items:center; justify-content:space-between; }
 .main-nav ul.nav-list { display:flex; flex-wrap:nowrap; width:100%; justify-content:space-between; }
@@ -1593,6 +1600,178 @@ label.file-input-trigger { display:inline-block; margin-bottom:0; }
   line-height: 1;
 }
 
+.payment-amount-period {
+  font-size: 14px;
+  color: #e4ecf8;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Membership category picker (join form) and renew / upgrade options */
+.membership-category-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.membership-category-options,
+.membership-category-field .membership-category-options.radio-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.membership-category-options .membership-category-option {
+  width: auto;
+  min-width: 0;
+}
+
+.membership-category-option {
+  position: relative;
+  display: block;
+  margin: 0;
+  cursor: pointer;
+}
+
+.membership-category-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.membership-category-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.membership-category-card strong {
+  color: var(--primary-dark);
+  font-size: 15.5px;
+}
+
+.membership-category-fee {
+  font-size: 20px;
+  font-weight: 800;
+  color: #173f73;
+}
+
+.membership-category-fee small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.membership-category-fee s {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.membership-category-who {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.membership-category-option:hover .membership-category-card {
+  border-color: #9bb6d6;
+}
+
+.membership-category-option input:checked + .membership-category-card {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(11, 76, 140, 0.12);
+  background: #f3f8fd;
+}
+
+.membership-category-option input:focus-visible + .membership-category-card {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.renew-member-card {
+  margin-bottom: 20px;
+}
+
+.renew-member-name {
+  margin-top: 4px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.renew-member-text {
+  margin: 12px 0 0;
+}
+
+.status-result-renew-link {
+  margin-left: 8px;
+  font-weight: 700;
+}
+
+/* Admin: Member Directory, Renewals, Membership settings (js/admin-membership.js) */
+/* Title, count and the four buttons on one row; wraps only when it can't fit. */
+.md-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 12px; }
+.md-heading h2 { margin:0; color:#073f73; font-size:1.3rem; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.md-heading .member-count-badge { font-size:0.82rem; padding:3px 10px; margin:0; }
+.md-heading-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.md-heading-actions .btn { white-space:nowrap; padding:5px 8px; font-size:12px; }
+.md-intro { margin:8px 0 14px; }
+/* All six status tabs on one line; on narrow screens the row scrolls sideways. */
+.md-state-tabs { flex-wrap:nowrap; overflow-x:auto; gap:2px; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+.md-state-tabs .tab-btn { flex:0 0 auto; padding:9px 11px; white-space:nowrap; }
+.md-filter-row { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 14px; margin:14px 0 16px; }
+.md-filter-row .form-group { margin-bottom:0; flex:1 1 170px; min-width:0; }
+.md-filter-row .md-search-group { flex:2 1 280px; }
+.md-detail-actions { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 18px; }
+.md-detail-wide { grid-column:1 / -1; }
+.md-reminder-list { margin:0; padding-left:18px; font-size:13px; color:#3d4b5c; }
+.md-reminder-list li { margin-bottom:4px; }
+.md-link-box { width:100%; margin-top:8px; padding:8px 10px; border:1px solid var(--border); border-radius:4px; font-size:13px; background:#fff; }
+.ms-inline-form { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 16px; }
+.ms-inline-form .form-group { margin-bottom:0; flex:1 1 220px; }
+.ms-discount-path { padding:14px 16px; margin-bottom:14px; border:1px solid var(--border); border-radius:6px; background:#f8fbfe; }
+.ms-discount-path h3 { margin:0 0 10px; font-size:15px; color:var(--primary-dark); }
+.ms-discount-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-bottom:8px; font-size:14px; }
+.ms-discount-row input { width:90px; padding:6px 8px; border:1px solid var(--border); border-radius:4px; }
+.membership-followup-modal-dialog { width:min(600px, 100%); max-height:calc(100vh - 32px); overflow-y:auto; }
+.membership-followup-modal-dialog .admin-confirm-content { flex:1 1 auto; min-width:0; }
+.membership-followup-modal-dialog .form-group[hidden] { display:none; }
+#md-detail-card[hidden], #rn-review-card[hidden] { display:none; }
+.md-payment-work[hidden] { display:none; }
+.md-payment-work .info-box { margin-bottom:12px; }
+/* Directory rows: compact status and action buttons */
+.md-table .application-status { min-width:0; padding:3px 9px; font-size:0.72rem; white-space:nowrap; }
+.md-verify-tag { display:block; margin-top:4px; font-size:0.72rem; font-weight:700; color:#8a5a00; white-space:nowrap; }
+.md-row-actions { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.md-row-actions-line { display:flex; flex-wrap:nowrap; gap:6px; justify-content:flex-end; }
+.md-row-actions .btn { white-space:nowrap; }
+.md-table th:last-child { text-align:right; }
+
+/* Member state chips (Member Directory, Renew Membership) */
+.member-state-active { color: #176638; background: #dff5e7; }
+.member-state-renewal_due { color: #765600; background: #fff4c7; }
+.member-state-grace { color: #8a4b00; background: #ffe6cc; }
+.member-state-lapsed { color: #8a2020; background: #ffe1e1; }
+.member-state-deactivated { color: #4b5563; background: #e5e7eb; }
+
 .payment-details-box {
   margin: 20px 0 26px;
   padding: 22px;
@@ -2923,6 +3102,13 @@ tr.registration-row-non-member {
 /* Deactivate sits on the left, away from Save. */
 .admin-edit-actions .member-edit-deactivate { margin-right: auto; }
 .admin-edit-actions .member-edit-deactivate[hidden] { display: none; }
+
+/* Member edit popup: title and buttons stay in view, the fields scroll
+   between them (as in SLICNA). The -28px margins cancel the dialog padding. */
+#member-edit-modal .admin-edit-dialog { padding-top: 0; padding-bottom: 0; }
+#member-edit-modal .admin-edit-header { position: sticky; top: 0; z-index: 2; margin: 0 -28px 14px; padding: 20px 28px 12px; background: #fff; border-bottom: 1px solid #e3ebf3; }
+#member-edit-modal #member-edit-alert { scroll-margin-top: 80px; }
+#member-edit-modal .admin-edit-actions { position: sticky; bottom: 0; z-index: 2; margin: 20px -28px 0; padding: 14px 28px 18px; background: #fff; border-top: 1px solid #e3ebf3; }
 
 @media (max-width: 600px) {
   .admin-edit-actions { flex-direction: column-reverse; }
@@ -4666,3 +4852,7 @@ body.rte-fullscreen-active::after { content:''; position:fixed; inset:0; backgro
 @media (max-width: 600px) {
   .cta-banner { flex-direction:column; align-items:flex-start; }
 }
+
+/* Member Directory: Working Place column (Members tab only) */
+.md-table th[hidden] { display:none; }
+.md-table .md-workplace { max-width:200px; font-size:0.88rem; }

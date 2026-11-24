@@ -8,7 +8,7 @@
 
   <meta
           name="description"
-          content="Apply for lifetime membership and an SLNA identity card."
+          content="Apply for Lifetime, General or Associate membership of the Sri Lanka Nurses Association and an SLNA identity card."
   >
 
   <link rel="icon" type="image/png" sizes="48x48" href="../images/favicon-48.png"><link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16.png"><link rel="apple-touch-icon" href="../images/apple-touch-icon.png"><link rel="stylesheet" href="../css/style.css">
@@ -35,24 +35,27 @@
       <li><a href="membership.html">Membership</a></li>
       <li><a href="membership-categories.html">Membership Categories & Fees</a></li>
       <li><a class="active" href="join-slna.html">Join SLNA</a></li>
+      <li><a href="renew-membership.html">Renew Membership</a></li>
       <li><a href="membership-benefits.html">Membership Benefits</a></li>
       <li><a href="member-login.html">Member Login</a></li>
     </ul>
   </aside>
 
   <main class="content-main">
-    <h1 class="page-title">Lifetime Membership Application</h1>
+    <h1 class="page-title">Membership Application</h1>
 
     <p>
-      Complete this application to apply for lifetime membership of the
-      Sri Lanka Nurses Association and for an SLNA identity card.
+      Apply for Lifetime, General or Associate membership of the Sri Lanka
+      Nurses Association (and for an SLNA identity card). Already a member?
+      <a href="renew-membership.html">Renew or upgrade your membership</a>.
     </p>
 
     <div class="info-box">
       <p>
         <strong>Before you begin:</strong>
-        Please prepare your Sri Lanka Nursing Council registration details,
-        bank-transfer receipt, and passport-size photograph.
+        Please prepare your Sri Lanka Nursing Council registration details
+        (students: your student number), bank-transfer receipt, and
+        passport-size photograph.
         Fields marked <span aria-hidden="true">*</span> are required.
       </p>
     </div>
@@ -105,9 +108,49 @@
 
         <section
                 class="application-section"
+                aria-labelledby="membership-category-heading"
+        >
+          <h3 id="membership-category-heading">1. Membership Category</h3>
+
+          <fieldset class="form-group membership-category-field">
+            <legend class="visually-hidden">Choose a membership category</legend>
+
+            <div class="membership-category-options radio-options">
+              <label class="membership-category-option">
+                <input type="radio" name="membershipType" value="lifetime" checked required>
+                <span class="membership-category-card">
+                  <strong>Lifetime Membership</strong>
+                  <span class="membership-category-fee"><span id="fee-amount-lifetime">Rs. 6,000</span> <small>one-time</small></span>
+                  <span class="membership-category-who">For registered nurses. Pay once, a member for life.</span>
+                </span>
+              </label>
+
+              <label class="membership-category-option">
+                <input type="radio" name="membershipType" value="general">
+                <span class="membership-category-card">
+                  <strong>General Membership</strong>
+                  <span class="membership-category-fee"><span id="fee-amount-general">Rs. 1,200</span> <small>per year</small></span>
+                  <span class="membership-category-who">For registered nurses. Renewed every year; can be upgraded to Lifetime.</span>
+                </span>
+              </label>
+
+              <label class="membership-category-option">
+                <input type="radio" name="membershipType" value="associate">
+                <span class="membership-category-card">
+                  <strong>Associate Membership</strong>
+                  <span class="membership-category-fee"><span id="fee-amount-associate">Rs. 3,000</span> <small>per year</small></span>
+                  <span class="membership-category-who">For nursing students. Renewed every year; can be upgraded after you qualify.</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+        </section>
+
+        <section
+                class="application-section"
                 aria-labelledby="personal-details-heading"
         >
-          <h3 id="personal-details-heading">1. Personal Details</h3>
+          <h3 id="personal-details-heading">2. Personal Details</h3>
 
           <div class="application-grid">
             <div class="form-group application-grid-full">
@@ -245,7 +288,7 @@
                 class="application-section"
                 aria-labelledby="contact-details-heading"
         >
-          <h3 id="contact-details-heading">2. Contact Details</h3>
+          <h3 id="contact-details-heading">3. Contact Details</h3>
 
           <div class="application-grid">
             <div class="form-group application-grid-full">
@@ -265,7 +308,7 @@
 
             <div class="form-group application-grid-full">
               <label for="current-working-place">
-                Current Working Place
+                <span data-text-default="Current Working Place" data-text-associate="Current Nursing School / University">Current Working Place</span>
                 <span aria-hidden="true">*</span>
               </label>
 
@@ -277,7 +320,7 @@
               >
             </div>
 
-            <div class="form-group application-grid-full">
+            <div class="form-group application-grid-full" data-hide-for="associate">
               <label for="official-address">
                 Official Address
                 <span aria-hidden="true">*</span>
@@ -373,10 +416,10 @@
                 class="application-section"
                 aria-labelledby="professional-details-heading"
         >
-          <h3 id="professional-details-heading">3. Professional Details</h3>
+          <h3 id="professional-details-heading"><span data-text-default="4. Professional Details" data-text-associate="4. Study Details">4. Professional Details</span></h3>
 
           <div class="application-grid">
-            <div class="form-group application-grid-full">
+            <div class="form-group application-grid-full" data-hide-for="associate">
               <label class="checkbox-label" for="slnc-not-registered">
                 <input
                         type="checkbox"
@@ -388,7 +431,7 @@
               </label>
             </div>
 
-            <div class="form-group" id="slnc-registration-group">
+            <div class="form-group" id="slnc-registration-group" data-hide-for="associate">
               <label for="slnc-registration">
                 SLNC Registration Number
                 <span aria-hidden="true">*</span>
@@ -402,7 +445,7 @@
               >
             </div>
 
-            <div class="form-group" id="slnc-registration-date-group">
+            <div class="form-group" id="slnc-registration-date-group" data-hide-for="associate">
               <label for="slnc-registration-date">
                 SLNC Registration Date
                 <span aria-hidden="true">*</span>
@@ -416,7 +459,7 @@
               >
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-hide-for="associate">
               <label for="designation">
                 Designation
                 <span aria-hidden="true">*</span>
@@ -430,7 +473,7 @@
               >
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-hide-for="associate">
               <label for="first-appointment-date">
                 First Appointment Date
                 <span aria-hidden="true">*</span>
@@ -444,7 +487,7 @@
               >
             </div>
 
-            <div class="form-group application-grid-full">
+            <div class="form-group application-grid-full" data-hide-for="associate">
               <label for="first-appointment-place">
                 First Appointment Place
                 <span aria-hidden="true">*</span>
@@ -486,6 +529,37 @@
               >
             </div>
 
+            <div class="form-group" data-only-for="associate" hidden>
+              <label for="student-number">
+                Student Number
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="text"
+                      id="student-number"
+                      name="studentNumber"
+                      maxlength="100"
+                      required
+                      disabled
+              >
+            </div>
+
+            <div class="form-group" data-only-for="associate" hidden>
+              <label for="institute-registration-date">
+                Date Registered at the Nursing School / University
+                <span aria-hidden="true">*</span>
+              </label>
+
+              <input
+                      type="date"
+                      id="institute-registration-date"
+                      name="instituteRegistrationDate"
+                      required
+                      disabled
+              >
+            </div>
+
             <div class="form-group application-grid-full">
               <label for="higher-qualification">
                 Higher Educational Qualification
@@ -504,11 +578,12 @@
                 class="application-section"
                 aria-labelledby="payment-details-heading"
         >
-          <h3 id="payment-details-heading">4. Lifetime Membership Payment</h3>
+          <h3 id="payment-details-heading">5. Membership Payment</h3>
 
           <div class="payment-amount-highlight">
-            <span class="payment-amount-label">Lifetime Membership Fee:</span>
-            <span class="payment-amount-value" id="fee-amount-lifetime">Rs. 6,000</span>
+            <span class="payment-amount-label"><span id="selected-fee-label">Lifetime Membership</span> Fee:</span>
+            <span class="payment-amount-value" id="selected-fee-amount">Rs. 6,000</span>
+            <span class="payment-amount-period" id="selected-fee-period">one-time</span>
           </div>
 
           <div class="payment-details-box">
@@ -537,7 +612,7 @@
             </dl>
 
             <p class="form-help">
-              Transfer the lifetime membership fee to this account,
+              Transfer the membership fee shown above to this account,
               then upload a clear copy of your bank receipt.
             </p>
           </div>
@@ -575,7 +650,7 @@
                 class="application-section"
                 aria-labelledby="id-application-heading"
         >
-          <h3 id="id-application-heading">5. SLNA ID Application</h3>
+          <h3 id="id-application-heading">6. SLNA ID Application</h3>
 
           <p>
             The details in this application will also be used to prepare your
@@ -645,7 +720,7 @@
                 type="submit"
                 class="btn btn-primary submit-application-btn"
         >
-          Submit Lifetime Membership Application
+          Submit Membership Application
         </button>
 
         <p class="form-help submit-help">
@@ -730,12 +805,25 @@
               <dd id="status-result-submitted">—</dd>
             </div>
 
+            <div id="status-result-category-row" hidden>
+              <dt>Membership Category</dt>
+              <dd id="status-result-category">—</dd>
+            </div>
+
             <div
                     id="status-result-membership-row"
                     hidden
             >
               <dt>SLNA Registration ID</dt>
               <dd id="status-result-membership-number">—</dd>
+            </div>
+
+            <div id="status-result-valid-row" hidden>
+              <dt>Valid Until</dt>
+              <dd>
+                <span id="status-result-valid-until">—</span>
+                <a href="renew-membership.html" class="status-result-renew-link">Renew</a>
+              </dd>
             </div>
           </dl>
 
